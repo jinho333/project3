@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>버스 불편 신고</title>
+  <link rel="stylesheet" href="/css/layouts/common.css">
+  <!-- 페이지별 css -->
+  <th:block layout:fragment="content_css"></th:block>
+</head>
+<body>
+  <!-- 헤더 -->
+  <header class="header">
+    <a class="logo" href="/">버스 불편 신고</a>
+    <nav class="header-menu">
+      <a href="/member/login">로그인</a>
+      <a href="/member/join">회원가입</a>
+    </nav>
+  </header>
+
+  <!-- 본문 -->
+  <main class="content">
+    <th:block layout:fragment="content"></th:block>
+  </main>
+
+  <!-- 페이지별 js -->
+  <th:block layout:fragment="content_js"></th:block>
+</body>
+</html>

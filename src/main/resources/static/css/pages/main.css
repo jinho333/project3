@@ -1,0 +1,13 @@
+/* 메인: 본문 가운데에 신고 접수 / 신고 조회 두 개의 창 */
+.main-boxes {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 80px;
+}
+.main-box {
+  width: 360px;
+  height: 300px;
+  border: 1px solid #ccc;
+  padding: 24px;
+}

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/user_layout}">
+
+<th:block layout:fragment="content_css">
+  <link rel="stylesheet" href="/css/pages/main.css">
+</th:block>
+
+<th:block layout:fragment="content">
+  <div class="main-boxes">
+    <section class="main-box">
+      <h2><a href="/report">신고 접수</a></h2>
+    </section>
+    <section class="main-box">
+      <h2>신고 조회</h2>
+    </section>
+  </div>
+</th:block>
+
+</html>
