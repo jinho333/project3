@@ -12,6 +12,6 @@ public interface MemberMapper {
     // 아이디 중복 확인 (1이면 중복)
     int isDupMemberId(String memberId);
 
-    // 로그인: 아이디, 비밀번호가 일치하는 회원 1명 조회 (없으면 null)
-    MemberDTO getMemberDetail(MemberDTO memberDTO);
+    // 로그인: 아이디로 회원 1명 조회 (없으면 null), 저장된 비밀번호는 암호화된 값
+    MemberDTO getMemberDetail(String memberId);
 }

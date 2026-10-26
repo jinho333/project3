@@ -17,15 +17,22 @@ public class MemberController {
         this.memberService = memberService;
     }
 
-    // 로그인 화면
+    // 로그인 화면 (이미 로그인했으면 메인으로)
     @GetMapping("/member/login")
-    public String loginForm() {
+    public String loginForm(HttpSession session) {
+        if (session.getAttribute("loginInfo") != null) {
+            return "redirect:/";
+        }
         return "pages/member/login";
     }
 
     // 로그인 처리: 성공하면 세션에 loginInfo 저장 후 메인으로
+    // 실패하면 입력했던 아이디는 memberDTO로 화면에 다시 전달됨
     @PostMapping("/member/login")
     public String login(MemberDTO memberDTO, HttpSession session, Model model) {
+        if (session.getAttribute("loginInfo") != null) {
+            return "redirect:/";
+        }
         MemberDTO loginInfo = memberService.login(memberDTO);
         if (loginInfo == null) {
             model.addAttribute("errorMsg", "아이디 또는 비밀번호가 올바르지 않습니다.");
@@ -43,21 +50,27 @@ public class MemberController {
         return "redirect:/";
     }
 
-    // 회원가입 화면
+    // 회원가입 화면 (이미 로그인했으면 메인으로)
     @GetMapping("/member/join")
-    public String joinForm() {
+    public String joinForm(HttpSession session) {
+        if (session.getAttribute("loginInfo") != null) {
+            return "redirect:/";
+        }
         return "pages/member/join";
     }
 
     // 회원가입 처리: 성공하면 로그인 화면으로
+    // 실패하면 입력했던 값(비밀번호 제외)은 memberDTO로 화면에 다시 전달됨
     @PostMapping("/member/join")
-    public String join(MemberDTO memberDTO, Model model) {
-        // 화면에서 중복확인을 했어도 한 번 더 확인
-        if (memberService.isDupMemberId(memberDTO.getMemberId())) {
-            model.addAttribute("errorMsg", "이미 사용 중인 아이디입니다.");
+    public String join(MemberDTO memberDTO, HttpSession session, Model model) {
+        if (session.getAttribute("loginInfo") != null) {
+            return "redirect:/";
+        }
+        String errorMsg = memberService.join(memberDTO);
+        if (errorMsg != null) {
+            model.addAttribute("errorMsg", errorMsg);
             return "pages/member/join";
         }
-        memberService.join(memberDTO);
         return "redirect:/member/login";
     }
 }

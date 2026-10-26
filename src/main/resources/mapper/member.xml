@@ -26,11 +26,11 @@
     SELECT COUNT(*) FROM MEMBER WHERE MEMBER_ID = #{memberId}
   </select>
 
-  <!-- 로그인 -->
+  <!-- 로그인: 아이디로 회원 조회 (비밀번호 비교는 Service에서 암호화 값끼리 비교) -->
   <select id="getMemberDetail" resultMap="member">
     SELECT MEMBER_NO, MEMBER_ID, MEMBER_PW, MEMBER_NAME, MEMBER_PHONE, REG_DATE, ROLE
     FROM MEMBER
-    WHERE MEMBER_ID = #{memberId} AND MEMBER_PW = #{memberPw}
+    WHERE MEMBER_ID = #{memberId}
   </select>
 	
 </mapper>
