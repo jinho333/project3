@@ -1,0 +1,10 @@
+/* 회원가입: 배치만 잡음 */
+.join-wrap { width: 420px; margin: 40px auto; }
+.join-wrap h2 { text-align: center; margin-bottom: 24px; }
+.form-row { display: flex; flex-direction: column; margin-bottom: 16px; }
+.form-row input { height: 36px; }
+.id-line { display: flex; gap: 8px; }
+.id-line input { flex: 1; }
+.error-msg { color: red; font-size: 13px; min-height: 20px; }
+.ok-msg { color: green; }
+.join-wrap > form > button { width: 100%; height: 44px; }

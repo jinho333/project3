@@ -3,7 +3,35 @@
 
 <!-- 해당 파일에 모든 쿼리문을 작성 -->
 <!-- namespace에는 xml파일과 연결할 Mapper interface 파일명을 패키지를 포함하여 적어주세요 -->
-<mapper namespace="mapper">
+<mapper namespace="com.commit.project3.mapper.MemberMapper">
+
+  <resultMap id="member" type="com.commit.project3.dto.MemberDTO">
+    <id column="MEMBER_NO" property="memberNo"/>
+    <result column="MEMBER_ID" property="memberId"/>
+    <result column="MEMBER_PW" property="memberPw"/>
+    <result column="MEMBER_NAME" property="memberName"/>
+    <result column="MEMBER_PHONE" property="memberPhone"/>
+    <result column="REG_DATE" property="regDate"/>
+    <result column="ROLE" property="role"/>
+  </resultMap>
+
+  <!-- 회원가입 (REG_DATE, ROLE은 DB 기본값 사용) -->
+  <insert id="insertMember">
+    INSERT INTO MEMBER (MEMBER_ID, MEMBER_PW, MEMBER_NAME, MEMBER_PHONE)
+    VALUES (#{memberId}, #{memberPw}, #{memberName}, #{memberPhone})
+  </insert>
+
+  <!-- 아이디 중복 확인 -->
+  <select id="isDupMemberId" resultType="int">
+    SELECT COUNT(*) FROM MEMBER WHERE MEMBER_ID = #{memberId}
+  </select>
+
+  <!-- 로그인 -->
+  <select id="getMemberDetail" resultMap="member">
+    SELECT MEMBER_NO, MEMBER_ID, MEMBER_PW, MEMBER_NAME, MEMBER_PHONE, REG_DATE, ROLE
+    FROM MEMBER
+    WHERE MEMBER_ID = #{memberId} AND MEMBER_PW = #{memberPw}
+  </select>
 	
 </mapper>
 
