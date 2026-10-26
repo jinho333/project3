@@ -4,7 +4,14 @@
   margin: 0 auto;
   padding: 40px 0;
   border: 1px solid #ccc;
+  font-size: 19px;
 }
+
+/* 입력칸·버튼은 브라우저 기본 글자 크기가 따로라 직접 지정 */
+.report-wrap input,
+.report-wrap textarea,
+.report-wrap button { font-size: 16px; }
+
 .report-title { text-align: center; margin-bottom: 40px; }
 
 .report-form { width: 900px; margin: 0 auto; }
@@ -14,8 +21,12 @@
 .form-label { width: 150px; padding-top: 6px; }
 
 .select-btn { width: 180px; height: 50px; }
+.selected-text { margin-left: 16px; line-height: 50px; } /* 버튼과 같은 높이에서 세로 가운데 */
+.route-input { margin-left: 16px; height: 50px; }
 
-.notice-list { margin-bottom: 8px; padding-left: 16px; font-size: 13px; }
+.error-msg { color: red; text-align: center; min-height: 24px; margin-top: 16px; }
+
+.notice-list { margin-bottom: 8px; padding-left: 16px; font-size: 16px; }
 
 /* 사진 3칸 */
 .photo-list { display: flex; gap: 16px; }
@@ -26,7 +37,11 @@
   height: 200px;
   border: 1px solid #ccc;
   cursor: pointer;
+  overflow: hidden;
+  background-size: cover;      /* 이미지 미리보기가 칸을 채우도록 */
+  background-position: center;
 }
+.photo-name { display: block; padding: 8px; word-break: break-all; }
 .photo-item input[type="text"] { width: 100%; }
 
 .form-row textarea { width: 790px; height: 180px; }
@@ -60,3 +75,4 @@
 
 .submit-area { text-align: center; margin-top: 40px; }
 .submit-btn { width: 280px; height: 60px; }
+.report-wrap .submit-btn { font-size: 19px; } /* 위의 button 16px보다 우선하도록 선택자를 더 구체적으로 */

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.commit.project3.mapper.ReportMapper">
+
+  <!-- 대분류 1개 안에 유형 여러 개: 1:N 관계는 collection -->
+  <resultMap id="typeGroup" type="com.commit.project3.dto.ReportTypeGroupDTO">
+    <id column="GROUP_NO" property="groupNo"/>
+    <result column="GROUP_NAME" property="groupName"/>
+    <collection property="typeList" ofType="com.commit.project3.dto.ReportTypeDTO">
+      <id column="TYPE_NO" property="typeNo"/>
+      <result column="GROUP_NO" property="groupNo"/>
+      <result column="TYPE_NAME" property="typeName"/>
+    </collection>
+  </resultMap>
+
+  <!-- 유형선택 모달용 목록 -->
+  <select id="selectTypeGroupList" resultMap="typeGroup">
+    SELECT G.GROUP_NO, G.GROUP_NAME, T.TYPE_NO, T.TYPE_NAME
+    FROM REPORT_TYPE_GROUP G
+    INNER JOIN REPORT_TYPE T ON G.GROUP_NO = T.GROUP_NO
+    ORDER BY G.GROUP_NO, T.TYPE_NO
+  </select>
+
+  <!-- 신고 등록 (STATUS, REG_DATE는 DB 기본값 사용, 생성된 번호는 reportNo에 담김) -->
+  <insert id="insertReport" useGeneratedKeys="true" keyProperty="reportNo">
+    INSERT INTO REPORT (MEMBER_NO, REPORTER_NAME, REPORTER_PHONE, TYPE_NO, ROUTE_NO, CONTENT)
+    VALUES (#{memberNo}, #{reporterName}, #{reporterPhone}, #{typeNo}, #{routeNo}, #{content})
+  </insert>
+
+  <!-- 신고 첨부파일 등록 -->
+  <insert id="insertReportFile">
+    INSERT INTO REPORT_FILE (REPORT_NO, ORIGIN_NAME, SAVE_NAME, FILE_DESC, SORT_NO)
+    VALUES (#{reportNo}, #{originName}, #{saveName}, #{fileDesc}, #{sortNo})
+  </insert>
+
+  <!-- 신고 조회용 resultMap (유형·대분류 이름, 처리 상태 이름 포함) -->
+  <resultMap id="report" type="com.commit.project3.dto.ReportDTO">
+    <id column="REPORT_NO" property="reportNo"/>
+    <result column="MEMBER_NO" property="memberNo"/>
+    <result column="REPORTER_NAME" property="reporterName"/>
+    <result column="REPORTER_PHONE" property="reporterPhone"/>
+    <result column="TYPE_NO" property="typeNo"/>
+    <result column="ROUTE_NO" property="routeNo"/>
+    <result column="CONTENT" property="content"/>
+    <result column="STATUS" property="status"/>
+    <result column="STATUS_NAME" property="statusName"/>
+    <result column="REG_DATE" property="regDate"/>
+    <result column="GROUP_NAME" property="groupName"/>
+    <result column="TYPE_NAME" property="typeName"/>
+  </resultMap>
+
+  <resultMap id="reportFile" type="com.commit.project3.dto.ReportFileDTO">
+    <id column="FILE_NO" property="fileNo"/>
+    <result column="REPORT_NO" property="reportNo"/>
+    <result column="ORIGIN_NAME" property="originName"/>
+    <result column="SAVE_NAME" property="saveName"/>
+    <result column="FILE_DESC" property="fileDesc"/>
+    <result column="SORT_NO" property="sortNo"/>
+  </resultMap>
+
+  <!-- 목록과 개수 조회에서 같이 쓰는 검색 조건 (내 신고만 + 선택한 조건) -->
+  <sql id="searchWhere">
+    <where>
+      R.MEMBER_NO = #{memberNo}
+      <if test='status != null and !status.equals("")'>
+        AND R.STATUS = #{status}
+      </if>
+      <if test="typeNo != null">
+        AND R.TYPE_NO = #{typeNo}
+      </if>
+      <if test="startDate != null">
+        AND R.REG_DATE &gt;= #{startDate}
+      </if>
+      <if test="endDate != null">
+        AND R.REG_DATE &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+      </if>
+    </where>
+  </sql>
+
+  <!-- 신고 목록 (최신순, LIMIT/OFFSET 페이징) -->
+  <select id="selectReportList" resultMap="report">
+    SELECT R.REPORT_NO, R.MEMBER_NO, R.REPORTER_NAME, R.REPORTER_PHONE, R.TYPE_NO, R.ROUTE_NO,
+           R.CONTENT, R.STATUS, R.REG_DATE, G.GROUP_NAME, T.TYPE_NAME,
+           CASE R.STATUS
+             WHEN 'RECEIVED' THEN '접수'
+             WHEN 'PROCESSING' THEN '처리중'
+             WHEN 'DONE' THEN '완료'
+             ELSE R.STATUS
+           END AS STATUS_NAME
+    FROM REPORT R
+    INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO
+    <include refid="searchWhere"/>
+    ORDER BY R.REPORT_NO DESC
+    LIMIT #{displayDataCnt} OFFSET #{offset}
+  </select>
+
+  <!-- 검색 조건에 맞는 전체 개수 -->
+  <select id="selectReportCount" resultType="int">
+    SELECT COUNT(*)
+    FROM REPORT R
+    <include refid="searchWhere"/>
+  </select>
+
+  <!-- 신고 상세: 본인 신고만 조회됨 -->
+  <select id="getReportDetail" resultMap="report">
+    SELECT R.REPORT_NO, R.MEMBER_NO, R.REPORTER_NAME, R.REPORTER_PHONE, R.TYPE_NO, R.ROUTE_NO,
+           R.CONTENT, R.STATUS, R.REG_DATE, G.GROUP_NAME, T.TYPE_NAME,
+           CASE R.STATUS
+             WHEN 'RECEIVED' THEN '접수'
+             WHEN 'PROCESSING' THEN '처리중'
+             WHEN 'DONE' THEN '완료'
+             ELSE R.STATUS
+           END AS STATUS_NAME
+    FROM REPORT R
+    INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO
+    WHERE R.REPORT_NO = #{reportNo} AND R.MEMBER_NO = #{memberNo}
+  </select>
+
+  <!-- 신고 첨부파일 목록 (사진 칸 순서대로) -->
+  <select id="selectReportFileList" resultMap="reportFile">
+    SELECT FILE_NO, REPORT_NO, ORIGIN_NAME, SAVE_NAME, FILE_DESC, SORT_NO
+    FROM REPORT_FILE
+    WHERE REPORT_NO = #{reportNo}
+    ORDER BY SORT_NO
+  </select>
+
+</mapper>

@@ -21,6 +21,8 @@
       </div>
       <!-- 오류 문구 (JS 검사 또는 서버 로그인 실패 시) -->
       <p class="error-msg" id="errorMsg" th:text="${errorMsg}"></p>
+      <!-- 로그인이 필요한 페이지에서 넘어온 경우 JS가 안내창을 띄움 -->
+      <input type="hidden" id="needLogin" th:if="${param.needLogin != null}">
       <button type="submit">로그인</button>
     </form>
     <a href="/member/join">회원가입</a>

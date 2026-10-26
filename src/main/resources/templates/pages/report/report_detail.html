@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/user_layout}">
+
+<th:block layout:fragment="content_css">
+  <link rel="stylesheet" href="/css/pages/report/report_detail.css">
+</th:block>
+
+<th:block layout:fragment="content">
+  <div class="detail-wrap">
+    <h2 class="detail-title">신고 상세</h2>
+
+    <table class="detail-table">
+      <tr>
+        <th>신고번호</th>
+        <td th:text="${report.reportNo}"></td>
+        <th>처리상태</th>
+        <td th:text="${report.statusName}"></td>
+      </tr>
+      <tr>
+        <th>신고자</th>
+        <td th:text="${report.reporterName}"></td>
+        <th>휴대전화번호</th>
+        <td th:text="${report.reporterPhone}"></td>
+      </tr>
+      <tr>
+        <th>유형</th>
+        <td th:text="|${report.groupName} > ${report.typeName}|"></td>
+        <th>노선</th>
+        <td th:text="${report.routeNo}"></td>
+      </tr>
+      <tr>
+        <th>접수일</th>
+        <td colspan="3" th:text="${#temporals.format(report.regDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
+      </tr>
+      <tr>
+        <th>내용</th>
+        <!-- 줄바꿈이 그대로 보이도록 CSS(white-space: pre-wrap)로 처리 -->
+        <td colspan="3" class="content-cell" th:text="${report.content}"></td>
+      </tr>
+    </table>
+
+    <!-- 첨부파일: 사진은 바로 보여주고, mp4는 재생, 그 외 동영상은 파일명 링크 -->
+    <div class="file-area" th:if="${not #lists.isEmpty(report.fileList)}">
+      <h3>첨부파일</h3>
+      <div class="file-item" th:each="file : ${report.fileList}">
+        <img th:if="${file.image}" th:src="@{/upload/{name}(name=${file.saveName})}" th:alt="${file.originName}">
+        <video th:if="${file.mp4}" th:src="@{/upload/{name}(name=${file.saveName})}" controls></video>
+        <a th:unless="${file.image or file.mp4}" th:href="@{/upload/{name}(name=${file.saveName})}"
+          th:text="${file.originName}"></a>
+        <p class="file-desc" th:text="${file.fileDesc}"></p>
+      </div>
+    </div>
+
+    <div class="detail-btns">
+      <a href="/report/list">목록으로</a>
+    </div>
+  </div>
+</th:block>
+
+</html>
