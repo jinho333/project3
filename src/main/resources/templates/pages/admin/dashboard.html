@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/admin_layout}">
+
+<th:block layout:fragment="content_css">
+  <link rel="stylesheet" href="/css/pages/admin/dashboard.css">
+</th:block>
+
+<th:block layout:fragment="content">
+  <div class="dash">
+    <!-- 왼쪽: 노선 목록 (4단계에서 작성) -->
+    <aside class="dash-list">
+      <h3>노선 목록</h3>
+    </aside>
+
+    <!-- 가운데: 지도 -->
+    <section class="dash-map">
+      <div id="map"></div>
+      <p id="mapMessage" class="map-message" hidden></p>
+    </section>
+
+    <!-- 오른쪽: 예측 상세 패널 (5단계에서 작성) -->
+    <aside class="dash-panel">
+      <h3>예측 상세</h3>
+    </aside>
+  </div>
+</th:block>
+
+<th:block layout:fragment="content_js">
+  <!-- 카카오맵 SDK: 키가 없으면 불러오지 않음 (키는 application.yaml 의 kakao.js.key) -->
+  <script th:if="${kakaoJsKey != null and !kakaoJsKey.isBlank()}"
+    th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false|"></script>
+  <script src="/js/pages/admin/dashboard_map.js"></script>
+</th:block>
+
+</html>

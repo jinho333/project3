@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>버스 혼잡 관리</title>
+  <link rel="stylesheet" href="/css/layouts/common.css">
+  <!-- 페이지별 css -->
+  <th:block layout:fragment="content_css"></th:block>
+</head>
+<body>
+  <!-- 헤더 -->
+  <header class="header">
+    <a class="logo" href="/admin">버스 혼잡 관리</a>
+    <nav class="header-menu">
+      <a href="/">시민 화면</a>
+    </nav>
+  </header>
+
+  <!-- 본문 -->
+  <main class="content admin-content">
+    <th:block layout:fragment="content"></th:block>
+  </main>
+
+  <!-- 페이지별 js -->
+  <th:block layout:fragment="content_js"></th:block>
+</body>
+</html>

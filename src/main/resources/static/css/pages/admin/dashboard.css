@@ -1,0 +1,45 @@
+/* 관리자 대시보드: 왼쪽 노선 목록 / 가운데 지도 / 오른쪽 예측 상세, 배치만 잡음 */
+.admin-content { padding: 0; }
+
+.dash {
+  display: flex;
+  height: calc(100vh - 54px); /* 헤더 높이만큼 뺌 */
+}
+.dash-list,
+.dash-panel {
+  width: 260px;
+  padding: 16px;
+  overflow-y: auto;
+}
+.dash-list { border-right: 1px solid #ccc; }
+.dash-panel { border-left: 1px solid #ccc; width: 320px; }
+
+.dash-map {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* 좁은 화면: 목록, 지도, 패널을 세로로 쌓음 */
+@media (max-width: 900px) {
+  .dash { flex-direction: column; height: auto; }
+  .dash-list,
+  .dash-panel { width: auto; border: 0; border-bottom: 1px solid #ccc; }
+  .dash-map { height: 60vh; flex: none; }
+}
+
+/* 지도를 불러오지 못했을 때 안내 문구 */
+.map-message {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  padding: 12px 16px;
+  background: #fff4e5;
+  border: 1px solid #f0b86e;
+  z-index: 10;
+}
