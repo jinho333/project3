@@ -23,10 +23,17 @@
 
       <button type="button" id="showAllBtn" class="show-all-btn">전체 노선 보기</button>
 
+      <!-- 방향 표시 (지도 전체의 기본값): 노선마다 대표 1방향만 / 모든 방향 -->
+      <div id="dirToggle" class="dir-toggle" role="group" aria-label="방향 표시">
+        <button type="button" id="dirOneBtn" class="dir-btn">대표 1방향</button>
+        <button type="button" id="dirBothBtn" class="dir-btn">양방향</button>
+      </div>
+
       <!-- 노선 찾기: 노선번호 또는 종점 이름으로 목록을 걸러 보여 줌 (지도에는 영향 없음) -->
       <input type="search" id="routeSearch" class="route-search" placeholder="노선번호·종점 이름 검색"
         autocomplete="off" aria-label="노선 검색">
       <p id="routeCount" class="list-note"></p>
+      <p class="list-note">노선을 누르면 지도에 표시되고 방향을 고를 수 있습니다. 이어서 누르거나 검색해서 고르면 함께 쌓이고, 표시 중인 노선을 다시 누르면 지도에서 빠집니다.</p>
 
       <!-- 노선 목록: 서버(/admin/api/routes)에서 받아 JS 가 채움 -->
       <ul id="routeList" class="route-btns"></ul>
@@ -37,22 +44,15 @@
     <div class="dash-main">
       <section class="dash-map">
         <div id="map"></div>
-        <!-- 지도 전체에 적용되는 방향 표시 (노선 하나를 선택하면 아래 예측 영역의 방향 칩이 대신함) -->
-        <div id="dirToggle" class="dir-toggle">
-          <span>방향</span>
-          <button type="button" id="dirOneBtn" class="dir-btn">대표 1방향</button>
-          <button type="button" id="dirBothBtn" class="dir-btn">양방향</button>
-        </div>
         <p id="mapMessage" class="map-message" hidden></p>
       </section>
 
       <!-- 지도에서 노선을 클릭하면 혼잡 예측 차트가 표시될 자리 (5단계에서 작성) -->
       <section class="dash-forecast">
         <h3>예측 데이터</h3>
-        <!-- 노선 하나를 선택했을 때: 노선 정보와 방향 칩 (JS 가 채움) -->
+        <!-- 노선 하나를 선택했을 때: 노선 정보 (JS 가 채움) -->
         <div id="forecastRoute" class="forecast-route" hidden>
           <p id="forecastTitle" class="forecast-title"></p>
-          <div id="dirChips" class="dir-chips"></div>
         </div>
         <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
       </section>
