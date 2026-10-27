@@ -39,6 +39,8 @@
   width: 100%;
   height: 100%;
 }
+/* 지도 위의 노선 선(SVG)에 마우스를 올리면 손가락 모양 포인터 (클릭할 수 있다는 표시) */
+#map svg path { cursor: pointer; }
 
 .dash-forecast {
   flex: 4;
@@ -49,17 +51,142 @@
 }
 .forecast-empty { margin-top: 12px; color: #777; }
 
-/* 지도를 불러오지 못했을 때 안내 문구 */
-.map-message {
+/* 노선 하나를 선택했을 때의 노선 정보와 방향 칩 */
+.forecast-route { margin-top: 8px; }
+.forecast-route[hidden] { display: none; }
+.forecast-title { font-weight: bold; }
+.dir-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.chips-caption { color: #666; font-size: 13px; }
+.chip, .dir-btn {
+  padding: 3px 10px;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid #999;
+  cursor: pointer;
+}
+.chip:hover, .dir-btn:hover { background: #f5f5f5; }
+.chip.is-on, .dir-btn.is-on { background: #eef2ff; border-color: #333; font-weight: bold; }
+
+/* 지도 왼쪽 위의 방향 토글 (지도 전체에 적용) */
+.dir-toggle {
   position: absolute;
   top: 16px;
   left: 16px;
-  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #333;
+  font-size: 13px;
+}
+.dir-toggle[hidden] { display: none; }
+
+/* 선에 마우스를 올렸을 때 뜨는 툴팁 */
+.route-tooltip {
+  position: absolute;                              /* 지도 영역 안에서 마우스를 따라다님 */
+  display: none;                                   /* 선에 마우스를 올릴 때만 JS 가 보이게 함 */
+  z-index: 20;
+  transform: translate(-50%, calc(-100% - 14px));  /* 마우스 위쪽 가운데에 표시 */
+  min-width: 140px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none; /* 툴팁이 마우스 동작을 가로채지 않게 */
+}
+.route-tooltip .tt-head { font-weight: bold; margin-bottom: 4px; }
+.route-tooltip .tt-line { color: #333; }
+.route-tooltip .tt-muted { color: #888; font-size: 12px; margin-top: 2px; }
+
+/* 선 위의 진행 방향 화살표 (마우스 동작은 아래 선이 받음) */
+.dir-arrow { width: 12px; height: 12px; pointer-events: none; }
+.dir-arrow svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* 정류장 표시: 흰 점 + 노선 색 테두리, 기점·종점은 더 크고 이름표가 붙음 */
+.stop-dot {
+  position: relative;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid #888;   /* 색은 JS 가 노선의 혼잡 등급 색으로 지정 */
+  border-radius: 50%;
+  cursor: default;
+}
+.stop-dot.is-end { width: 16px; height: 16px; border-width: 3px; }
+.stop-label {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(6px, -50%);
+  font-size: 12px;
+  font-weight: bold;
+  color: #222;
+  white-space: nowrap;
+  text-shadow: -1px 0 #fff, 0 1px #fff, 1px 0 #fff, 0 -1px #fff;  /* 지도 위에서 읽히도록 흰 테두리 */
+  pointer-events: none;
+}
+
+/* 노선 목록 */
+.list-note { margin-top: 8px; color: #777; font-size: 13px; }
+
+/* 혼잡 등급 색 (지도의 선 색과 같음) */
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.grade-HIGH { background: #E53935; }
+.grade-MID  { background: #F9A825; }
+.grade-LOW  { background: #43A047; }
+.legend { list-style: none; display: flex; gap: 12px; margin-top: 12px; font-size: 13px; }
+
+.show-all-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #333;
+  cursor: pointer;
+}
+.show-all-btn:hover { background: #f5f5f5; }
+
+.route-search {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #333;
+  font-size: 14px;
+}
+
+.route-btns { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.route-btn {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+.route-btn:hover { background: #f5f5f5; }
+.route-btn small { display: block; margin-top: 2px; color: #666; font-size: 12px; }
+.route-btn.is-active { border-color: #333; background: #eef2ff; font-weight: bold; }  /* 지도에 표시 중인 노선(선택한 노선) */
+.route-btn.is-missing { color: #999; border-style: dashed; }                         /* 데이터를 불러오지 못한 노선 */
+
+/* 지도를 불러오지 못했을 때 안내 문구 */
+.map-message {
+  position: absolute;
+  top: 64px;   /* 왼쪽 위의 방향 토글 아래 */
+  left: 16px;
+  right: 64px; /* 오른쪽 확대/축소 버튼을 가리지 않도록 여유를 둠 */
   padding: 12px 16px;
   background: #fff4e5;
   border: 1px solid #f0b86e;
   z-index: 10;
 }
+/* 불러오는 중 같은 일반 안내는 파란 톤, 오류/없는 노선 안내는 주황 톤 */
+.map-message.is-info { background: #eaf3ff; border-color: #8ab4f8; }
 
 /* 좁은 화면: 목록, 지도, 예측 데이터를 세로로 쌓고 여백은 없앰 */
 @media (max-width: 900px) {
