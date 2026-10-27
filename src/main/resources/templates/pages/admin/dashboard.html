@@ -14,16 +14,19 @@
       <h3>노선 목록</h3>
     </aside>
 
-    <!-- 가운데: 지도 -->
-    <section class="dash-map">
-      <div id="map"></div>
-      <p id="mapMessage" class="map-message" hidden></p>
-    </section>
+    <!-- 오른쪽: 위 지도, 아래 예측 데이터 (오른쪽 끝에 여백) -->
+    <div class="dash-main">
+      <section class="dash-map">
+        <div id="map"></div>
+        <p id="mapMessage" class="map-message" hidden></p>
+      </section>
 
-    <!-- 오른쪽: 예측 상세 패널 (5단계에서 작성) -->
-    <aside class="dash-panel">
-      <h3>예측 상세</h3>
-    </aside>
+      <!-- 지도에서 노선을 클릭하면 혼잡 예측 차트가 표시될 자리 (5단계에서 작성) -->
+      <section class="dash-forecast">
+        <h3>예측 데이터</h3>
+        <p class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
+      </section>
+    </div>
   </div>
 </th:block>
 

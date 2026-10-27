@@ -18,10 +18,15 @@
 |---|---|
 | `controller/AdminController.java` | `/admin` 화면, `kakao.js.key`를 템플릿에 전달 (관리자 접근 제한은 TODO) |
 | `templates/layouts/admin_layout.html` | 관리자 레이아웃 |
-| `templates/pages/admin/dashboard.html` | 왼쪽 노선 목록, 가운데 지도, 오른쪽 예측 상세 자리 |
-| `static/css/pages/admin/dashboard.css` | 3단 배치 (900px 이하는 세로로 쌓임) |
+| `templates/pages/admin/dashboard.html` | 왼쪽 노선 목록, 오른쪽 위 지도 / 오른쪽 아래 예측 데이터 (2단) |
+| `static/css/pages/admin/dashboard.css` | 2단 배치, 지도:예측 = 6:4, 지도와 예측 데이터 오른쪽 여백 320px (`--dash-right-gap`, 900px 이하는 세로로 쌓이고 여백 0) |
 | `static/js/pages/admin/dashboard_map.js` | 울산 지도 표시, 확대/축소 버튼, SDK를 못 불러왔을 때 안내 |
 | `static/data/routes/741.geojson` | 741번 두 방향 선과 정류장 점 (좌표는 [경도, 위도] 순서) |
+
+### 화면 틀 (2026-10-27 변경, 아직 커밋 전)
+
+팀에서 정한 초기 틀로 바꿈: 헤더 아래 **왼쪽 노선 목록 / 오른쪽 위 지도 / 오른쪽 아래 예측 데이터(차트 자리)**.
+지도에서 노선을 클릭하면 아래 칸에 혼잡 예측 데이터가 나타날 예정. 오른쪽 여백은 처음 3단에서 예측 상세 칸 폭이던 **320px**을 그대로 사용 (`dashboard.css` 맨 위 변수 `--dash-right-gap` 한 곳에서 변경).
 
 ## 2. 집에서 시작하는 순서
 
