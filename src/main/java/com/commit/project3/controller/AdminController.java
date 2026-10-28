@@ -4,6 +4,7 @@ import com.commit.project3.dto.StatDTO;
 import com.commit.project3.service.AdminService;
 import com.commit.project3.util.AdminUtil;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,10 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+
+    // 카카오맵 JavaScript 키 (application.yaml 의 kakao.js.key), 없으면 빈 값
+    @Value("${kakao.js.key:}")
+    private String kakaoJsKey;
 
     public AdminController(AdminService adminService) {
         this.adminService = adminService;
@@ -40,6 +45,18 @@ public class AdminController {
         model.addAttribute("routeMax", maxCnt(routeStat));
         model.addAttribute("typeMax", maxCnt(typeStat));
         return "pages/admin/dashboard";
+    }
+
+    // 버스 혼잡도: 노선 목록 + 지도 + 예측 데이터
+    @GetMapping("/admin/congestion")
+    public String congestion(HttpSession session, Model model) {
+        String redirect = AdminUtil.checkAdmin(session);
+        if (redirect != null) {
+            return redirect;
+        }
+        model.addAttribute("menu", "congestion");
+        model.addAttribute("kakaoJsKey", kakaoJsKey);
+        return "pages/admin/congestion";
     }
 
     private int maxCnt(List<StatDTO> list) {
