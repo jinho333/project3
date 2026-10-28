@@ -211,6 +211,7 @@
 .route-btn:hover { background: #f5f5f5; }
 .route-btn small { display: block; margin-top: 2px; color: #666; font-size: 12px; }
 .route-btn.is-active { border-color: #333; background: #eef2ff; font-weight: bold; }  /* 지도에 표시 중인 노선(선택한 노선) */
+.route-btn.is-hover { border-color: #333; background: #fff3c4; }                       /* 지도에서 마우스를 올린 노선 */
 .route-btn.is-missing { color: #999; border-style: dashed; }                         /* 데이터를 불러오지 못한 노선 */
 
 /* 지도를 불러오지 못했을 때 안내 문구 */

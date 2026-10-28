@@ -11,7 +11,11 @@
 //     조금 확대(DIRECTION_ZOOM_LEVEL 이하)하면 선 위에 진행 방향 V 만 표시 (동그라미 없이) /
 //     더 확대(STOP_ZOOM_LEVEL 이하)하면 화면 안의 정류장 점도 표시 / 정류장에 마우스를 올리면 툴팁에 정류장 이름도 표시
 //     진행 방향은 정류장 점 바로 앞에 붙는 V 화살표로 표시 (선 위에 일정 간격으로 그리지 않음)
-// 노선 목록은 /admin/api/routes, 노선 선은 /admin/api/routes/{노선번호}/geometry 에서 받음
+//  8) 노선을 선택하면 보이는 방향의 선을 실제 도로 모양으로 바꿈 (서버가 카카오 대중교통 경로를 그때그때 조회).
+//     도로 선을 못 받으면(키 없음, 순환 노선, 직행 경로 없음 등) 정류장을 이은 직선 그대로 둠
+//  9) 노선을 고르면 그 선이 두 번 깜빡이고, 지금 화면에 그 노선이 하나도 안 보이면 기점으로 화면만 옮김 (확대 수준 유지)
+// 노선 목록은 /admin/api/routes, 노선 선은 /admin/api/routes/{노선번호}/geometry,
+// 도로 선은 /admin/api/routes/{노선번호}/road?brtId= 에서 받음
 (function () {
   const mapEl = document.querySelector('#map');
   const messageEl = document.querySelector('#mapMessage');
@@ -32,7 +36,16 @@
   const LINE_WEIGHT = 5;          // 선 굵기
   const LINE_WEIGHT_HOVER = 8;    // 마우스를 올린 선의 굵기
   const LINE_OPACITY = 0.85;      // 보통 선 투명도
+  const LINE_OPACITY_HOVER = 1;   // 마우스를 올린 선 투명도 (가장 진하게)
+  // 마우스를 올린 선 아래에 깔리는 부드러운 그림자 테두리: 검정을 아주 연하게 두 겹으로 깔아 가장자리가 번지듯 보이게 함
+  // extra: 올린 선보다 굵은 만큼(px, 양쪽으로 절반씩), opacity: 투명도 (숫자가 작을수록 연함)
+  const CASING_COLOR = '#000';
+  const CASING_LAYERS = [
+    { extra: 10, opacity: 0.12, z: 8 },   // 바깥쪽 (아주 연함)
+    { extra: 5, opacity: 0.25, z: 9 }     // 안쪽 (조금 진함)
+  ];
   const LINE_OPACITY_DIM = 0.5;   // 마우스를 올렸을 때 다른 노선의 투명도
+  const FLASH_OPACITY = 0.15;     // 노선을 고른 직후 깜빡일 때 가장 흐려지는 투명도
   const ARROW_SPACING_PX = 130;   // 진행 방향 V 사이의 화면 간격(px), 너무 촘촘하지 않게
   const ARROW_SNAP_PX = 35;       // V 자리에서 이 거리 안에 정류장이 있으면 그 정류장 점 안에 넣음
   const DIRECTION_ZOOM_LEVEL = 7; // 이 확대 수준 이하(더 확대)가 되면 선 위에 진행 방향 V 를 표시 (숫자가 작을수록 확대)
@@ -149,6 +162,13 @@
     tooltipEl.appendChild(direction);
     tooltipEl.appendChild(level);
     tooltipEl.appendChild(forecast);
+
+    // 지금 그려진 선이 도로 기준인지 정류장을 이은 직선인지 (도로 선을 못 받은 노선을 알아볼 수 있게)
+    const shape = document.createElement('div');
+    shape.className = 'tt-line tt-muted';
+    shape.textContent = dir.roadState !== 'ok' ? '선: 정류장을 직선으로 연결'
+      : (dir.roadPartial ? '선: 도로 기준 (일부 구간은 직선)' : '선: 도로 기준');
+    tooltipEl.appendChild(shape);
     tooltipEl.style.display = 'block';
     moveTooltip();
   }
@@ -166,26 +186,34 @@
     });
   }
 
+  // 올린 방향의 선: 가장 진하게(투명도 1.0), 굵게, 맨 위로, 연한 그림자 테두리를 깔아 다른 선과 분리해서 보여 줌.
+  // 목록에서도 같은 노선 항목을 강조함.
   function applyHover(routeNo, brtId, hoverLine) {
     eachLine(function (no, line, dir) {
       const mine = no === routeNo && dir.brtId === brtId;
       line.setOptions({
-        strokeOpacity: mine ? LINE_OPACITY : LINE_OPACITY_DIM,
+        strokeOpacity: mine ? LINE_OPACITY_HOVER : LINE_OPACITY_DIM,
         strokeWeight: line === hoverLine ? LINE_WEIGHT_HOVER : LINE_WEIGHT,
         zIndex: mine ? 10 : 1                      // 올린 방향을 위로 올림
       });
+      dir.casings.forEach(function (c) { c.setMap(mine ? map : null); });   // 그림자 테두리는 올린 방향에만
     });
     stopMarkers.forEach(function (s) {
       const mine = s.routeNo === routeNo && s.brtId === brtId;
       s.el.style.opacity = mine ? '' : LINE_OPACITY_DIM;   // 다른 방향·노선의 정류장도 같이 흐리게
     });
+    Object.keys(buttons).forEach(function (no) {
+      buttons[no].classList.toggle('is-hover', no === routeNo);
+    });
   }
 
   function clearHover() {
-    eachLine(function (no, line) {
+    eachLine(function (no, line, dir) {
       line.setOptions({ strokeOpacity: LINE_OPACITY, strokeWeight: LINE_WEIGHT, zIndex: 1 });
+      dir.casings.forEach(function (c) { c.setMap(null); });
     });
     stopMarkers.forEach(function (s) { s.el.style.opacity = ''; });
+    Object.keys(buttons).forEach(function (no) { buttons[no].classList.remove('is-hover'); });
   }
 
   // ---------- 정류장 표시 ----------
@@ -241,36 +269,44 @@
   // 그래서 V 가 너무 촘촘하지 않고, 정류장 사이가 넓어도 방향이 끊기지 않음. 기점의 V 는 항상 기점 점 안에 들어감.
   // 반환: { stopAngles: {정류장 순번: 각도}, mids: [{ pos, angle, x, y }] }
   function planArrows(dir, proj, snap) {
-    const pts = dir.stops.map(function (s) { return proj.containerPointFromCoords(s.pos); });
-    const cum = [0];                               // 기점에서 각 정류장까지 화면상 누적 거리(px)
+    // V 는 지도에 그려진 선을 따라 놓음: 도로 선을 받았으면 그 선, 아니면 정류장을 이은 직선
+    const track = dir.track || dir.stops.map(function (s) { return s.pos; });
+    const pts = track.map(function (p) { return proj.containerPointFromCoords(p); });
+    const cum = [0];                               // 선의 시작에서 각 꼭짓점까지 화면상 누적 거리(px)
     for (let i = 1; i < pts.length; i++) {
       cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
     }
     const total = cum[cum.length - 1];
+    // 정류장이 선의 몇 번째 꼭짓점에 놓이는지 (직선이면 정류장이 곧 꼭짓점), 그 자리까지의 누적 거리
+    const stopIdx = dir.stopIdx || dir.stops.map(function (s, j) { return j; });
+    const stopCum = stopIdx.map(function (k) { return cum[k]; });
+    const reach = dir.track ? 3 : 1;               // 도로 선은 꼭짓점이 촘촘해서 몇 칸 앞에서부터 방향을 잼
     const stopAngles = {};
     const mids = [];
-    const angleAt = function (j) {                 // 이전 정류장에서 들어오는 방향, 기점은 다음 정류장으로 나가는 방향
-      if (j > 0) return Math.atan2(pts[j].y - pts[j - 1].y, pts[j].x - pts[j - 1].x);
-      return pts.length > 1 ? Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x) : 0;
+    const angleAt = function (j) {                 // 정류장으로 들어오는 방향, 기점은 앞으로 나가는 방향
+      const k = stopIdx[j];
+      const from = k > 0 ? Math.max(0, k - reach) : 0;
+      const to = k > 0 ? k : Math.min(pts.length - 1, reach);
+      return to === from ? 0 : Math.atan2(pts[to].y - pts[from].y, pts[to].x - pts[from].x);
     };
 
     if (!snap) stopAngles[0] = angleAt(0);         // 기점 표시에는 항상 방향 V 가 들어감 (기점 자리에서 시작하지 않도록 아래에서 간격의 절반 뒤부터)
     for (let t = snap ? 0 : ARROW_SPACING_PX / 2; t <= total; t += ARROW_SPACING_PX) {
       let near = -1, best = ARROW_SNAP_PX + 1;
       if (snap) {
-        for (let j = 0; j < cum.length; j++) {
-          const d = Math.abs(cum[j] - t);
+        for (let j = 0; j < stopCum.length; j++) {
+          const d = Math.abs(stopCum[j] - t);
           if (d < best && stopAngles[j] === undefined) { best = d; near = j; }
         }
       }
       if (near >= 0) { stopAngles[near] = angleAt(near); continue; }
 
-      let i = 1;                                   // t 가 속한 구간 (정류장 i-1 ~ i)
+      let i = 1;                                   // t 가 속한 구간 (꼭짓점 i-1 ~ i)
       while (i < cum.length - 1 && cum[i] < t) i++;
       const len = cum[i] - cum[i - 1];
       if (len === 0) continue;
       const f = (t - cum[i - 1]) / len;
-      const a = dir.stops[i - 1].pos, b = dir.stops[i].pos;
+      const a = track[i - 1], b = track[i];
       mids.push({
         pos: new kakao.maps.LatLng(a.getLat() + (b.getLat() - a.getLat()) * f, a.getLng() + (b.getLng() - a.getLng()) * f),
         angle: Math.atan2(pts[i].y - pts[i - 1].y, pts[i].x - pts[i - 1].x),
@@ -376,7 +412,11 @@
           isLoop: /순환\s*$/.test(label),
           stops: stopsByDir[f.properties.brt_id] || [],
           path: path,
-          lines: []
+          lines: [],
+          roadState: 'none',      // 도로 선 조회 상태: none(아직) / loading / ok(도로 선 사용) / fail(직선 유지)
+          roadPartial: false,     // 도로 선이 일부 구간뿐이고 나머지는 직선인지
+          track: null,            // 도로 선을 받았으면 그 좌표(LatLng 목록), 없으면 null
+          stopIdx: null           // 도로 선에서 각 정류장에 가장 가까운 꼭짓점 번호
         });
       });
 
@@ -409,6 +449,13 @@
         hideTooltip();
       });
       dir.lines.push(line);
+      // 호버 그림자 테두리: 같은 경로의 더 굵고 연한 선들. 평소에는 지도에 올리지 않고, 호버한 방향에만 선 바로 아래에 깖
+      dir.casings = CASING_LAYERS.map(function (c) {
+        return new kakao.maps.Polyline({
+          path: dir.path, strokeColor: CASING_COLOR, strokeWeight: LINE_WEIGHT_HOVER + c.extra,
+          strokeOpacity: c.opacity, zIndex: c.z
+        });
+      });
     });
 
     // 대표 방향: 순환이 아닌 방향 중 방향ID 가 가장 작은 것 (순환뿐이면 그중 첫째)
@@ -435,6 +482,68 @@
       showError(0, route.routeNo);
       return false;
     }
+  }
+
+  // ---------- 도로를 따라가는 선 (카카오 대중교통 경로, 서버가 그때그때 조회) ----------
+  // 노선을 선택해서 지도에 보이는 방향만 요청함. 순환 노선, 직행 경로가 없거나 정류장과 맞지 않는 경우 등
+  // 서버가 못 쓴다고 하면 정류장을 이은 직선을 그대로 씀.
+  // 받은 좌표는 이 페이지 메모리에만 두고(새로고침하면 사라짐) 서버나 DB 에는 저장하지 않음.
+  let roadDisabled = false;       // 서버에 REST 키가 없거나 카카오 연결이 안 되면(503) 이번 접속 동안은 더 요청하지 않음
+
+  async function ensureRoad(route, dir) {
+    if (roadDisabled || dir.isLoop || dir.roadState !== 'none') return;   // 순환 노선은 요청해도 결과가 없음
+    dir.roadState = 'loading';
+    try {
+      const res = await fetch(ROUTE_API + '/' + encodeURIComponent(route.routeNo)
+        + '/road?brtId=' + encodeURIComponent(dir.brtId));
+      if (!res.ok) {
+        dir.roadState = 'fail';
+        if (res.status === 503) roadDisabled = true;
+        return;
+      }
+      const body = await res.json();
+      dir.roadPartial = !!body.partial;           // true: 카카오 경로와 맞는 구간만 도로 선, 나머지는 직선
+      applyRoad(dir, body.points);
+    } catch (e) {
+      dir.roadState = 'fail';
+      console.warn('노선 ' + route.routeNo + ' 도로 선을 불러오지 못해 직선을 유지합니다', e);
+    }
+  }
+
+  // 받은 도로 선으로 바꿈: 선, 그림자 테두리의 경로를 교체하고 정류장 점과 방향 V 를 새 선 기준으로 다시 정함
+  function applyRoad(dir, points) {
+    // 서버 좌표는 [경도, 위도]
+    dir.track = points.map(function (c) { return new kakao.maps.LatLng(c[1], c[0]); });
+    dir.stopIdx = stopIndexOnTrack(dir.stops, dir.track);
+    dir.lines.concat(dir.casings).forEach(function (line) { line.setPath(dir.track); });
+    dir.roadState = 'ok';
+    refreshStops();
+  }
+
+  // 각 정류장이 도로 선의 몇 번째 꼭짓점에 가장 가까운지: 앞 정류장보다 뒤에서만 찾아 순서가 뒤바뀌지 않게 함
+  function stopIndexOnTrack(stops, track) {
+    const idx = [];
+    let from = 0;
+    stops.forEach(function (s) {
+      let best = from, bestD = Infinity;
+      for (let k = from; k < track.length; k++) {
+        const dLat = track[k].getLat() - s.pos.getLat();
+        const dLng = (track[k].getLng() - s.pos.getLng()) * 0.82;   // 울산 위도에서 경도 1도는 위도 1도의 약 0.82배 길이
+        const d = dLat * dLat + dLng * dLng;
+        if (d < bestD) { bestD = d; best = k; }
+      }
+      idx.push(best);
+      from = best;
+    });
+    return idx;
+  }
+
+  // 지금 지도에 보이는 방향들의 도로 선을 요청 (이미 받았거나 요청 중이거나 못 쓰는 방향은 다시 요청하지 않음)
+  function ensureRoads() {
+    if (mode !== 'select') return;
+    visibleRouteNos().forEach(function (no) {
+      shownDirs(no).forEach(function (dir) { ensureRoad(findRoute(no), dir); });
+    });
   }
 
   // ---------- 화면에 반영 ----------
@@ -471,16 +580,35 @@
   }
 
   // 클릭했을 때는 지금 보고 있는 화면(확대 수준, 위치)을 그대로 둠.
-  // 단, 그 노선이 지금 화면에 전혀 안 들어와 있으면 아무것도 안 보이니까, 확대 수준은 두고 위치만 옮김.
-  function panIfOutOfView(routeNo) {
+  // 단, 지금 보이는 방향의 선과 정류장이 화면 안에 하나도 없으면 아무것도 안 보이니까,
+  // 확대 수준은 두고 그 방향의 기점이 화면 가운데 오도록 위치만 옮김.
+  // (노선의 사각형 범위가 화면과 겹치는지로 보면, 선은 화면 밖인데 사각형만 걸쳐서 안 옮겨지는 경우가 생김)
+  function panToStartIfHidden(routeNo) {
     const view = map.getBounds();
-    const b = layers[routeNo].bounds;
-    const sw = b.getSouthWest(), ne = b.getNorthEast();
-    const outside = ne.getLat() < view.getSouthWest().getLat() || sw.getLat() > view.getNorthEast().getLat()
-      || ne.getLng() < view.getSouthWest().getLng() || sw.getLng() > view.getNorthEast().getLng();
-    if (outside) {
-      map.panTo(new kakao.maps.LatLng((sw.getLat() + ne.getLat()) / 2, (sw.getLng() + ne.getLng()) / 2));
-    }
+    const dirs = shownDirs(routeNo);
+    const inView = dirs.some(function (d) {
+      return d.stops.some(function (s) { return view.contain(s.pos); })
+        || d.path.some(function (p) { return view.contain(p); });
+    });
+    if (inView || dirs.length === 0 || dirs[0].stops.length === 0) return;
+    map.panTo(dirs[0].stops[0].pos);
+  }
+
+  // 방금 고른 노선의 선을 짧게 두 번 깜빡여서 "이게 방금 고른 노선"임을 알려 줌.
+  // 굵기는 그대로 두고 투명도만 잠깐 낮췄다 되돌림 (마우스를 올려 둔 동안에는 건드리지 않음)
+  function flashRoute(routeNo) {
+    const lines = [];
+    shownDirs(routeNo).forEach(function (d) { d.lines.forEach(function (l) { lines.push(l); }); });
+    const set = function (dip) {
+      if (tooltipEl && tooltipEl.style.display === 'block') return;
+      lines.forEach(function (l) {
+        l.setOptions({ strokeOpacity: dip ? FLASH_OPACITY : LINE_OPACITY, zIndex: dip ? 10 : 1 });
+      });
+    };
+    [0, 260].forEach(function (t) {
+      setTimeout(function () { set(true); }, t);
+      setTimeout(function () { set(false); }, t + 130);
+    });
   }
 
   // 노선 하나만 선택했을 때의 노선번호 (아니면 null)
@@ -509,6 +637,7 @@
     applyFilter();                                // 검색 중에도 선택한 노선은 목록에 남겨 둠
     refreshStops();
     renderDirControls(single);
+    ensureRoads();                                // 보이는 방향의 도로 선을 받아 오면 선과 방향 V 가 도로 모양으로 바뀜
   }
 
   // ---------- 방향 컨트롤: 노선 목록 위의 토글(전체 기본값) / 방금 누른 노선 항목 안의 방향 칩 ----------
@@ -625,6 +754,8 @@
       openRoute = routeNo;
       renderRouteDetails();
       items[routeNo].scrollIntoView({ block: 'nearest' });
+      panToStartIfHidden(routeNo);                // 이미 표시 중인 노선을 다시 고르면(검색 엔터, 지도의 선) 찾아가서 보여 줌
+      flashRoute(routeNo);
       return;
     }
 
@@ -639,7 +770,8 @@
     }
     openRoute = routeNo;
     render();
-    panIfOutOfView(routeNo);                      // 확대 수준은 유지 (자동 확대하지 않음)
+    panToStartIfHidden(routeNo);                  // 확대 수준은 유지 (자동 확대하지 않음)
+    flashRoute(routeNo);
     hideMessage();
     items[routeNo].scrollIntoView({ block: 'nearest' });
   }
