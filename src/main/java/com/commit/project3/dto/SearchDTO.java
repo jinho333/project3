@@ -17,7 +17,11 @@ public class SearchDTO {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate endDate;          // 접수일 끝 (yyyy-MM-dd, 이 날짜까지 포함)
 
-    private int page = 1;               // 현재 페이지
+    private String keyword;             // 내용 검색어 (비어 있으면 전체)
+    private String routeNo;             // 노선번호 (비어 있으면 전체)
+    private String sort = "new";        // 정렬: new(최신순) / old(오래된순)
+
+    private int page = 1;             // 현재 페이지
     private int displayDataCnt = 10;    // 한 페이지에 보여줄 개수
 
     // LIMIT ... OFFSET 에 쓰는 값: 앞에서 건너뛸 개수

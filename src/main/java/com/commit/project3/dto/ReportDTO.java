@@ -16,6 +16,8 @@ public class ReportDTO {
     private String content;         // 신고 내용
     private String status;          // 처리 상태 (RECEIVED / PROCESSING / DONE)
     private LocalDateTime regDate;  // 접수일
+    private String answer;          // 처리 결과(답변), 아직 없으면 null
+    private LocalDateTime answerDate;   // 답변일
 
     // 조회 화면용 (JOIN으로 가져오는 값)
     private String groupName;       // 대분류 이름

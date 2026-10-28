@@ -11,6 +11,12 @@ const imageExts = ['jpg', 'bmp', 'gif', 'png'];
 const videoExts = ['avi', 'wmv', 'mpg', 'mov', 'mp4'];
 const maxTotalSize = 200 * 1024 * 1024; // 총 200MB
 
+const routeModal = document.querySelector('#routeModal');
+const routeList = document.querySelector('#routeList');
+const routeKeyword = document.querySelector('#routeKeyword');
+const submitBtn = document.querySelector('#submitBtn');
+const submitBtnText = submitBtn.textContent;
+
 // 유형선택하기 버튼 → 모달 열기
 document.querySelector('#typeOpenBtn').addEventListener('click', () => {
   typeModal.hidden = false;
@@ -21,16 +27,106 @@ document.querySelector('#typeCloseBtn').addEventListener('click', () => {
   typeModal.hidden = true;
 });
 
-// 유형 버튼 클릭 → 선택한 유형을 버튼 옆에 표시하고, 유형 번호를 폼에 담은 뒤 모달 닫기
+// 선택한 유형을 버튼 옆에 표시하고, 유형 번호를 폼에 담음
+function applyType(btn) {
+  const groupName = btn.closest('.type-group').querySelector('h4').textContent;
+  document.querySelector('#selectedType').textContent = `${groupName} > ${btn.textContent}`;
+  document.querySelector('#typeNo').value = btn.dataset.typeNo;
+}
+
+// 유형 버튼 클릭 → 적용한 뒤 모달 닫기
 document.querySelectorAll('.type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const groupName = btn.closest('.type-group').querySelector('h4').textContent;
-    const typeName = btn.textContent;
-
-    document.querySelector('#selectedType').textContent = `${groupName} > ${typeName}`;
-    document.querySelector('#typeNo').value = btn.dataset.typeNo;
+    applyType(btn);
     typeModal.hidden = true;
   });
+});
+
+// 수정 화면이거나 서버 오류로 다시 열린 경우: 이미 들어 있는 유형 번호에 맞는 이름을 표시
+const initTypeNo = document.querySelector('#typeNo').value;
+if (initTypeNo !== '') {
+  const initBtn = document.querySelector(`.type-btn[data-type-no="${initTypeNo}"]`);
+  if (initBtn) {
+    applyType(initBtn);
+  }
+}
+
+// 노선 목록을 서버에서 받아 모달에 표시
+function loadRouteList() {
+  axios.get('/api/route', { params: { keyword: routeKeyword.value.trim() } })
+    .then(res => {
+      routeList.textContent = '';
+      if (res.data.length === 0) {
+        routeList.textContent = '검색된 노선이 없습니다.';
+        return;
+      }
+      res.data.forEach(route => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'route-item';
+        btn.textContent = `${route.routeNo} (${route.routeName})`;
+        // 노선을 고르면 입력칸에 노선번호를 넣고 모달 닫기
+        btn.addEventListener('click', () => {
+          document.querySelector('#routeNo').value = route.routeNo;
+          routeModal.hidden = true;
+        });
+        routeList.appendChild(btn);
+      });
+    })
+    .catch(() => {
+      routeList.textContent = '노선 목록을 불러오지 못했습니다.';
+    });
+}
+
+// 노선선택하기 버튼 → 모달 열고 목록 불러오기
+document.querySelector('#routeOpenBtn').addEventListener('click', () => {
+  routeModal.hidden = false;
+  routeKeyword.focus();
+  loadRouteList();
+});
+
+document.querySelector('#routeCloseBtn').addEventListener('click', () => {
+  routeModal.hidden = true;
+});
+
+document.querySelector('#routeSearchBtn').addEventListener('click', loadRouteList);
+routeKeyword.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    loadRouteList();
+  }
+});
+
+// 모달 바깥(어두운 부분)을 누르거나 Esc를 누르면 닫기
+[typeModal, routeModal].forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.hidden = true;
+    }
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    typeModal.hidden = true;
+    routeModal.hidden = true;
+  }
+});
+
+// 내용 글자 수 표시
+const content = document.querySelector('#content');
+const contentCount = document.querySelector('#contentCount');
+function updateContentCount() {
+  contentCount.textContent = content.value.length;
+}
+content.addEventListener('input', updateContentCount);
+updateContentCount();
+
+// 뒤로 가기 등으로 이 화면이 다시 보일 때 보내기 버튼을 되살림
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitBtnText;
+  }
 });
 
 // 사진 칸에 파일을 고르면 이미지는 미리보기, 그 외(동영상)는 파일명을 칸 안에 표시
@@ -64,12 +160,12 @@ function getExt(fileName) {
 }
 
 // 보내기 버튼 → 입력값 검사 후 통과하면 전송
-document.querySelector('#submitBtn').addEventListener('click', () => {
+submitBtn.addEventListener('click', () => {
   const reporterName = document.querySelector('#reporterName').value.trim();
   const reporterPhone = document.querySelector('#reporterPhone').value.trim();
   const typeNo = document.querySelector('#typeNo').value;
   const routeNo = document.querySelector('#routeNo').value.trim();
-  const content = document.querySelector('#content').value.trim();
+  const contentValue = content.value.trim();
 
   if (reporterName === '') {
     reportMsg.textContent = '이름을 입력해주세요.';
@@ -87,7 +183,7 @@ document.querySelector('#submitBtn').addEventListener('click', () => {
     reportMsg.textContent = '노선번호를 올바르게 입력해주세요. (예: 3600)';
     return;
   }
-  if (content === '') {
+  if (contentValue === '') {
     reportMsg.textContent = '내용을 입력해주세요.';
     return;
   }
@@ -119,5 +215,8 @@ document.querySelector('#submitBtn').addEventListener('click', () => {
     return;
   }
 
+  // 전송 중에 다시 누르지 못하도록 버튼을 잠금 (중복 접수 방지)
+  submitBtn.disabled = true;
+  submitBtn.textContent = '전송 중...';
   reportForm.submit();
 });

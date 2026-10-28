@@ -3,6 +3,7 @@ package com.commit.project3.mapper;
 import com.commit.project3.dto.ReportDTO;
 import com.commit.project3.dto.ReportFileDTO;
 import com.commit.project3.dto.ReportTypeGroupDTO;
+import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.dto.SearchDTO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -33,4 +34,16 @@ public interface ReportMapper {
 
     // 신고에 첨부된 파일 목록
     List<ReportFileDTO> selectReportFileList(int reportNo);
+
+    // 노선 목록 (노선번호·이름 검색, 최대 50개)
+    List<RouteDTO> selectRouteList(String keyword);
+
+    // 존재하는 노선인지 확인 (1이면 있음)
+    int countRoute(String routeNo);
+
+    // 신고 수정: 본인 신고이면서 아직 '접수' 상태일 때만 바뀜 (바뀐 행 수를 돌려줌)
+    int updateReport(ReportDTO reportDTO);
+
+    // 신고 삭제: 본인 신고이면서 아직 '접수' 상태일 때만 지워짐 (첨부파일 정보는 DB가 함께 삭제)
+    int deleteReport(@Param("reportNo") int reportNo, @Param("memberNo") int memberNo);
 }

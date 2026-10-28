@@ -28,6 +28,14 @@ public class UploadUtil {
         return saveName;
     }
 
+    // 저장된 파일 삭제 (접수 실패 시 정리, 신고 취소 시 사용). 없는 파일이면 그냥 넘어감
+    public void deleteFile(String saveName) {
+        if (saveName == null || saveName.isEmpty()) {
+            return;
+        }
+        new File(uploadDir, saveName).delete();
+    }
+
     // 확장자 (점 포함, 소문자). 없으면 빈 문자열
     public static String getExt(String fileName) {
         if (fileName == null || !fileName.contains(".")) {

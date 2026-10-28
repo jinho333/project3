@@ -13,4 +13,9 @@
 .file-item img,
 .file-item video { max-width: 100%; }
 
-.detail-btns { text-align: center; margin-top: 32px; }
+.info-msg { text-align: center; color: green; margin-bottom: 16px; }
+.no-answer { color: #888; }
+.answer-date { margin-top: 8px; color: #666; font-size: 14px; }
+
+.detail-btns { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 32px; }
+.delete-form { display: inline; }

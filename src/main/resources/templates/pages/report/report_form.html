@@ -9,19 +9,26 @@
 
 <th:block layout:fragment="content">
   <div class="report-wrap">
-    <h2 class="report-title">신고하기</h2>
+    <h2 class="report-title" th:text="${editMode == true} ? '신고 수정' : '신고하기'">신고하기</h2>
 
-    <form class="report-form" id="reportForm" action="/report" method="post" enctype="multipart/form-data">
+    <!-- 수정 화면(editMode)이면 수정 주소로, 아니면 접수 주소로 보냄 -->
+    <form class="report-form" id="reportForm" method="post" enctype="multipart/form-data"
+      th:action="${editMode == true} ? @{/report/{no}/edit(no=${reportDTO.reportNo})} : @{/report}">
+      <!-- 중복 접수 방지용 토큰: 한 번 쓰면 서버에서 지워짐 -->
+      <input type="hidden" name="reportToken" th:if="${reportToken != null}" th:value="${reportToken}">
+
       <!-- 서버 오류로 다시 열린 경우에는 입력했던 값(reportDTO)을, 처음에는 로그인 정보를 채움 -->
       <div class="form-row">
         <label class="form-label" for="reporterName">이름</label>
         <input type="text" id="reporterName" name="reporterName"
+          th:readonly="${editMode == true}"
           th:value="${reportDTO?.reporterName ?: session.loginInfo.memberName}">
       </div>
 
       <div class="form-row">
         <label class="form-label" for="reporterPhone">휴대전화번호</label>
         <input type="text" id="reporterPhone" name="reporterPhone"
+          th:readonly="${editMode == true}"
           th:value="${reportDTO?.reporterPhone ?: session.loginInfo.memberPhone}">
       </div>
 
@@ -29,18 +36,21 @@
         <span class="form-label">유형선택</span>
         <button type="button" class="select-btn" id="typeOpenBtn">유형선택하기</button>
         <span class="selected-text" id="selectedType"></span>
-        <input type="hidden" id="typeNo" name="typeNo">
+        <!-- 값이 있으면(수정, 오류로 다시 열림) JS가 선택한 유형 이름을 옆에 표시함 -->
+        <input type="hidden" id="typeNo" name="typeNo"
+          th:value="${reportDTO != null and reportDTO.typeNo > 0} ? ${reportDTO.typeNo} : ''">
       </div>
 
       <div class="form-row">
         <span class="form-label">노선선택</span>
-        <button type="button" class="select-btn">노선선택하기</button>
-        <!-- 노선 목록(모달)을 만들기 전까지는 노선번호를 직접 입력 -->
+        <button type="button" class="select-btn" id="routeOpenBtn">노선선택하기</button>
+        <!-- 목록에 있는 노선만 접수할 수 있음 (직접 입력해도 서버에서 존재 여부를 확인) -->
         <input type="text" class="route-input" id="routeNo" name="routeNo"
           placeholder="노선번호 (예: 3600)" th:value="${reportDTO?.routeNo}">
       </div>
 
-      <div class="form-row">
+      <!-- 첨부파일은 접수할 때만 받음 (수정 화면에서는 숨김) -->
+      <div class="form-row" th:unless="${editMode == true}">
         <span class="form-label">사진선택</span>
         <div class="form-field">
           <ul class="notice-list">
@@ -76,9 +86,10 @@
 
       <div class="form-row">
         <label class="form-label" for="content">내용입력</label>
-        <textarea id="content" name="content" placeholder="불편신고 내용을 입력하세요."
+        <textarea id="content" name="content" maxlength="2000" placeholder="불편신고 내용을 입력하세요."
           th:text="${reportDTO?.content}"></textarea>
       </div>
+      <p class="char-count"><span id="contentCount">0</span> / 2000자</p>
 
       <ul class="notice-list bottom-notice">
         <li>시민님의 말 한마디가 시민응대상담사를 아프게 할 수 있습니다.</li>
@@ -89,7 +100,9 @@
       <p class="error-msg" id="reportMsg" th:text="${errorMsg}"></p>
 
       <div class="submit-area">
-        <button type="button" class="submit-btn" id="submitBtn">보내기</button>
+        <button type="button" class="submit-btn" id="submitBtn"
+          th:text="${editMode == true} ? '수정하기' : '보내기'">보내기</button>
+        <a class="cancel-link" th:if="${editMode == true}" th:href="@{/report/{no}(no=${reportDTO.reportNo})}">취소</a>
       </div>
     </form>
   </div>
@@ -112,9 +125,25 @@
       </div>
     </div>
   </div>
+
+  <!-- 노선선택 모달: 노선번호나 이름으로 검색해서 고름 (목록은 /api/route 에서 가져옴) -->
+  <div class="modal" id="routeModal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>노선선택</h3>
+        <button type="button" class="modal-close" id="routeCloseBtn">닫기</button>
+      </div>
+      <div class="route-search">
+        <input type="text" id="routeKeyword" placeholder="노선번호 또는 이름">
+        <button type="button" id="routeSearchBtn">검색</button>
+      </div>
+      <div class="route-list" id="routeList"></div>
+    </div>
+  </div>
 </th:block>
 
 <th:block layout:fragment="content_js">
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
   <script src="/js/pages/report/report_form.js"></script>
 </th:block>
 

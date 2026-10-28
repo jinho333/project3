@@ -2,7 +2,12 @@
 .list-wrap { width: 1100px; margin: 0 auto; padding: 40px 0; }
 .list-title { text-align: center; margin-bottom: 32px; }
 
-.search-form { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.info-msg { text-align: center; color: green; margin-bottom: 16px; }
+.warn-msg { text-align: center; color: red; margin-bottom: 16px; }
+
+.search-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.route-filter { width: 90px; }
+.keyword-filter { width: 160px; }
 .search-form select,
 .search-form input,
 .search-form button,
@@ -10,11 +15,17 @@
 .reset-btn { display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid #ccc; }
 
 .total-cnt { margin-bottom: 8px; }
+.list-hint { margin-bottom: 8px; color: #666; font-size: 14px; }
 
 .list-table { width: 100%; border-collapse: collapse; }
 .list-table th,
 .list-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
 .list-table .content-cell { text-align: left; }
+
+/* 눌러서 이동할 수 있는 노선·내용은 파란색 + 밑줄로 링크임을 보여줌 */
+.list-table td a { color: #1a5fd0; text-decoration: underline; cursor: pointer; }
+.list-table td a:hover { color: #0b3d91; font-weight: bold; }
+.list-table tbody tr:hover { background: #f3f7ff; } /* 마우스를 올린 줄 강조 */
 .list-table .empty-cell { padding: 40px; }
 
 .paging { display: flex; justify-content: center; gap: 12px; margin-top: 24px; }

@@ -47,6 +47,8 @@
     <result column="STATUS" property="status"/>
     <result column="STATUS_NAME" property="statusName"/>
     <result column="REG_DATE" property="regDate"/>
+    <result column="ANSWER" property="answer"/>
+    <result column="ANSWER_DATE" property="answerDate"/>
     <result column="GROUP_NAME" property="groupName"/>
     <result column="TYPE_NAME" property="typeName"/>
   </resultMap>
@@ -69,6 +71,12 @@
       </if>
       <if test="typeNo != null">
         AND R.TYPE_NO = #{typeNo}
+      </if>
+      <if test='keyword != null and !keyword.equals("")'>
+        AND R.CONTENT LIKE CONCAT('%', #{keyword}, '%')
+      </if>
+      <if test='routeNo != null and !routeNo.equals("")'>
+        AND R.ROUTE_NO = #{routeNo}
       </if>
       <if test="startDate != null">
         AND R.REG_DATE &gt;= #{startDate}
@@ -93,7 +101,15 @@
     INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
     INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO
     <include refid="searchWhere"/>
-    ORDER BY R.REPORT_NO DESC
+    <!-- 정렬 방향은 ${} 대신 조건으로 나눠서 고정된 SQL만 사용 -->
+    <choose>
+      <when test='sort == "old"'>
+        ORDER BY R.REPORT_NO ASC
+      </when>
+      <otherwise>
+        ORDER BY R.REPORT_NO DESC
+      </otherwise>
+    </choose>
     LIMIT #{displayDataCnt} OFFSET #{offset}
   </select>
 
@@ -107,7 +123,7 @@
   <!-- 신고 상세: 본인 신고만 조회됨 -->
   <select id="getReportDetail" resultMap="report">
     SELECT R.REPORT_NO, R.MEMBER_NO, R.REPORTER_NAME, R.REPORTER_PHONE, R.TYPE_NO, R.ROUTE_NO,
-           R.CONTENT, R.STATUS, R.REG_DATE, G.GROUP_NAME, T.TYPE_NAME,
+           R.CONTENT, R.STATUS, R.REG_DATE, R.ANSWER, R.ANSWER_DATE, G.GROUP_NAME, T.TYPE_NAME,
            CASE R.STATUS
              WHEN 'RECEIVED' THEN '접수'
              WHEN 'PROCESSING' THEN '처리중'
@@ -127,5 +143,38 @@
     WHERE REPORT_NO = #{reportNo}
     ORDER BY SORT_NO
   </select>
+
+  <resultMap id="route" type="com.commit.project3.dto.RouteDTO">
+    <id column="ROUTE_NO" property="routeNo"/>
+    <result column="ROUTE_NAME" property="routeName"/>
+  </resultMap>
+
+  <!-- 노선선택 모달용: 노선번호나 이름에 검색어가 들어간 노선 (검색어가 비어 있으면 앞에서 50개) -->
+  <select id="selectRouteList" resultMap="route">
+    SELECT ROUTE_NO, ROUTE_NAME
+    FROM BUS_ROUTE
+    WHERE ROUTE_NO LIKE CONCAT('%', #{keyword}, '%')
+       OR ROUTE_NAME LIKE CONCAT('%', #{keyword}, '%')
+    ORDER BY ROUTE_NO
+    LIMIT 50
+  </select>
+
+  <!-- 존재하는 노선인지 확인 -->
+  <select id="countRoute" resultType="int">
+    SELECT COUNT(*) FROM BUS_ROUTE WHERE ROUTE_NO = #{routeNo}
+  </select>
+
+  <!-- 신고 수정: 본인 신고 + 접수 상태일 때만 -->
+  <update id="updateReport">
+    UPDATE REPORT
+    SET TYPE_NO = #{typeNo}, ROUTE_NO = #{routeNo}, CONTENT = #{content}
+    WHERE REPORT_NO = #{reportNo} AND MEMBER_NO = #{memberNo} AND STATUS = 'RECEIVED'
+  </update>
+
+  <!-- 신고 삭제: 본인 신고 + 접수 상태일 때만 (REPORT_FILE은 ON DELETE CASCADE) -->
+  <delete id="deleteReport">
+    DELETE FROM REPORT
+    WHERE REPORT_NO = #{reportNo} AND MEMBER_NO = #{memberNo} AND STATUS = 'RECEIVED'
+  </delete>
 
 </mapper>

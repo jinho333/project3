@@ -73,6 +73,15 @@
 .type-list { display: flex; flex-direction: column; gap: 8px; border: 1px solid #ccc; padding: 12px; }
 .type-btn { height: 44px; }
 
+/* 노선선택 모달 (모달 틀은 위의 .modal 을 같이 씀) */
+.route-search { display: flex; gap: 8px; margin-bottom: 12px; }
+.route-search input { flex: 1; height: 36px; }
+.route-list { display: flex; flex-direction: column; gap: 8px; }
+.route-item { height: 40px; text-align: left; padding: 0 12px; }
+
+.char-count { margin-left: 150px; margin-top: -16px; font-size: 16px; color: #666; }
+.cancel-link { display: inline-block; margin-left: 16px; }
+
 .submit-area { text-align: center; margin-top: 40px; }
 .submit-btn { width: 280px; height: 60px; }
 .report-wrap .submit-btn { font-size: 19px; } /* 위의 button 16px보다 우선하도록 선택자를 더 구체적으로 */
