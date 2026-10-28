@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/user_layout}">
+
+<th:block layout:fragment="content_css">
+  <link rel="stylesheet" href="/css/pages/report/report_list.css">
+</th:block>
+
+<th:block layout:fragment="content">
+  <div class="list-wrap">
+    <h2 class="list-title">신고조회</h2>
+
+    <p class="info-msg" th:if="${param.deleted != null}">신고가 취소되었습니다.</p>
+    <p class="warn-msg" th:if="${searchMsg != null}" th:text="${searchMsg}"></p>
+
+    <!-- 검색 조건: 선택한 값은 searchDTO로 다시 채움 -->
+    <form class="search-form" action="/report/list" method="get">
+      <select name="status">
+        <option value="">처리상태 전체</option>
+        <option value="RECEIVED" th:selected="${searchDTO.status == 'RECEIVED'}">접수</option>
+        <option value="PROCESSING" th:selected="${searchDTO.status == 'PROCESSING'}">처리중</option>
+        <option value="DONE" th:selected="${searchDTO.status == 'DONE'}">완료</option>
+      </select>
+
+      <select name="typeNo">
+        <option value="">유형 전체</option>
+        <optgroup th:each="group : ${typeGroupList}" th:label="${group.groupName}">
+          <option th:each="type : ${group.typeList}" th:value="${type.typeNo}" th:text="${type.typeName}"
+            th:selected="${searchDTO.typeNo != null and searchDTO.typeNo == type.typeNo}"></option>
+        </optgroup>
+      </select>
+
+      <input type="text" name="routeNo" class="route-filter" placeholder="노선번호" maxlength="20"
+        th:value="${searchDTO.routeNo}">
+      <input type="text" name="keyword" class="keyword-filter" placeholder="내용 검색" maxlength="50"
+        th:value="${searchDTO.keyword}">
+
+      <input type="date" name="startDate" th:value="${searchDTO.startDate}">
+      <span>~</span>
+      <input type="date" name="endDate" th:value="${searchDTO.endDate}">
+
+      <select name="sort">
+        <option value="new" th:selected="${searchDTO.sort == 'new'}">최신순</option>
+        <option value="old" th:selected="${searchDTO.sort == 'old'}">오래된순</option>
+      </select>
+      <select name="displayDataCnt">
+        <option value="10" th:selected="${searchDTO.displayDataCnt == 10}">10개씩</option>
+        <option value="20" th:selected="${searchDTO.displayDataCnt == 20}">20개씩</option>
+        <option value="50" th:selected="${searchDTO.displayDataCnt == 50}">50개씩</option>
+      </select>
+
+      <button type="submit">조회</button>
+      <a class="reset-btn" href="/report/list">초기화</a>
+    </form>
+
+    <p class="total-cnt" th:text="|전체 ${pageDTO.totalCnt}건|"></p>
+    <p class="list-hint">※ 노선을 누르면 같은 노선의 신고만, 내용을 누르면 상세 화면을 볼 수 있습니다.</p>
+
+    <table class="list-table">
+      <thead>
+        <tr>
+          <th>번호</th>
+          <th>유형</th>
+          <th>노선</th>
+          <th>내용</th>
+          <th>처리상태</th>
+          <th>접수일</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="r : ${reportList}">
+          <td th:text="${r.reportNo}"></td>
+          <td th:text="${r.typeName}"></td>
+          <!-- 노선을 누르면 같은 노선의 신고만 모아 봄 -->
+          <td><a th:href="@{/report/list(routeNo=${r.routeNo})}" th:title="|${r.routeNo}번 노선 신고만 보기|" th:text="${r.routeNo}"></a></td>
+          <td class="content-cell">
+            <a th:href="@{/report/{no}(no=${r.reportNo})}" title="상세 보기" th:text="${#strings.abbreviate(r.content, 30)}"></a>
+          </td>
+          <td th:text="${r.statusName}"></td>
+          <td th:text="${#temporals.format(r.regDate, 'yyyy-MM-dd')}"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(reportList)}">
+          <td colspan="6" class="empty-cell">조회된 신고가 없습니다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 페이지 번호: 검색·정렬 조건을 유지한 채 page만 바꿈 -->
+    <div class="paging">
+      <a th:if="${pageDTO.prev}"
+        th:href="@{/report/list(page=${pageDTO.startPage - 1}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt})}">이전</a>
+
+      <th:block th:each="p : ${#numbers.sequence(pageDTO.startPage, pageDTO.endPage)}">
+        <strong th:if="${p == pageDTO.page}" th:text="${p}"></strong>
+        <a th:unless="${p == pageDTO.page}" th:text="${p}"
+          th:href="@{/report/list(page=${p}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt})}"></a>
+      </th:block>
+
+      <a th:if="${pageDTO.next}"
+        th:href="@{/report/list(page=${pageDTO.endPage + 1}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt})}">다음</a>
+    </div>
+  </div>
+</th:block>
+
+</html>

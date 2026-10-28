@@ -1,0 +1,18 @@
+/* 관리자 노선 관리: 디자인 전 단계, 배치만 잡음 */
+.route-add-form { display: flex; align-items: center; gap: 8px; border: 1px solid #ccc; padding: 16px; margin-bottom: 24px; }
+.route-add-form h3 { margin-right: 12px; }
+.route-add-form input,
+.route-add-form button,
+.route-search-form input,
+.route-search-form button,
+.edit-form input,
+.edit-form button { height: 36px; }
+.name-input { width: 300px; }
+
+.route-search-form { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.reset-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border: 1px solid #ccc; }
+
+.total-cnt { margin-bottom: 8px; }
+.empty-cell { padding: 40px; }
+.edit-form { display: flex; justify-content: center; gap: 8px; }
+.delete-btn { height: 36px; }

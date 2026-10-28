@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/admin_layout}">
+
+<th:block layout:fragment="content_css">
+  <link rel="stylesheet" href="/css/pages/admin/report.css">
+</th:block>
+
+<th:block layout:fragment="content">
+  <h2 class="admin-title">신고 처리</h2>
+
+  <p class="info-msg" th:if="${param.saved != null}">처리 내용이 저장되었습니다.</p>
+  <p class="warn-msg" th:if="${errorMsg != null}" th:text="${errorMsg}"></p>
+
+  <table class="admin-table detail-table">
+    <tr>
+      <th>신고번호</th>
+      <td th:text="${report.reportNo}"></td>
+      <th>접수일</th>
+      <td th:text="${#temporals.format(report.regDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
+    </tr>
+    <tr>
+      <th>신고자</th>
+      <td th:text="${report.reporterName}"></td>
+      <th>휴대전화번호</th>
+      <td th:text="${report.reporterPhone}"></td>
+    </tr>
+    <tr>
+      <th>유형</th>
+      <td th:text="|${report.groupName} > ${report.typeName}|"></td>
+      <th>노선</th>
+      <td th:text="${report.routeNo}"></td>
+    </tr>
+    <tr>
+      <th>내용</th>
+      <!-- 줄바꿈이 그대로 보이도록 CSS(white-space: pre-wrap)로 처리 -->
+      <td colspan="3" class="left content-cell" th:text="${report.content}"></td>
+    </tr>
+  </table>
+
+  <!-- 첨부파일: 사진은 바로 보여주고, mp4는 재생, 그 외 동영상은 파일명 링크 -->
+  <div class="file-area" th:if="${not #lists.isEmpty(report.fileList)}">
+    <h3>첨부파일</h3>
+    <div class="file-item" th:each="file : ${report.fileList}">
+      <img th:if="${file.image}" th:src="@{/upload/{name}(name=${file.saveName})}" th:alt="${file.originName}">
+      <video th:if="${file.mp4}" th:src="@{/upload/{name}(name=${file.saveName})}" controls></video>
+      <a th:unless="${file.image or file.mp4}" th:href="@{/upload/{name}(name=${file.saveName})}"
+        th:text="${file.originName}"></a>
+      <p class="file-desc" th:text="${file.fileDesc}"></p>
+    </div>
+  </div>
+
+  <!-- 처리: 상태는 접수 → 처리중 → 완료 방향으로만 바꿀 수 있고, 완료하려면 처리 결과가 필요 -->
+  <form class="process-form" method="post" th:action="@{/admin/report/{no}(no=${report.reportNo})}">
+    <h3>처리</h3>
+    <div class="process-row">
+      <label for="status">처리 상태</label>
+      <select id="status" name="status">
+        <option value="RECEIVED" th:selected="${report.status == 'RECEIVED'}">접수</option>
+        <option value="PROCESSING" th:selected="${report.status == 'PROCESSING'}">처리중</option>
+        <option value="DONE" th:selected="${report.status == 'DONE'}">완료</option>
+      </select>
+    </div>
+    <div class="process-row">
+      <label for="answer">처리 결과</label>
+      <textarea id="answer" name="answer" maxlength="2000" placeholder="신고자에게 보여줄 처리 결과를 입력하세요."
+        th:text="${report.answer}"></textarea>
+    </div>
+    <p class="answer-date" th:if="${report.answerDate != null}"
+      th:text="|마지막 답변일 ${#temporals.format(report.answerDate, 'yyyy-MM-dd HH:mm')}|"></p>
+    <div class="process-btns">
+      <button type="submit">저장</button>
+      <a href="/admin/report/list">목록으로</a>
+    </div>
+  </form>
+</th:block>
+
+</html>

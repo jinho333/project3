@@ -1,0 +1,21 @@
+/* 신고 상세: 디자인 전 단계, 배치만 잡음 */
+.detail-wrap { width: 900px; margin: 0 auto; padding: 40px 0; }
+.detail-title { text-align: center; margin-bottom: 32px; }
+
+.detail-table { width: 100%; border-collapse: collapse; }
+.detail-table th,
+.detail-table td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+.detail-table th { width: 140px; }
+.detail-table .content-cell { white-space: pre-wrap; min-height: 120px; }
+
+.file-area { margin-top: 24px; }
+.file-item { margin-top: 16px; }
+.file-item img,
+.file-item video { max-width: 100%; }
+
+.info-msg { text-align: center; color: green; margin-bottom: 16px; }
+.no-answer { color: #888; }
+.answer-date { margin-top: 8px; color: #666; font-size: 14px; }
+
+.detail-btns { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 32px; }
+.delete-form { display: inline; }

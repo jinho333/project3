@@ -14,8 +14,17 @@
   <header class="header">
     <a class="logo" href="/">버스 불편 신고</a>
     <nav class="header-menu">
-      <a href="/member/login">로그인</a>
-      <a href="/member/join">회원가입</a>
+      <!-- 로그아웃 상태 -->
+      <th:block th:if="${session.loginInfo == null}">
+        <a href="/member/login">로그인</a>
+        <a href="/member/join">회원가입</a>
+      </th:block>
+      <!-- 로그인 상태 -->
+      <th:block th:unless="${session.loginInfo == null}">
+        <a href="/admin" th:if="${session.loginInfo.role == 'ADMIN'}">관리자</a>
+        <span th:text="|${session.loginInfo.memberName}님|"></span>
+        <a href="/member/logout">로그아웃</a>
+      </th:block>
     </nav>
   </header>
 

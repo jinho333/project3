@@ -13,9 +13,15 @@
       <h2><a href="/report">신고 접수</a></h2>
     </section>
     <section class="main-box">
-      <h2>신고 조회</h2>
+      <h2><a href="/report/list">신고 조회</a></h2>
     </section>
   </div>
+  <!-- 신고 접수를 마치고 넘어온 경우 JS가 안내창을 띄움 -->
+  <input type="hidden" id="reported" th:if="${param.reported != null}">
+</th:block>
+
+<th:block layout:fragment="content_js">
+  <script src="/js/pages/main.js"></script>
 </th:block>
 
 </html>
