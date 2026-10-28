@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/admin_layout}">
+
+<th:block layout:fragment="content_css">
+  <link rel="stylesheet" href="/css/pages/admin/dashboard.css">
+</th:block>
+
+<th:block layout:fragment="content">
+  <div class="dash">
+    <!-- 왼쪽: 노선 목록 (4단계에서 작성) -->
+    <aside class="dash-list">
+      <h3>노선 목록</h3>
+      <p class="list-note">임시 데이터 (혼잡도는 가짜)</p>
+
+      <!-- 혼잡 등급 색 안내 -->
+      <ul class="legend">
+        <li><span class="dot grade-HIGH"></span>혼잡</li>
+        <li><span class="dot grade-MID"></span>보통</li>
+        <li><span class="dot grade-LOW"></span>여유</li>
+      </ul>
+
+      <button type="button" id="showAllBtn" class="show-all-btn">전체 노선 보기</button>
+
+      <!-- 방향 표시 (지도 전체의 기본값): 노선마다 대표 1방향만 / 모든 방향 -->
+      <div id="dirToggle" class="dir-toggle" role="group" aria-label="방향 표시">
+        <button type="button" id="dirOneBtn" class="dir-btn">대표 1방향</button>
+        <button type="button" id="dirBothBtn" class="dir-btn">양방향</button>
+      </div>
+
+      <!-- 노선 찾기: 노선번호 또는 종점 이름으로 목록을 걸러 보여 줌 (지도에는 영향 없음) -->
+      <input type="search" id="routeSearch" class="route-search" placeholder="노선번호·종점 이름 검색"
+        autocomplete="off" aria-label="노선 검색">
+      <p id="routeCount" class="list-note"></p>
+      <p class="list-note">노선을 누르면 지도에 표시되고 방향을 고를 수 있습니다. 이어서 누르거나 검색해서 고르면 함께 쌓이고, 표시 중인 노선을 다시 누르면 지도에서 빠집니다.</p>
+
+      <!-- 노선 목록: 서버(/admin/api/routes)에서 받아 JS 가 채움 -->
+      <ul id="routeList" class="route-btns"></ul>
+      <p id="routeEmpty" class="list-note" hidden>검색 결과가 없습니다.</p>
+    </aside>
+
+    <!-- 오른쪽: 위 지도, 아래 예측 데이터 (오른쪽 끝에 여백) -->
+    <div class="dash-main">
+      <section class="dash-map">
+        <div id="map"></div>
+        <p id="mapMessage" class="map-message" hidden></p>
+      </section>
+
+      <!-- 지도에서 노선을 클릭하면 혼잡 예측 차트가 표시될 자리 (5단계에서 작성) -->
+      <section class="dash-forecast">
+        <h3>예측 데이터</h3>
+        <!-- 노선 하나를 선택했을 때: 노선 정보 (JS 가 채움) -->
+        <div id="forecastRoute" class="forecast-route" hidden>
+          <p id="forecastTitle" class="forecast-title"></p>
+        </div>
+        <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
+      </section>
+    </div>
+  </div>
+</th:block>
+
+<th:block layout:fragment="content_js">
+  <!-- 카카오맵 SDK: 키가 없으면 불러오지 않음 (키는 application.yaml 의 kakao.js.key) -->
+  <script th:if="${kakaoJsKey != null and !kakaoJsKey.isBlank()}"
+    th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false|"></script>
+  <script src="/js/pages/admin/dashboard_map.js"></script>
+</th:block>
+
+</html>
