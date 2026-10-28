@@ -21,6 +21,7 @@
       </th:block>
       <!-- 로그인 상태 -->
       <th:block th:unless="${session.loginInfo == null}">
+        <a href="/admin" th:if="${session.loginInfo.role == 'ADMIN'}">관리자</a>
         <span th:text="|${session.loginInfo.memberName}님|"></span>
         <a href="/member/logout">로그아웃</a>
       </th:block>

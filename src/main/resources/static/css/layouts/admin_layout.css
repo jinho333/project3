@@ -1,0 +1,29 @@
+/* 관리자 레이아웃: 왼쪽 사이드 메뉴 + 오른쪽 본문 (디자인 전 단계, 배치만 잡음) */
+.admin-body { display: flex; min-height: calc(100vh - 62px); }
+
+.side-menu {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ccc;
+  padding: 16px 0;
+}
+.side-menu a { padding: 14px 24px; }
+.side-menu a:hover { background: #f3f7ff; }
+.side-menu a.active { background: #e3ecff; font-weight: bold; border-left: 4px solid #1a5fd0; padding-left: 20px; }
+
+.admin-content { flex: 1; padding: 32px; min-width: 0; }
+.admin-title { margin-bottom: 24px; }
+
+/* 관리자 화면 공통 문구 */
+.info-msg { color: green; margin-bottom: 16px; }
+.warn-msg { color: red; margin-bottom: 16px; }
+
+/* 관리자 화면 공통 표 */
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th,
+.admin-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+.admin-table .left { text-align: left; }
+.admin-table td a { color: #1a5fd0; text-decoration: underline; }
+.admin-table tbody tr:hover { background: #f3f7ff; }

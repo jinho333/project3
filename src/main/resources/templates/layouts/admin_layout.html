@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>버스 불편 신고 - 관리자</title>
+  <link rel="stylesheet" href="/css/layouts/common.css">
+  <link rel="stylesheet" href="/css/layouts/admin_layout.css">
+  <!-- 페이지별 css -->
+  <th:block layout:fragment="content_css"></th:block>
+</head>
+<body>
+  <!-- 헤더 -->
+  <header class="header">
+    <a class="logo" href="/admin">버스 불편 신고 관리자</a>
+    <nav class="header-menu">
+      <span th:text="|${session.loginInfo.memberName}님|"></span>
+      <a href="/">사용자 화면</a>
+      <a href="/member/logout">로그아웃</a>
+    </nav>
+  </header>
+
+  <div class="admin-body">
+    <!-- 사이드 메뉴: 현재 화면(menu)에 해당하는 항목을 강조 -->
+    <aside class="side-menu">
+      <a href="/admin" th:classappend="${menu == 'dashboard'} ? 'active'">대시보드</a>
+      <a href="/admin/report/list" th:classappend="${menu == 'report'} ? 'active'">신고 관리</a>
+      <a href="/admin/route" th:classappend="${menu == 'route'} ? 'active'">노선 관리</a>
+    </aside>
+
+    <!-- 본문 -->
+    <main class="admin-content">
+      <th:block layout:fragment="content"></th:block>
+    </main>
+  </div>
+
+  <!-- 페이지별 js -->
+  <th:block layout:fragment="content_js"></th:block>
+</body>
+</html>
