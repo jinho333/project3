@@ -10,22 +10,48 @@
 <th:block layout:fragment="content">
   <h2 class="admin-title">대시보드</h2>
 
-  <!-- 상태별 건수 카드 -->
-  <div class="stat-cards">
-    <div class="stat-card">
-      <div class="stat-label">전체 신고</div>
-      <div class="stat-num" th:text="${totalCnt}"></div>
+  <!-- 지금 처리해야 할 일: 기간과 상관없이 현재 남아 있는 건수, 누르면 해당 목록으로 이동 -->
+  <section class="stat-block now-block">
+    <div class="block-head">
+      <h3>지금 처리해야 할 일</h3>
+      <span class="period-note" th:text="|조회 시각: ${#temporals.format(baseTime, 'yyyy-MM-dd HH:mm')}|"></span>
+      <a class="period-refresh" th:href="@{/admin}" title="새로고침" aria-label="새로고침">&#10227;</a>
     </div>
-    <div class="stat-card" th:each="s : ${statusStat}">
-      <div class="stat-label" th:text="${s.label}"></div>
-      <div class="stat-num" th:text="${s.cnt}"></div>
+    <div class="stat-cards">
+      <a class="stat-card now-card" th:href="@{/admin/report/list(status='RECEIVED')}">
+        <div class="stat-label">접수 (처리 대기)</div>
+        <div class="stat-num" th:text="${statusStat[0].cnt}"></div>
+      </a>
+      <a class="stat-card now-card" th:href="@{/admin/report/list(status='PROCESSING')}">
+        <div class="stat-label">처리중</div>
+        <div class="stat-num" th:text="${statusStat[1].cnt}"></div>
+      </a>
     </div>
-  </div>
+  </section>
+
+  <!-- 지난 기간 실적: 어제까지 최근 7일 (오늘은 아직 쌓이는 중이라 제외) -->
+  <section class="stat-block past-block">
+    <div class="block-head">
+      <h3 th:text="|최근 ${days}일 실적|"></h3>
+      <span class="period-note"
+        th:text="|${#temporals.format(periodStart, 'yyyy-MM-dd')} ~ ${#temporals.format(periodEnd, 'yyyy-MM-dd')} (오늘 제외)|"></span>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card past-card">
+        <div class="stat-label" th:text="|최근 ${days}일 접수된 신고|"></div>
+        <div class="stat-num" th:text="${periodCnt}"></div>
+      </div>
+      <div class="stat-card past-card">
+        <div class="stat-label" th:text="|최근 ${days}일 처리 완료|"></div>
+        <div class="stat-num" th:text="${doneCnt}"></div>
+      </div>
+    </div>
+  </section>
 
   <!-- 노선별 / 유형별 막대: 가장 큰 값을 100%로 두고 비율로 길이를 정함 -->
   <div class="stat-groups">
     <section class="stat-group">
-      <h3>신고가 많은 노선 TOP 10</h3>
+      <h3 th:text="|최근 ${days}일 신고가 많은 노선 TOP 10|"></h3>
       <p class="stat-empty" th:if="${#lists.isEmpty(routeStat)}">데이터가 없습니다.</p>
       <div class="bar-row" th:each="s : ${routeStat}">
         <a class="bar-label" th:href="@{/admin/report/list(routeNo=${s.label})}" th:text="${s.label}"
@@ -36,7 +62,7 @@
     </section>
 
     <section class="stat-group">
-      <h3>신고가 많은 유형 TOP 10</h3>
+      <h3 th:text="|최근 ${days}일 신고가 많은 유형 TOP 10|"></h3>
       <p class="stat-empty" th:if="${#lists.isEmpty(typeStat)}">데이터가 없습니다.</p>
       <div class="bar-row" th:each="s : ${typeStat}">
         <span class="bar-label" th:text="${s.label}"></span>

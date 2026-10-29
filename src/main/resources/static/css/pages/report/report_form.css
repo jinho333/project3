@@ -41,6 +41,8 @@
   background-size: cover;      /* 이미지 미리보기가 칸을 채우도록 */
   background-position: center;
 }
+/* 파일을 고르기 전의 빈칸: 카메라 그림 (고르면 has-file 이 붙어 미리보기·파일명으로 바뀜) */
+.photo-box:not(.has-file) { background-image: url(/img/photo_placeholder.png); }
 .photo-name { display: block; padding: 8px; word-break: break-all; }
 .photo-item input[type="text"] { width: 100%; }
 
