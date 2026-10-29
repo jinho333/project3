@@ -81,20 +81,24 @@ public class AdminService {
 
     // ===== 대시보드 =====
 
-    public int getTotalCount() {
-        return adminMapper.selectTotalCount();
+    public int getPeriodCount(int days) {
+        return adminMapper.selectPeriodCount(days);
+    }
+
+    public int getDoneCount(int days) {
+        return adminMapper.selectDoneCount(days);
     }
 
     public List<StatDTO> getStatusStat() {
         return adminMapper.selectStatusStat();
     }
 
-    public List<StatDTO> getRouteStat() {
-        return adminMapper.selectRouteStat();
+    public List<StatDTO> getRouteStat(int days) {
+        return adminMapper.selectRouteStat(days);
     }
 
-    public List<StatDTO> getTypeStat() {
-        return adminMapper.selectTypeStat();
+    public List<StatDTO> getTypeStat(int days) {
+        return adminMapper.selectTypeStat(days);
     }
 
     // ===== 노선 관리 =====

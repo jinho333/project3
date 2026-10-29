@@ -117,23 +117,35 @@
   </update>
 
   <!-- 대시보드 통계 -->
-  <select id="selectTotalCount" resultType="int">
-    SELECT COUNT(*) FROM REPORT
+  <!-- 기간 통계는 "어제까지 최근 N일"만 센다: 아직 쌓이는 중인 오늘은 제외해서 언제 봐도 같은 값이 나오게 함 -->
+  <sql id="periodWhere">
+    REG_DATE &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY) AND REG_DATE &lt; CURDATE()
+  </sql>
+
+  <select id="selectPeriodCount" resultType="int">
+    SELECT COUNT(*) FROM REPORT WHERE <include refid="periodWhere"/>
   </select>
 
-  <!-- 세 상태는 건수가 0이어도 항상 나오도록 UNION으로 고정 -->
+  <!-- 아직 끝나지 않은 일: 기간과 상관없이 현재 남아 있는 건수 (지금 처리할 일이 몇 건인지 보는 숫자).
+       두 상태는 건수가 0이어도 항상 나오도록 UNION으로 고정 -->
   <select id="selectStatusStat" resultMap="stat">
     SELECT '접수' AS LABEL, COUNT(*) AS CNT FROM REPORT WHERE STATUS = 'RECEIVED'
     UNION ALL
     SELECT '처리중', COUNT(*) FROM REPORT WHERE STATUS = 'PROCESSING'
-    UNION ALL
-    SELECT '완료', COUNT(*) FROM REPORT WHERE STATUS = 'DONE'
+  </select>
+
+  <!-- 최근 N일에 처리가 끝난 건수: 완료 시점은 처리 결과를 저장한 시각(ANSWER_DATE)으로 봄 -->
+  <select id="selectDoneCount" resultType="int">
+    SELECT COUNT(*) FROM REPORT
+    WHERE STATUS = 'DONE'
+      AND ANSWER_DATE &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY) AND ANSWER_DATE &lt; CURDATE()
   </select>
 
   <!-- 신고가 많은 노선 상위 10개 -->
   <select id="selectRouteStat" resultMap="stat">
     SELECT ROUTE_NO AS LABEL, COUNT(*) AS CNT
     FROM REPORT
+    WHERE <include refid="periodWhere"/>
     GROUP BY ROUTE_NO
     ORDER BY CNT DESC, ROUTE_NO
     LIMIT 10
@@ -144,6 +156,7 @@
     SELECT T.TYPE_NAME AS LABEL, COUNT(*) AS CNT
     FROM REPORT R
     INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    WHERE R.REG_DATE &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY) AND R.REG_DATE &lt; CURDATE()
     GROUP BY T.TYPE_NO, T.TYPE_NAME
     ORDER BY CNT DESC, T.TYPE_NO
     LIMIT 10

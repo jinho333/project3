@@ -9,10 +9,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
 public class AdminController {
+
+    private static final int STAT_DAYS = 7;
 
     private final AdminService adminService;
 
@@ -32,11 +36,19 @@ public class AdminController {
             return redirect;
         }
         List<StatDTO> statusStat = adminService.getStatusStat();
-        List<StatDTO> routeStat = adminService.getRouteStat();
-        List<StatDTO> typeStat = adminService.getTypeStat();
+        // 통계 기간은 최근 7일로 고정
+        int days = STAT_DAYS;
+        List<StatDTO> routeStat = adminService.getRouteStat(days);
+        List<StatDTO> typeStat = adminService.getTypeStat(days);
 
         model.addAttribute("menu", "dashboard");
-        model.addAttribute("totalCnt", adminService.getTotalCount());
+        model.addAttribute("days", days);
+        // 기준 기간: 어제까지 최근 days일, 기준 시각: 화면을 연 시각
+        model.addAttribute("periodStart", LocalDate.now().minusDays(days));
+        model.addAttribute("periodEnd", LocalDate.now().minusDays(1));
+        model.addAttribute("baseTime", LocalDateTime.now());
+        model.addAttribute("periodCnt", adminService.getPeriodCount(days));
+        model.addAttribute("doneCnt", adminService.getDoneCount(days));
         model.addAttribute("statusStat", statusStat);
         model.addAttribute("routeStat", routeStat);
         model.addAttribute("typeStat", typeStat);
