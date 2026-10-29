@@ -14,6 +14,8 @@
 //  8) 노선을 선택하면 보이는 방향의 선을 실제 도로 모양으로 바꿈 (서버가 카카오 대중교통 경로를 그때그때 조회).
 //     도로 선을 못 받으면(키 없음, 순환 노선, 직행 경로 없음 등) 정류장을 이은 직선 그대로 둠
 //  9) 노선을 고르면 그 선이 두 번 깜빡이고, 지금 화면에 그 노선이 하나도 안 보이면 기점으로 화면만 옮김 (확대 수준 유지)
+// 10) 노선을 선택한 상태에서 같은 도로를 같은 방향으로 지나는 선들은 화면 기준 몇 px 씩 옆으로 벌려 그림 (applyOffsets 참고).
+//     정류장 점은 실제 위치 그대로, 선과 방향 V 만 벌어진 선을 따라감. 전체 보기에서는 벌리지 않음
 // 노선 목록은 /admin/api/routes, 노선 선은 /admin/api/routes/{노선번호}/geometry,
 // 도로 선은 /admin/api/routes/{노선번호}/road?brtId= 에서 받음
 (function () {
@@ -50,6 +52,13 @@
   const ARROW_SNAP_PX = 35;       // V 자리에서 이 거리 안에 정류장이 있으면 그 정류장 점 안에 넣음
   const DIRECTION_ZOOM_LEVEL = 7; // 이 확대 수준 이하(더 확대)가 되면 선 위에 진행 방향 V 를 표시 (숫자가 작을수록 확대)
   const STOP_ZOOM_LEVEL = 5;  // 이 확대 수준 이하(더 확대)가 되면 기점·종점 외 정류장도 표시 (숫자가 작을수록 확대)
+  // 겹치는 선 벌리기 (모두 화면 px 기준이라 확대/축소해도 벌어진 간격이 일정)
+  const LANE_GAP_PX = LINE_WEIGHT + 2;  // 겹친 선들의 중심 사이 간격 (선 굵기보다 조금 넓게 해서 사이가 살짝 비게 함)
+  const OVERLAP_DIST_PX = 6;      // 두 선의 중심이 이 거리보다 가까우면 겹친 것으로 봄
+  const SAME_DIR_DOT = 0.7;       // 두 선의 진행 방향이 이 정도(약 45도) 이내로 나란할 때만 겹친 것으로 봄 (교차, 반대 방향은 제외)
+  const OFFSET_SAMPLE_PX = 6;     // 선을 이 간격(px)마다 쪼개서 겹침을 확인 (너무 긴 선은 간격을 늘림)
+  const OFFSET_MAX_SAMPLES = 2500; // 선 하나를 쪼갤 최대 개수
+  const OFFSET_SMOOTH = 5;        // 벌어지는 정도를 앞뒤 이만큼의 점으로 평균내서 부드럽게 이어 줌
 
   const SDK_MESSAGE = '카카오 지도를 불러오지 못했습니다. application.yaml 의 kakao.js.key, '
     + '카카오 개발자 콘솔의 사이트 도메인 등록(http://localhost:8080), 카카오맵 사용 설정을 확인하세요.';
@@ -269,8 +278,8 @@
   // 그래서 V 가 너무 촘촘하지 않고, 정류장 사이가 넓어도 방향이 끊기지 않음. 기점의 V 는 항상 기점 점 안에 들어감.
   // 반환: { stopAngles: {정류장 순번: 각도}, mids: [{ pos, angle, x, y }] }
   function planArrows(dir, proj, snap) {
-    // V 는 지도에 그려진 선을 따라 놓음: 도로 선을 받았으면 그 선, 아니면 정류장을 이은 직선
-    const track = dir.track || dir.stops.map(function (s) { return s.pos; });
+    // V 는 지도에 그려진 선을 따라 놓음: 옆으로 벌린 선이 있으면 그 선, 아니면 도로 선, 아니면 정류장을 이은 직선
+    const track = dir.shown || dir.track || dir.stops.map(function (s) { return s.pos; });
     const pts = track.map(function (p) { return proj.containerPointFromCoords(p); });
     const cum = [0];                               // 선의 시작에서 각 꼭짓점까지 화면상 누적 거리(px)
     for (let i = 1; i < pts.length; i++) {
@@ -278,9 +287,9 @@
     }
     const total = cum[cum.length - 1];
     // 정류장이 선의 몇 번째 꼭짓점에 놓이는지 (직선이면 정류장이 곧 꼭짓점), 그 자리까지의 누적 거리
-    const stopIdx = dir.stopIdx || dir.stops.map(function (s, j) { return j; });
+    const stopIdx = (dir.shown ? dir.shownStopIdx : dir.stopIdx) || dir.stops.map(function (s, j) { return j; });
     const stopCum = stopIdx.map(function (k) { return cum[k]; });
-    const reach = dir.track ? 3 : 1;               // 도로 선은 꼭짓점이 촘촘해서 몇 칸 앞에서부터 방향을 잼
+    const reach = dir.shown || dir.track ? 3 : 1;  // 도로 선은 꼭짓점이 촘촘해서 몇 칸 앞에서부터 방향을 잼
     const stopAngles = {};
     const mids = [];
     const angleAt = function (j) {                 // 정류장으로 들어오는 방향, 기점은 앞으로 나가는 방향
@@ -416,7 +425,9 @@
           roadState: 'none',      // 도로 선 조회 상태: none(아직) / loading / ok(도로 선 사용) / fail(직선 유지)
           roadPartial: false,     // 도로 선이 일부 구간뿐이고 나머지는 직선인지
           track: null,            // 도로 선을 받았으면 그 좌표(LatLng 목록), 없으면 null
-          stopIdx: null           // 도로 선에서 각 정류장에 가장 가까운 꼭짓점 번호
+          stopIdx: null,          // 도로 선에서 각 정류장에 가장 가까운 꼭짓점 번호
+          shown: null,            // 겹침 때문에 옆으로 벌려 그린 선의 좌표(LatLng 목록), 벌리지 않았으면 null
+          shownStopIdx: null      // 벌린 선에서 각 정류장에 해당하는 꼭짓점 번호
         });
       });
 
@@ -515,9 +526,164 @@
     // 서버 좌표는 [경도, 위도]
     dir.track = points.map(function (c) { return new kakao.maps.LatLng(c[1], c[0]); });
     dir.stopIdx = stopIndexOnTrack(dir.stops, dir.track);
-    dir.lines.concat(dir.casings).forEach(function (line) { line.setPath(dir.track); });
+    dir.shown = null;
+    dir.shownStopIdx = null;
+    setDirPath(dir, dir.track);
     dir.roadState = 'ok';
+    applyOffsets();                               // 선 모양이 바뀌었으니 겹침을 다시 확인
     refreshStops();
+  }
+
+  // ---------- 겹치는 선 벌리기 ----------
+  // 같은 도로를 같은 방향으로 지나는 선들이 서로를 가리지 않도록, 겹친 구간에서만 선을 옆으로 조금씩 밀어 나란히 그림.
+  // 원리 (모두 화면 px 좌표에서 계산):
+  //  1) 보이는 선을 OFFSET_SAMPLE_PX 간격의 점으로 쪼갬 (원래 꼭짓점은 그대로 유지)
+  //  2) 각 점에서 OVERLAP_DIST_PX 이내에 진행 방향이 나란한 다른 노선의 점이 있으면 "겹침", 겹친 선들을 한 그룹으로 봄
+  //  3) 그룹 안에서 노선번호 순서로 차선(왼쪽부터)을 정하고, 차선마다 선의 수직 방향으로 LANE_GAP_PX 씩 밀 거리를 정함
+  //     (2개면 -3.5, +3.5px / 3개면 -7, 0, +7px). 순서가 고정이라 같은 노선은 늘 같은 쪽에 그려짐
+  //  4) 밀 거리를 앞뒤 점과 평균내서 겹침의 시작과 끝에서 선이 부드럽게 벌어지고 모이게 함
+  //  5) 밀린 점을 다시 지도 좌표로 바꿔 선을 교체. 겹치지 않는 구간은 0px 이라 원래 선 그대로
+  // 확대 수준이 바뀌면 px 간격이 달라지므로 다시 계산하고, 이동만 했을 때는 다시 계산하지 않음.
+  // 노선을 선택한 상태(select 모드)에서만 벌림. 전체 보기에서는 선이 너무 많아서 원래 선 그대로 둠.
+  let offsetSig = null;           // 마지막으로 계산한 입력(확대 수준, 보이는 방향, 선 모양), 같으면 다시 계산하지 않음
+
+  function basePath(dir) { return dir.track || dir.path; }
+
+  function setDirPath(dir, path) {
+    dir.lines.concat(dir.casings).forEach(function (line) { line.setPath(path); });
+  }
+
+  // 선 하나를 화면 px 좌표의 촘촘한 점들로 바꿈. x, y: 위치, tx, ty: 진행 방향(길이 1), vmap: 원래 꼭짓점 번호 -> 점 번호
+  function sampleDir(dir, proj) {
+    const base = basePath(dir).map(function (p) { return proj.containerPointFromCoords(p); });
+    let total = 0;
+    for (let i = 1; i < base.length; i++) total += Math.hypot(base[i].x - base[i - 1].x, base[i].y - base[i - 1].y);
+    const step = Math.max(OFFSET_SAMPLE_PX, total / OFFSET_MAX_SAMPLES);
+
+    const x = [], y = [], vmap = [];
+    base.forEach(function (p, i) {
+      vmap.push(x.length);
+      x.push(p.x);
+      y.push(p.y);
+      if (i === base.length - 1) return;
+      const q = base[i + 1];
+      const len = Math.hypot(q.x - p.x, q.y - p.y);
+      for (let d = step; d < len - 0.001; d += step) {   // 꼭짓점 사이를 일정 간격으로 쪼갬
+        x.push(p.x + (q.x - p.x) * d / len);
+        y.push(p.y + (q.y - p.y) * d / len);
+      }
+    });
+
+    const n = x.length, tx = new Array(n), ty = new Array(n);
+    for (let k = 0; k < n; k++) {
+      const a = Math.max(0, k - 1), b = Math.min(n - 1, k + 1);
+      const len = Math.hypot(x[b] - x[a], y[b] - y[a]);
+      tx[k] = len ? (x[b] - x[a]) / len : 0;
+      ty[k] = len ? (y[b] - y[a]) / len : 0;
+    }
+    return { n: n, x: x, y: y, tx: tx, ty: ty, vmap: vmap };
+  }
+
+  function applyOffsets() {
+    if (!map) return;
+    const entries = [];
+    if (mode === 'select') {
+      visibleRouteNos().forEach(function (no) {
+        shownDirs(no).forEach(function (dir) { entries.push({ routeNo: no, dir: dir }); });
+      });
+    }
+    // 차선 순서: 노선번호(숫자 순), 같은 노선이면 방향ID 순 (항상 같은 순서여야 선이 늘 같은 쪽에 그려짐)
+    entries.sort(function (a, b) {
+      const byNo = a.routeNo.localeCompare(b.routeNo, undefined, { numeric: true });
+      return byNo || (a.dir.brtId < b.dir.brtId ? -1 : a.dir.brtId > b.dir.brtId ? 1 : 0);
+    });
+
+    const sig = map.getLevel() + '|' + entries.map(function (e) {
+      return e.routeNo + ':' + e.dir.brtId + ':' + (e.dir.track ? e.dir.track.length : 'p');
+    }).join(',');
+    if (sig === offsetSig) return;
+    offsetSig = sig;
+
+    Object.keys(layers).forEach(function (no) {   // 전에 벌려 둔 선은 먼저 원래대로
+      layers[no].dirs.forEach(function (d) {
+        if (!d.shown) return;
+        d.shown = null;
+        d.shownStopIdx = null;
+        setDirPath(d, basePath(d));
+      });
+    });
+    if (entries.length < 2) return;
+
+    const proj = map.getProjection();
+    const samples = entries.map(function (e) { return sampleDir(e.dir, proj); });
+
+    // 점들을 OVERLAP_DIST_PX 칸의 격자에 넣어 두면 가까운 점을 주변 9칸만 보고 찾을 수 있음
+    const cell = OVERLAP_DIST_PX;
+    const grid = {};
+    samples.forEach(function (s, i) {
+      for (let k = 0; k < s.n; k++) {
+        const key = Math.floor(s.x[k] / cell) + ',' + Math.floor(s.y[k] / cell);
+        (grid[key] = grid[key] || []).push(i * 65536 + k);
+      }
+    });
+
+    const near2 = OVERLAP_DIST_PX * OVERLAP_DIST_PX;
+    samples.forEach(function (s, i) {
+      // 2~3) 점마다 겹친 선이 몇 개인지, 내가 몇 번째 차선인지 -> 밀 거리(px, 진행 방향의 왼쪽이 +)
+      const raw = new Array(s.n).fill(0);
+      for (let k = 0; k < s.n; k++) {
+        const cx = Math.floor(s.x[k] / cell), cy = Math.floor(s.y[k] / cell);
+        const found = {};
+        let count = 0, before = 0;                // count: 겹친 다른 선의 수, before: 그중 나보다 순서가 앞인 선의 수
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const list = grid[(cx + dx) + ',' + (cy + dy)];
+            if (!list) continue;
+            list.forEach(function (code) {
+              const j = Math.floor(code / 65536), m = code % 65536;
+              if (j === i || found[j]) return;
+              const o = samples[j];
+              const ddx = o.x[m] - s.x[k], ddy = o.y[m] - s.y[k];
+              if (ddx * ddx + ddy * ddy > near2) return;
+              if (o.tx[m] * s.tx[k] + o.ty[m] * s.ty[k] < SAME_DIR_DOT) return;   // 교차하거나 반대 방향이면 겹침이 아님
+              found[j] = true;
+              count++;
+              if (j < i) before++;
+            });
+          }
+        }
+        if (count) raw[k] = (before - count / 2) * LANE_GAP_PX;
+      }
+
+      // 4) 앞뒤 점과 평균 (가까운 점일수록 비중이 큼)
+      const off = new Array(s.n);
+      let biggest = 0;
+      for (let k = 0; k < s.n; k++) {
+        let sum = 0, weight = 0;
+        for (let d = -OFFSET_SMOOTH; d <= OFFSET_SMOOTH; d++) {
+          const m = k + d;
+          if (m < 0 || m >= s.n) continue;
+          const w = OFFSET_SMOOTH + 1 - Math.abs(d);
+          sum += raw[m] * w;
+          weight += w;
+        }
+        off[k] = sum / weight;
+        biggest = Math.max(biggest, Math.abs(off[k]));
+      }
+      if (biggest < 0.5) return;                  // 겹치는 곳이 없으면 원래 선 그대로
+
+      // 5) 선의 왼쪽 수직 방향(화면에서 (ty, -tx))으로 밀어서 지도 좌표로 되돌림
+      const dir = entries[i].dir;
+      const moved = new Array(s.n);
+      for (let k = 0; k < s.n; k++) {
+        moved[k] = proj.coordsFromContainerPoint(
+          new kakao.maps.Point(s.x[k] + s.ty[k] * off[k], s.y[k] - s.tx[k] * off[k]));
+      }
+      const baseIdx = dir.stopIdx || dir.stops.map(function (st, j) { return j; });
+      dir.shown = moved;
+      dir.shownStopIdx = baseIdx.map(function (k) { return s.vmap[Math.min(k, s.vmap.length - 1)]; });
+      setDirPath(dir, moved);
+    });
   }
 
   // 각 정류장이 도로 선의 몇 번째 꼭짓점에 가장 가까운지: 앞 정류장보다 뒤에서만 찾아 순서가 뒤바뀌지 않게 함
@@ -635,6 +801,7 @@
       buttons[no].classList.toggle('is-active', mode === 'select' && selected.has(no));
     });
     applyFilter();                                // 검색 중에도 선택한 노선은 목록에 남겨 둠
+    applyOffsets();                               // 겹치는 선은 옆으로 벌림 (정류장과 방향 V 가 벌어진 선을 따라가도록 먼저 함)
     refreshStops();
     renderDirControls(single);
     ensureRoads();                                // 보이는 방향의 도로 선을 받아 오면 선과 방향 V 가 도로 모양으로 바뀜
@@ -895,7 +1062,10 @@
     });
     map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
     window.addEventListener('resize', function () { map.relayout(); });  // 창 크기가 바뀌면 지도 크기를 다시 맞춤
-    kakao.maps.event.addListener(map, 'idle', refreshStops);             // 확대/이동이 끝나면 보이는 정류장을 다시 정함
+    kakao.maps.event.addListener(map, 'idle', function () {              // 확대/이동이 끝나면
+      applyOffsets();                                                    // 확대 수준이 바뀌었으면 겹친 선을 다시 벌리고
+      refreshStops();                                                    // 보이는 정류장을 다시 정함
+    });
     createTooltip();
 
     init();
