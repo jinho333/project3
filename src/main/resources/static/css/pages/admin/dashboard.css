@@ -29,3 +29,14 @@ a.bar-label { color: #1a5fd0; text-decoration: underline; }
 .now-card .stat-num { color: #c2410c; }
 .past-card { border: 1px solid #ddd; background: #f6f6f6; }
 .past-card .stat-num { color: #555; }
+
+/* AI 비서 */
+.ai-box { margin-top: 32px; border-top: 1px solid #ccc; padding-top: 24px; }
+.ai-btn { margin-top: 12px; padding: 8px 16px; border: 1px solid #1a5fd0; background: #fff; color: #1a5fd0; cursor: pointer; }
+.ai-btn:hover { background: #f3f7ff; }
+.ai-btn:disabled { color: #999; border-color: #ccc; cursor: default; }
+.ai-ask { display: flex; gap: 8px; margin-top: 20px; }
+.ai-ask input { flex: 1; padding: 8px 12px; border: 1px solid #333; }
+.ai-ask .ai-btn { margin-top: 0; }
+.ai-answer { margin-top: 12px; padding: 14px 16px; background: #f6f8fc; border: 1px solid #dde5f5; white-space: pre-wrap; line-height: 1.7; }
+.ai-answer.is-error { background: #fff4e5; border-color: #f0b86e; }
