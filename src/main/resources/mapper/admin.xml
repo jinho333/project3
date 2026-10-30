@@ -151,6 +151,25 @@
     LIMIT 10
   </select>
 
+  <!-- 최근 N일 날짜별 접수 건수 (AI 분석용) -->
+  <select id="selectDailyStat" resultMap="stat">
+    SELECT DATE_FORMAT(REG_DATE, '%Y-%m-%d') AS LABEL, COUNT(*) AS CNT
+    FROM REPORT
+    WHERE <include refid="periodWhere"/>
+    GROUP BY DATE_FORMAT(REG_DATE, '%Y-%m-%d')
+    ORDER BY LABEL
+  </select>
+
+  <!-- 최근 N일 신고 내용 샘플 (AI 분석용, 신고자 정보는 가져오지 않음) -->
+  <select id="selectRecentReportText" resultMap="adminReport">
+    SELECT R.ROUTE_NO, T.TYPE_NAME, R.STATUS, R.CONTENT
+    FROM REPORT R
+    INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    WHERE R.REG_DATE &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY) AND R.REG_DATE &lt; CURDATE()
+    ORDER BY R.REG_DATE DESC
+    LIMIT #{limit}
+  </select>
+
   <!-- 신고가 많은 유형 상위 10개 -->
   <select id="selectTypeStat" resultMap="stat">
     SELECT T.TYPE_NAME AS LABEL, COUNT(*) AS CNT

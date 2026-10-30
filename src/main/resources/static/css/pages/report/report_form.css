@@ -1,56 +1,60 @@
-/* 신고 접수: 디자인 전 단계, 배치만 잡음 */
+/* 신고 접수 / 수정: 가운데 흰 카드 안에 항목을 한 줄씩 */
 .report-wrap {
-  width: 1100px;
-  margin: 0 auto;
-  padding: 40px 0;
-  border: 1px solid #ccc;
-  font-size: 19px;
+  max-width: 960px;
+  margin: 0 auto 24px;
+  padding: 40px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
-
-/* 입력칸·버튼은 브라우저 기본 글자 크기가 따로라 직접 지정 */
-.report-wrap input,
-.report-wrap textarea,
-.report-wrap button { font-size: 16px; }
-
-.report-title { text-align: center; margin-bottom: 40px; }
-
-.report-form { width: 900px; margin: 0 auto; }
+.report-title { font-size: 36px; line-height: 44px; margin-bottom: 32px; }
+.report-form { width: 100%; }
 
 /* 라벨(왼쪽) + 입력(오른쪽) 한 줄 */
-.form-row { display: flex; align-items: flex-start; margin-bottom: 24px; }
-.form-label { width: 150px; padding-top: 6px; }
+.form-row { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 24px; }
+.form-label { width: 130px; flex-shrink: 0; padding-top: 12px; font-weight: 500; }
+.form-row > input[type="text"] { flex: 1; min-width: 200px; max-width: 480px; }
+.form-field { flex: 1; min-width: 0; }
 
-.select-btn { width: 180px; height: 50px; }
-.selected-text { margin-left: 16px; line-height: 50px; } /* 버튼과 같은 높이에서 세로 가운데 */
-.route-input { margin-left: 16px; height: 50px; }
+.select-btn { min-width: 160px; }
+.selected-text { align-self: center; font-weight: 500; }
+.route-input { width: 220px; }
 
-.error-msg { color: red; text-align: center; min-height: 24px; margin-top: 16px; }
+.error-msg { text-align: center; min-height: 24px; margin-top: 16px; }
 
-.notice-list { margin-bottom: 8px; padding-left: 16px; font-size: 16px; }
+.notice-list { margin-bottom: 12px; padding-left: 18px; font-size: 14px; color: var(--body); line-height: 1.7; }
 
 /* 사진 3칸 */
-.photo-list { display: flex; gap: 16px; }
-.photo-item { width: 200px; }
+.photo-list { display: flex; flex-wrap: wrap; gap: 16px; }
+.photo-item { width: 200px; display: flex; flex-direction: column; gap: 8px; }
 .photo-box {
   display: block;
   width: 200px;
   height: 200px;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-card);
   cursor: pointer;
   overflow: hidden;
+  background-color: var(--soft);
   background-size: cover;      /* 이미지 미리보기가 칸을 채우도록 */
   background-position: center;
 }
+.photo-box:hover { opacity: 0.9; }
 /* 파일을 고르기 전의 빈칸: 카메라 그림 (고르면 has-file 이 붙어 미리보기·파일명으로 바뀜) */
 .photo-box:not(.has-file) { background-image: url(/img/photo_placeholder.png); }
-.photo-name { display: block; padding: 8px; word-break: break-all; }
-.photo-item input[type="text"] { width: 100%; }
+.photo-name { display: block; padding: 12px; word-break: break-all; font-size: 14px; }
+.photo-item input[type="text"] { width: 100%; height: 44px; font-size: 14px; }
 
-.form-row textarea { width: 790px; height: 180px; }
+.form-row textarea { flex: 1; min-width: 0; height: 200px; }
 
-.bottom-notice { margin-left: 150px; }
+.char-count { margin: -12px 0 16px 146px; font-size: 14px; color: var(--body); }
+.bottom-notice { margin-left: 146px; }
+.cancel-link { display: inline-flex; align-items: center; height: 56px; margin-left: 12px; padding: 0 24px; border-radius: 999px; background: var(--soft); font-weight: 500; }
+.cancel-link:hover { background: var(--pressed); }
 
-/* 유형선택 모달 */
+.submit-area { display: flex; justify-content: center; align-items: center; margin-top: 32px; }
+.submit-btn { width: 100%; max-width: 360px; height: 56px; border-radius: var(--radius-card); background: var(--ink); color: #fff; font-size: 18px; }
+.submit-btn:hover { background: var(--elevated); }
+
+/* 유형·노선 선택 모달 */
 .modal[hidden] { display: none; }
 .modal {
   position: fixed;
@@ -58,32 +62,71 @@
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 100;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 .modal-box {
-  width: 420px;
+  width: 460px;
+  max-width: calc(100% - 32px);
   max-height: 80vh;
   overflow-y: auto;
-  background: #fff;
-  padding: 16px;
+  background: var(--canvas);
+  padding: 24px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
-.modal-head { display: flex; justify-content: space-between; margin-bottom: 16px; }
-.type-group { margin-bottom: 16px; }
-.type-list { display: flex; flex-direction: column; gap: 8px; border: 1px solid #ccc; padding: 12px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-head h3 { font-size: 24px; line-height: 32px; }
+.modal-close { height: 40px; padding: 0 16px; font-size: 14px; }
+.type-group { margin-bottom: 20px; }
+.type-group h4 { margin-bottom: 8px; color: var(--body); font-size: 14px; }
+.type-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .type-btn { height: 44px; }
+.type-btn:hover { background: var(--ink); color: #fff; }
 
 /* 노선선택 모달 (모달 틀은 위의 .modal 을 같이 씀) */
 .route-search { display: flex; gap: 8px; margin-bottom: 12px; }
-.route-search input { flex: 1; height: 36px; }
+.route-search input { flex: 1; min-width: 0; }
 .route-list { display: flex; flex-direction: column; gap: 8px; }
-.route-item { height: 40px; text-align: left; padding: 0 12px; }
+.route-item { height: 48px; justify-content: flex-start; padding: 0 16px; border-radius: var(--radius-input); text-align: left; }
 
-.char-count { margin-left: 150px; margin-top: -16px; font-size: 16px; color: #666; }
-.cancel-link { display: inline-block; margin-left: 16px; }
+/* AI 도우미: 문장 자동완성 / 문장 다듬기 */
+.ai-help { margin: 0 0 16px 146px; }
+.ai-help-btn { height: 40px; padding: 0 18px; font-size: 14px; }
+.ai-help-btn:hover { background: var(--ink); color: #fff; }
+.ai-help-btn:disabled:hover { background: var(--soft); color: var(--mute); }
+.ai-help-note { margin-left: 10px; color: var(--body); font-size: 14px; }
+.ai-result { margin-top: 12px; padding: 20px; max-width: 700px; background: var(--softer); border-radius: var(--radius-card); }
+.ai-result-title { font-weight: 700; margin-bottom: 8px; }
+.ai-result-text { white-space: pre-wrap; line-height: 1.7; }
+.ai-result-tip { margin: 8px 0 16px; color: var(--body); font-size: 14px; }
+.ai-result button { height: 40px; font-size: 14px; margin-right: 6px; }
+.ai-result button#aiApplyBtn { background: var(--ink); color: #fff; }
+.ai-error { margin-top: 8px; color: #c0392b; font-size: 14px; }
 
-.submit-area { text-align: center; margin-top: 40px; }
-.submit-btn { width: 280px; height: 60px; }
-.report-wrap .submit-btn { font-size: 19px; } /* 위의 button 16px보다 우선하도록 선택자를 더 구체적으로 */
+.suggest-list { margin-top: 12px; max-width: 700px; display: flex; flex-direction: column; gap: 8px; }
+.suggest-item {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 14px 18px;
+  text-align: left;
+  line-height: 1.6;
+  border-radius: var(--radius-card);
+  background: var(--softer);
+  font-weight: 400;
+}
+.suggest-item:hover { background: var(--soft); }
+.suggest-item small { display: block; margin-top: 6px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 720px) {
+  .report-wrap { padding: 24px 16px; }
+  .form-label { width: 100%; padding-top: 0; }
+  .form-row > input[type="text"] { max-width: none; }
+  .char-count, .bottom-notice, .ai-help { margin-left: 0; }
+  .photo-item { width: calc(50% - 8px); }
+  .photo-box { width: 100%; }
+}

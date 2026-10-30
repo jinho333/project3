@@ -17,7 +17,7 @@
         <th>신고번호</th>
         <td th:text="${report.reportNo}"></td>
         <th>처리상태</th>
-        <td th:text="${report.statusName}"></td>
+        <td><span class="badge" th:classappend="|badge-${report.status}|" th:text="${report.statusName}"></span></td>
       </tr>
       <tr>
         <th>신고자</th>
@@ -67,7 +67,7 @@
       <a href="/report/list">목록으로</a>
       <!-- 아직 '접수' 상태일 때만 수정·취소 가능 -->
       <th:block th:if="${report.status == 'RECEIVED'}">
-        <a th:href="@{/report/{no}/edit(no=${report.reportNo})}">수정</a>
+        <a class="btn-primary" th:href="@{/report/{no}/edit(no=${report.reportNo})}">수정</a>
         <form class="delete-form" id="deleteForm" method="post" th:action="@{/report/{no}/delete(no=${report.reportNo})}">
           <button type="button" id="deleteBtn">신고 취소</button>
         </form>

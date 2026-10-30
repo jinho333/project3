@@ -30,6 +30,8 @@ public interface AdminMapper {
     List<StatDTO> selectStatusStat();                            // 접수·처리중: 현재 남은 건수 (기간 없음)
     List<StatDTO> selectRouteStat(@Param("days") int days);
     List<StatDTO> selectTypeStat(@Param("days") int days);
+    List<StatDTO> selectDailyStat(@Param("days") int days);      // 날짜별 접수 건수 (AI 분석용)
+    List<ReportDTO> selectRecentReportText(@Param("days") int days, @Param("limit") int limit);   // 신고 내용 샘플 (AI 분석용)
 
     // 노선 관리
     List<RouteDTO> selectAdminRouteList(String keyword);
