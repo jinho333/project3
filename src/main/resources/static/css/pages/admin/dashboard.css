@@ -15,3 +15,17 @@ a.bar-label { color: #1a5fd0; text-decoration: underline; }
 .bar-track { flex: 1; height: 18px; background: #eee; }
 .bar-fill { height: 100%; background: #1a5fd0; }
 .bar-cnt { width: 50px; text-align: right; }
+
+/* 카드 묶음: 지금 처리할 일(강조) / 지난 기간 실적(차분) */
+.stat-block { margin-bottom: 32px; }
+.stat-block .stat-cards { margin-bottom: 0; }
+.block-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.block-head .period-refresh { margin-left: -6px; color: #1a5fd0; font-size: 18px; line-height: 1; text-decoration: none; }  /* 조회 시각 바로 옆 동기화 기호 */
+.block-head .period-refresh:hover { color: #0d3d91; }
+.period-note { color: #777; font-size: 13px; }
+
+.now-card { border: 2px solid #e8590c; background: #fff4e6; color: inherit; }
+.now-card:hover { background: #ffe8cc; }
+.now-card .stat-num { color: #c2410c; }
+.past-card { border: 1px solid #ddd; background: #f6f6f6; }
+.past-card .stat-num { color: #555; }

@@ -5,6 +5,7 @@ import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.dto.StatDTO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -24,10 +25,11 @@ public interface AdminMapper {
     int updateReportProcess(ReportDTO reportDTO);
 
     // 대시보드 통계
-    int selectTotalCount();
-    List<StatDTO> selectStatusStat();
-    List<StatDTO> selectRouteStat();
-    List<StatDTO> selectTypeStat();
+    int selectPeriodCount(@Param("days") int days);             // 어제까지 최근 days일의 신고 수
+    int selectDoneCount(@Param("days") int days);               // 어제까지 최근 days일에 처리 완료된 수
+    List<StatDTO> selectStatusStat();                            // 접수·처리중: 현재 남은 건수 (기간 없음)
+    List<StatDTO> selectRouteStat(@Param("days") int days);
+    List<StatDTO> selectTypeStat(@Param("days") int days);
 
     // 노선 관리
     List<RouteDTO> selectAdminRouteList(String keyword);

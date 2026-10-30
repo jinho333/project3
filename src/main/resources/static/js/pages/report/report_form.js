@@ -137,6 +137,7 @@ document.querySelectorAll('.photo-box input[type="file"]').forEach(input => {
     const file = input.files[0];
 
     // 선택을 취소한 경우
+    box.classList.toggle('has-file', !!file);
     if (!file) {
       box.style.backgroundImage = '';
       nameSpan.textContent = '';
