@@ -32,13 +32,19 @@ public class ReportController {
 
     // 신고 접수 화면 (로그인한 회원만 이용 가능)
     @GetMapping("/report")
-    public String reportForm(HttpSession session, Model model) {
+    public String reportForm(@RequestParam(required = false) Integer typeNo, HttpSession session, Model model) {
         // 비로그인이면 로그인 화면으로 보내고, 로그인 화면에서 안내 문구를 띄움
         if (session.getAttribute("loginInfo") == null) {
             return "redirect:/member/login?needLogin=true";
         }
         model.addAttribute("typeGroupList", reportService.getTypeGroupList());
         model.addAttribute("reportToken", issueToken(session));
+        // 메인의 유형 TOP 5에서 넘어온 경우: 그 유형을 미리 선택해 둠 (없는 번호면 무시)
+        if (reportService.existsType(typeNo)) {
+            ReportDTO reportDTO = new ReportDTO();
+            reportDTO.setTypeNo(typeNo);
+            model.addAttribute("reportDTO", reportDTO);
+        }
         return "pages/report/report_form";
     }
 

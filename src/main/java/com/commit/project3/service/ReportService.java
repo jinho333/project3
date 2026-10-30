@@ -2,9 +2,11 @@ package com.commit.project3.service;
 
 import com.commit.project3.dto.ReportDTO;
 import com.commit.project3.dto.ReportFileDTO;
+import com.commit.project3.dto.ReportTypeDTO;
 import com.commit.project3.dto.ReportTypeGroupDTO;
 import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.dto.SearchDTO;
+import com.commit.project3.dto.TypeRankDTO;
 import com.commit.project3.mapper.ReportMapper;
 import com.commit.project3.util.UploadUtil;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +42,31 @@ public class ReportService {
     // 유형선택 모달용 목록
     public List<ReportTypeGroupDTO> getTypeGroupList() {
         return reportMapper.selectTypeGroupList();
+    }
+
+    // 메인 화면용: 신고가 많은 유형 TOP 5
+    public List<TypeRankDTO> getTopTypeList() {
+        return reportMapper.selectTopTypeList(5);
+    }
+
+    // 유형 번호가 실제로 있는 유형인지 (주소로 넘어온 typeNo 확인용)
+    public boolean existsType(Integer typeNo) {
+        return findTypeName(typeNo) != null;
+    }
+
+    // 유형 번호로 "대분류 > 유형" 이름을 찾음 (없는 번호면 null). 화면에서 보낸 이름 대신 DB 값을 쓰기 위한 메서드
+    public String findTypeName(Integer typeNo) {
+        if (typeNo == null) {
+            return null;
+        }
+        for (ReportTypeGroupDTO group : reportMapper.selectTypeGroupList()) {
+            for (ReportTypeDTO type : group.getTypeList()) {
+                if (type.getTypeNo() == typeNo) {
+                    return group.getGroupName() + " > " + type.getTypeName();
+                }
+            }
+        }
+        return null;
     }
 
     // 신고 목록 (검색 조건 + 페이징)
