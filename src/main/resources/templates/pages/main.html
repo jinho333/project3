@@ -8,14 +8,55 @@
 </th:block>
 
 <th:block layout:fragment="content">
-  <div class="main-boxes">
-    <section class="main-box">
-      <h2><a href="/report">신고 접수</a></h2>
-    </section>
-    <section class="main-box">
-      <h2><a href="/report/list">신고 조회</a></h2>
-    </section>
-  </div>
+  <!-- 회색 영역(화면 높이의 40%): 큰 제목 + 신고 접수 / 신고 조회 두 칸 -->
+  <section class="report-band">
+    <div class="band-inner">
+      <h1 class="big-title">REPORT</h1>
+
+      <div class="band-cols">
+        <a class="band-col" href="/report">
+          <h2>신고 접수</h2>
+          <span class="circle-arrow" aria-hidden="true">&rarr;</span>
+        </a>
+        <a class="band-col" href="/report/list">
+          <h2>신고 조회</h2>
+          <span class="circle-arrow" aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 신고 유형 순위 (흰 배경): 신고가 많은 순서대로 5개, 막대 길이는 1위를 100%로 한 비율. 누르면 그 유형이 선택된 신고 접수로 이동 -->
+  <section class="rank-section"
+    th:with="maxCnt=${(#lists.isEmpty(topTypeList) or topTypeList[0].cnt < 1) ? 1 : topTypeList[0].cnt}">
+    <div class="band-inner">
+      <h2 class="big-title">RANKING</h2>
+
+      <div class="rank-col">
+        <div class="rank-colhead">
+          <h3>신고 유형 TOP 5</h3>
+          <span class="rank-hint">누르면 그 유형으로 바로 신고할 수 있어요</span>
+        </div>
+
+        <ol class="rank-list">
+          <li th:each="t, stat : ${topTypeList}">
+            <a class="rank-row" th:href="@{/report(typeNo=${t.typeNo})}">
+              <span class="rank-no" th:text="${#numbers.formatInteger(stat.count, 2)}"></span>
+              <span class="rank-name">
+                <span class="rank-group" th:text="${t.groupName}"></span>
+                <span class="rank-type" th:text="${t.typeName}"></span>
+              </span>
+              <span class="rank-track"><span class="rank-fill" th:style="|width: ${t.cnt * 100 / maxCnt}%|"></span></span>
+              <span class="rank-cnt" th:text="|${t.cnt}건|"></span>
+              <span class="circle-arrow" aria-hidden="true">&rarr;</span>
+            </a>
+          </li>
+        </ol>
+        <p class="rank-empty" th:if="${#lists.isEmpty(topTypeList)}">아직 표시할 유형이 없습니다.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- 신고 접수를 마치고 넘어온 경우 JS가 안내창을 띄움 -->
   <input type="hidden" id="reported" th:if="${param.reported != null}">
 </th:block>

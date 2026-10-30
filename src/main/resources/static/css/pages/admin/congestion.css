@@ -2,7 +2,7 @@
 :root {
   --dash-list-width: 260px;   /* 왼쪽 노선 목록 폭 */
   --dash-right-gap: 320px;    /* 지도와 예측 데이터 오른쪽 여백 */
-  --dash-header-height: 62px; /* 헤더 높이 */
+  --dash-header-height: 110px; /* 헤더 62px + 가로 메뉴 48px */
 }
 
 .admin-content { padding: 0; }  /* 사이드 메뉴 오른쪽 본문을 꽉 채움 */

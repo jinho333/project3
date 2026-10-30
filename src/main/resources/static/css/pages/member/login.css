@@ -1,7 +1,10 @@
-/* 로그인: 배치만 잡음 */
-.login-wrap { width: 360px; margin: 60px auto; }
-.login-wrap h2 { text-align: center; margin-bottom: 24px; }
-.form-row { display: flex; flex-direction: column; margin-bottom: 16px; }
-.form-row input { height: 36px; }
-.error-msg { color: red; font-size: 13px; min-height: 20px; }
-.login-wrap button { width: 100%; height: 44px; margin-bottom: 12px; }
+/* 로그인: 가운데 흰 카드 */
+body.user .content { display: flex; justify-content: center; }
+.login-wrap { width: 440px; max-width: 100%; margin: 48px auto; padding: 32px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+.login-wrap h2 { font-size: 32px; line-height: 40px; margin-bottom: 24px; }
+.form-row { display: flex; flex-direction: column; margin-bottom: 16px; gap: 8px; }
+.form-row label { font-weight: 500; }
+.login-wrap button[type="submit"] { width: 100%; height: 52px; margin-top: 4px; background: var(--ink); color: #fff; }
+.login-wrap button[type="submit"]:hover { background: var(--elevated); }
+.login-wrap > a { display: flex; align-items: center; justify-content: center; height: 48px; margin-top: 12px; border-radius: 999px; background: var(--soft); font-weight: 500; }
+.login-wrap > a:hover { background: var(--pressed); }

@@ -5,6 +5,7 @@ import com.commit.project3.dto.ReportFileDTO;
 import com.commit.project3.dto.ReportTypeGroupDTO;
 import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.dto.SearchDTO;
+import com.commit.project3.dto.TypeRankDTO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,6 +16,9 @@ public interface ReportMapper {
 
     // 유형선택 모달용: 대분류와 그 안의 유형 목록
     List<ReportTypeGroupDTO> selectTypeGroupList();
+
+    // 메인 화면용: 신고가 많은 유형 상위 limit개
+    List<TypeRankDTO> selectTopTypeList(int limit);
 
     // 신고 등록 (등록 후 reportNo에 생성된 번호가 담김)
     void insertReport(ReportDTO reportDTO);

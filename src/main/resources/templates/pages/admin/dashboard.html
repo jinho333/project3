@@ -71,6 +71,26 @@
       </div>
     </section>
   </div>
+
+  <!-- AI 비서: 위의 신고 통계를 근거로 인사이트와 답변을 만들어 줌 (Gemini) -->
+  <section class="ai-box">
+    <h3>AI 비서</h3>
+    <p class="period-note">최근 7일 신고 통계와 신고 내용 일부를 바탕으로 답합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
+
+    <button type="button" id="insightBtn" class="ai-btn">AI 인사이트 보기</button>
+    <p id="insightResult" class="ai-answer" hidden></p>
+
+    <div class="ai-ask">
+      <input type="text" id="askInput" maxlength="300" placeholder="예) 신고가 가장 많은 노선은 어떤 문제가 많아?" autocomplete="off">
+      <button type="button" id="askBtn" class="ai-btn">질문하기</button>
+    </div>
+    <p id="askResult" class="ai-answer" hidden></p>
+  </section>
+</th:block>
+
+<th:block layout:fragment="content_js">
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
+  <script src="/js/pages/admin/dashboard_ai.js"></script>
 </th:block>
 
 </html>

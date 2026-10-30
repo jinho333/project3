@@ -15,6 +15,17 @@
     </collection>
   </resultMap>
 
+  <!-- 메인 화면용: 신고가 많은 유형 상위 N개 (신고가 없는 유형도 0건으로 나오도록 LEFT JOIN) -->
+  <select id="selectTopTypeList" resultType="com.commit.project3.dto.TypeRankDTO">
+    SELECT T.TYPE_NO AS typeNo, G.GROUP_NAME AS groupName, T.TYPE_NAME AS typeName, COUNT(R.REPORT_NO) AS cnt
+    FROM REPORT_TYPE T
+    INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO
+    LEFT JOIN REPORT R ON R.TYPE_NO = T.TYPE_NO
+    GROUP BY T.TYPE_NO, G.GROUP_NAME, T.TYPE_NAME
+    ORDER BY cnt DESC, T.TYPE_NO
+    LIMIT #{limit}
+  </select>
+
   <!-- 유형선택 모달용 목록 -->
   <select id="selectTypeGroupList" resultMap="typeGroup">
     SELECT G.GROUP_NO, G.GROUP_NAME, T.TYPE_NO, T.TYPE_NAME

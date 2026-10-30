@@ -221,3 +221,128 @@ submitBtn.addEventListener('click', () => {
   submitBtn.textContent = '전송 중...';
   reportForm.submit();
 });
+
+// AI 문장 다듬기: 내용을 서버로 보내 정리된 문장을 받고, '적용하기'를 눌러야 내용 칸에 넣음
+const aiRefineBtn = document.querySelector('#aiRefineBtn');
+const aiResult = document.querySelector('#aiResult');
+const aiResultText = document.querySelector('#aiResultText');
+const aiResultTip = document.querySelector('#aiResultTip');
+const aiError = document.querySelector('#aiError');
+const MAX_CONTENT_LENGTH = 2000;
+
+function showAiError(message) {
+  aiError.textContent = message;
+  aiError.hidden = false;
+}
+
+aiRefineBtn.addEventListener('click', () => {
+  aiError.hidden = true;
+  aiResult.hidden = true;
+
+  if (content.value.trim().length < 5) {
+    showAiError('내용을 5자 이상 적은 뒤에 사용해 주세요.');
+    return;
+  }
+
+  const btnText = aiRefineBtn.textContent;
+  aiRefineBtn.disabled = true;
+  aiRefineBtn.textContent = '다듬는 중…';
+
+  axios.post('/api/report/refine', {
+    content: content.value,
+    typeName: document.querySelector('#selectedType').textContent
+  })
+    .then(res => {
+      aiResultText.textContent = res.data.refined;
+      aiResultTip.textContent = res.data.tip;
+      aiResult.hidden = false;
+    })
+    .catch(err => {
+      const msg = err.response && err.response.data && err.response.data.message;
+      showAiError(msg || '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    })
+    .finally(() => {
+      aiRefineBtn.disabled = false;
+      aiRefineBtn.textContent = btnText;
+    });
+});
+
+document.querySelector('#aiApplyBtn').addEventListener('click', () => {
+  content.value = aiResultText.textContent.substring(0, MAX_CONTENT_LENGTH);
+  content.dispatchEvent(new Event('input'));    // 글자 수 표시 갱신
+  aiResult.hidden = true;
+});
+
+document.querySelector('#aiCloseBtn').addEventListener('click', () => {
+  aiResult.hidden = true;
+});
+
+// 문장 자동완성: 선택한 유형(과 노선)에 맞는 예시 문장을 받아 보여 주고, 고른 문장을 내용 칸에 넣음
+const suggestBtn = document.querySelector('#suggestBtn');
+const suggestList = document.querySelector('#suggestList');
+const suggestError = document.querySelector('#suggestError');
+
+function showSuggestError(message) {
+  suggestError.textContent = message;
+  suggestError.hidden = false;
+}
+
+suggestBtn.addEventListener('click', () => {
+  suggestError.hidden = true;
+  suggestList.hidden = true;
+
+  const typeNo = document.querySelector('#typeNo').value;
+  if (typeNo === '') {
+    showSuggestError('먼저 유형을 선택해 주세요.');
+    return;
+  }
+
+  const btnText = suggestBtn.textContent;
+  suggestBtn.disabled = true;
+  suggestBtn.textContent = '문장 만드는 중…';
+
+  axios.post('/api/report/suggest', {
+    typeNo: typeNo,
+    routeNo: document.querySelector('#routeNo').value.trim()
+  })
+    .then(res => {
+      suggestList.textContent = '';
+      res.data.list.forEach(text => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'suggest-item';
+        item.textContent = text;           // 글자 그대로 표시 (HTML 로 해석되지 않게 textContent 사용)
+
+        const hint = document.createElement('small');
+        hint.textContent = '이 문장 사용하기';
+        item.appendChild(hint);
+
+        item.addEventListener('click', () => applySuggest(text));
+        suggestList.appendChild(item);
+      });
+      suggestList.hidden = false;
+    })
+    .catch(err => {
+      const msg = err.response && err.response.data && err.response.data.message;
+      showSuggestError(msg || '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    })
+    .finally(() => {
+      suggestBtn.disabled = false;
+      suggestBtn.textContent = btnText;
+    });
+});
+
+// 고른 예시를 내용 칸에 넣음: 이미 쓴 내용이 있으면 지우지 않고 아래 줄에 덧붙임
+function applySuggest(text) {
+  const base = content.value.trim();
+  content.value = (base === '' ? text : content.value.replace(/\s+$/, '') + '\n' + text).substring(0, MAX_CONTENT_LENGTH);
+  content.dispatchEvent(new Event('input'));    // 글자 수 표시 갱신
+  suggestList.hidden = true;
+
+  // 고쳐 써야 하는 첫 ○○ 부분을 바로 선택해 줌
+  const pos = content.value.indexOf('○○');
+  content.focus();
+  if (pos !== -1) {
+    content.setSelectionRange(pos, pos + 2);
+  }
+}

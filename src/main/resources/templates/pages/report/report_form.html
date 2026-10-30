@@ -91,6 +91,28 @@
       </div>
       <p class="char-count"><span id="contentCount">0</span> / 2000자</p>
 
+      <!-- 문장 자동완성: 선택한 유형에 맞는 예시 문장을 보여 주고, 고르면 내용 칸에 넣음 (○○ 부분은 직접 고쳐 씀) -->
+      <div class="ai-help">
+        <button type="button" class="ai-help-btn" id="suggestBtn">문장 자동완성</button>
+        <span class="ai-help-note">선택한 유형에 맞는 예시 문장을 보여 줘요. ○○ 부분은 직접 고쳐 쓰세요.</span>
+        <div class="suggest-list" id="suggestList" hidden></div>
+        <p class="ai-error" id="suggestError" hidden></p>
+      </div>
+
+      <!-- AI 문장 다듬기: 버튼을 눌렀을 때만 글이 AI로 전송됨. 결과는 확인한 뒤 '적용하기'를 눌러야 내용에 들어감 -->
+      <div class="ai-help">
+        <button type="button" class="ai-help-btn" id="aiRefineBtn">AI로 문장 다듬기</button>
+        <span class="ai-help-note">짧게 적은 메모를 신고 문장으로 정리해 줘요. 개인정보는 적지 마세요.</span>
+        <div class="ai-result" id="aiResult" hidden>
+          <p class="ai-result-title">AI가 다듬은 내용</p>
+          <p class="ai-result-text" id="aiResultText"></p>
+          <p class="ai-result-tip" id="aiResultTip"></p>
+          <button type="button" id="aiApplyBtn">적용하기</button>
+          <button type="button" id="aiCloseBtn">닫기</button>
+        </div>
+        <p class="ai-error" id="aiError" hidden></p>
+      </div>
+
       <ul class="notice-list bottom-notice">
         <li>시민님의 말 한마디가 시민응대상담사를 아프게 할 수 있습니다.</li>
         <li>※ 폭언 등을 하지 말아주세요. 위반시 관련법에 의해 법적 조치 될 수 있습니다.</li>

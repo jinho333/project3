@@ -93,6 +93,14 @@ public class AdminService {
         return adminMapper.selectStatusStat();
     }
 
+    public List<StatDTO> getDailyStat(int days) {
+        return adminMapper.selectDailyStat(days);
+    }
+
+    public List<ReportDTO> getRecentReportText(int days, int limit) {
+        return adminMapper.selectRecentReportText(days, limit);
+    }
+
     public List<StatDTO> getRouteStat(int days) {
         return adminMapper.selectRouteStat(days);
     }
