@@ -142,6 +142,19 @@
   border-radius: 50%;
   cursor: default;
 }
+/* 일반 정류장 아이콘: 흰 바탕 + 노선 색 테두리 + 버스 모양 (색은 JS 가 지정, 여러 노선이 지나면 진한 회색) */
+.stop-icon {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  padding: 1px;
+  background: #fff;
+  border: 2px solid #888;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: default;
+}
+.stop-icon svg { display: block; width: 100%; height: 100%; }
 .stop-dot.has-arrow { width: 18px; height: 18px; }          /* 진행 방향 V 가 들어가는 정류장은 조금 크게 */
 .stop-dot.is-end { width: 18px; height: 18px; border-width: 3px; }
 .stop-dot.is-end.has-arrow { width: 22px; height: 22px; }
