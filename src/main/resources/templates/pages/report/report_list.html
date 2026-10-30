@@ -77,7 +77,7 @@
           <td class="content-cell">
             <a th:href="@{/report/{no}(no=${r.reportNo})}" title="상세 보기" th:text="${#strings.abbreviate(r.content, 30)}"></a>
           </td>
-          <td th:text="${r.statusName}"></td>
+          <td><span class="badge" th:classappend="|badge-${r.status}|" th:text="${r.statusName}"></span></td>
           <td th:text="${#temporals.format(r.regDate, 'yyyy-MM-dd')}"></td>
         </tr>
         <tr th:if="${#lists.isEmpty(reportList)}">
