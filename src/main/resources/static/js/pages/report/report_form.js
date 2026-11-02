@@ -270,7 +270,7 @@ aiRefineBtn.addEventListener('click', () => {
 document.querySelector('#aiApplyBtn').addEventListener('click', () => {
   content.value = aiResultText.textContent.substring(0, MAX_CONTENT_LENGTH);
   content.dispatchEvent(new Event('input'));    // 글자 수 표시 갱신
-  aiResult.hidden = true;
+  // 결과 창은 닫지 않음 (닫기 버튼을 눌러야 닫힘)
 });
 
 document.querySelector('#aiCloseBtn').addEventListener('click', () => {
