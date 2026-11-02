@@ -127,7 +127,22 @@ public class ReportController {
             model.addAttribute("reportToken", issueToken(session)); // 다시 제출할 수 있도록 새 토큰 발급
             return "pages/report/report_form";
         }
-        return "redirect:/?reported=true";
+        return "redirect:/report/done?reportNo=" + reportDTO.getReportNo();
+    }
+
+    // 신고 접수 완료 화면: 방금 접수한 본인 신고의 번호·내용을 보여줌 (남의 번호나 없는 번호면 목록으로)
+    @GetMapping("/report/done")
+    public String reportDone(@RequestParam(required = false) Integer reportNo, HttpSession session, Model model) {
+        MemberDTO loginInfo = (MemberDTO) session.getAttribute("loginInfo");
+        if (loginInfo == null) {
+            return "redirect:/member/login?needLogin=true";
+        }
+        ReportDTO reportDTO = reportNo == null ? null : reportService.getReportDetail(reportNo, loginInfo.getMemberNo());
+        if (reportDTO == null) {
+            return "redirect:/report/list";
+        }
+        model.addAttribute("report", reportDTO);
+        return "pages/report/report_done";
     }
 
     // 신고 수정 화면: 본인 신고이면서 '접수' 상태일 때만 열림

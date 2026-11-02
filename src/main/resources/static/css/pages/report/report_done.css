@@ -1,0 +1,18 @@
+/* 신고 접수 완료 */
+.done-wrap { max-width: 560px; margin: 0 auto; padding: 48px 0 56px; text-align: center; }
+.done-check { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 36px; line-height: 72px; }
+.done-title { font-size: 32px; line-height: 40px; margin-bottom: 8px; }
+.done-sub { color: var(--body); margin-bottom: 32px; }
+
+.done-box { text-align: left; border: 1px solid var(--hairline); border-radius: var(--radius-card); overflow: hidden; }
+.done-box > div { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--hairline); }
+.done-box > div:last-child { border-bottom: 0; }
+.done-box dt { width: 100px; flex-shrink: 0; color: var(--body); }
+.done-box dd { font-weight: 500; }
+.done-box .done-no { font-size: 20px; font-weight: 700; }
+
+.done-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.done-btns > a { display: inline-flex; align-items: center; height: 48px; padding: 0 24px; border-radius: 999px; background: var(--soft); font-weight: 500; }
+.done-btns > a:hover { background: var(--pressed); }
+.done-btns > a.btn-primary { background: var(--ink); color: #fff; }
+.done-btns > a.btn-primary:hover { background: var(--elevated); }
