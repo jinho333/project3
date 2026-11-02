@@ -166,7 +166,7 @@
 .route-tooltip .tt-head { font-weight: bold; margin-bottom: 4px; }
 .route-tooltip .tt-line { color: #333; }
 .route-tooltip .tt-muted { color: #888; font-size: 12px; margin-top: 2px; }
-.route-tooltip .tt-open { font-weight: bold; color: #1a5fd0; }   /* 미처리 신고 합계 */
+.route-tooltip .tt-open { font-weight: bold; color: red; }   /* 미처리 신고 합계 */
 
 /* 정류장 사이가 넓을 때 선 가운데에 넣는 진행 방향 V (마우스 동작은 아래 선이 받음) */
 .seg-arrow { width: 12px; height: 12px; pointer-events: none; }
@@ -270,7 +270,7 @@
   top: 8px;
   right: 10px;
   padding: 1px 8px;
-  background: #1a5fd0;
+  background: #E53935;
   color: #fff;
   border-radius: 10px;
   font-size: 12px;
