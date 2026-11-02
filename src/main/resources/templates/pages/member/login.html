@@ -23,6 +23,8 @@
       <p class="error-msg" id="errorMsg" th:text="${errorMsg}"></p>
       <!-- 로그인이 필요한 페이지에서 넘어온 경우 JS가 안내창을 띄움 -->
       <input type="hidden" id="needLogin" th:if="${param.needLogin != null}">
+      <!-- 로그인 후 돌아갈 주소 (로그인이 필요한 화면에서 넘어온 경우에만 값이 있음) -->
+      <input type="hidden" name="returnUrl" th:value="${returnUrl}">
       <button type="submit">로그인</button>
     </form>
     <a href="/member/join">회원가입</a>

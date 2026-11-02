@@ -34,7 +34,11 @@
 
       <div class="rank-col">
         <div class="rank-colhead">
-          <h3>신고 유형 TOP 5</h3>
+          <div class="rank-title">
+            <h3>신고 유형 TOP 5</h3>
+            <!-- 통계 기준: 순위 쿼리가 기간 제한 없이 전체 신고를 세므로 "전체 누적" -->
+            <span class="rank-basis">전체 누적 신고 기준</span>
+          </div>
           <span class="rank-hint">누르면 그 유형으로 바로 신고할 수 있어요</span>
         </div>
 
@@ -47,7 +51,6 @@
                 <span class="rank-type" th:text="${t.typeName}"></span>
               </span>
               <span class="rank-track"><span class="rank-fill" th:style="|width: ${t.cnt * 100 / maxCnt}%|"></span></span>
-              <span class="rank-cnt" th:text="|${t.cnt}건|"></span>
               <span class="circle-arrow" aria-hidden="true">&rarr;</span>
             </a>
           </li>
