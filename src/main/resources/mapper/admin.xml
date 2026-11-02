@@ -181,6 +181,57 @@
     LIMIT 10
   </select>
 
+  <!-- 지도(버스 혼잡도): 노선별 미처리 신고 수. 미처리 = 접수 + 처리중 (대시보드의 "지금 처리할 일"과 같은 기준),
+       신고가 없는 노선은 행이 나오지 않으므로 호출하는 쪽에서 0건으로 봄 -->
+  <resultMap id="routeOpenCount" type="com.commit.project3.dto.RouteOpenCountDTO">
+    <result column="ROUTE_NO" property="routeNo"/>
+    <result column="RECEIVED_CNT" property="receivedCnt"/>
+    <result column="PROCESSING_CNT" property="processingCnt"/>
+  </resultMap>
+
+  <select id="selectOpenCountByRoute" resultMap="routeOpenCount">
+    SELECT ROUTE_NO,
+           SUM(CASE WHEN STATUS = 'RECEIVED' THEN 1 ELSE 0 END) AS RECEIVED_CNT,
+           SUM(CASE WHEN STATUS = 'PROCESSING' THEN 1 ELSE 0 END) AS PROCESSING_CNT
+    FROM REPORT
+    WHERE STATUS IN ('RECEIVED', 'PROCESSING')
+    <if test="routeNo != null">
+      AND ROUTE_NO = #{routeNo}
+    </if>
+    GROUP BY ROUTE_NO
+    ORDER BY ROUTE_NO
+  </select>
+
+  <!-- 지도 AI 분석용: 노선 하나의 미처리(접수 + 처리중) 신고. 신고자 정보는 가져오지 않음.
+       노선 구분은 신고의 노선번호(ROUTE_NO) 그대로, 위의 건수와 같은 기준 -->
+  <select id="selectOpenOldestDays" resultType="java.lang.Integer">
+    SELECT DATEDIFF(CURDATE(), MIN(REG_DATE))
+    FROM REPORT
+    WHERE STATUS IN ('RECEIVED', 'PROCESSING')
+      AND ROUTE_NO = #{routeNo}
+  </select>
+
+  <select id="selectOpenTypeStat" resultMap="stat">
+    SELECT T.TYPE_NAME AS LABEL, COUNT(*) AS CNT
+    FROM REPORT R
+    INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    WHERE R.STATUS IN ('RECEIVED', 'PROCESSING')
+      AND R.ROUTE_NO = #{routeNo}
+    GROUP BY T.TYPE_NO, T.TYPE_NAME
+    ORDER BY CNT DESC, T.TYPE_NO
+  </select>
+
+  <!-- 오래된 신고부터 (먼저 처리해야 할 순서) -->
+  <select id="selectOpenReportText" resultMap="adminReport">
+    SELECT R.ROUTE_NO, T.TYPE_NAME, R.STATUS, R.CONTENT, R.REG_DATE
+    FROM REPORT R
+    INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    WHERE R.STATUS IN ('RECEIVED', 'PROCESSING')
+      AND R.ROUTE_NO = #{routeNo}
+    ORDER BY R.REG_DATE ASC, R.REPORT_NO ASC
+    LIMIT #{limit}
+  </select>
+
   <!-- 노선 관리 -->
   <select id="selectAdminRouteList" resultMap="adminRoute">
     SELECT ROUTE_NO, ROUTE_NAME

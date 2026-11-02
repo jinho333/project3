@@ -20,14 +20,47 @@
   border-right: 1px solid #ccc;
 }
 
-/* 오른쪽: 지도(위)와 예측 데이터(아래)를 세로로 쌓음, 오른쪽 끝에 여백 */
+/* 가운데: 지도(위)와 예측 데이터(아래)를 세로로 쌓음 */
 .dash-main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  margin-right: var(--dash-right-gap);
 }
+
+/* 오른쪽 패널: 선택한 노선의 미처리 신고 수 (AI 답변이 들어올 자리) */
+.dash-side {
+  width: var(--dash-right-gap);
+  flex: none;
+  padding: 16px;
+  overflow-y: auto;
+  border-left: 1px solid #ccc;
+}
+.side-empty { margin-top: 12px; color: #777; }
+.side-title { margin-top: 8px; font-weight: bold; }
+.side-note { margin-top: 4px; color: #777; font-size: 12px; }
+.side-counts { display: flex; gap: 8px; margin-top: 12px; }
+.side-count {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  border: 1px solid #333;
+}
+.side-count-label { font-size: 13px; color: #555; }
+.side-count-num { margin-top: 4px; font-size: 28px; font-weight: bold; }
+.side-counts[hidden] { display: none; }
+.side-ai-btn { width: 100%; margin-top: 16px; padding: 8px 16px; border: 1px solid #1a5fd0; background: #fff; color: #1a5fd0; cursor: pointer; }
+.side-ai-btn:hover { background: #f3f7ff; }
+.side-ai-btn:disabled { color: #999; border-color: #ccc; cursor: default; }
+.side-ai-answer { margin-top: 12px; padding: 12px 14px; background: #f6f8fc; border: 1px solid #dde5f5; white-space: pre-wrap; line-height: 1.7; font-size: 13px; }
+.side-ai-answer.is-error { background: #fff4e5; border-color: #f0b86e; }
+.side-ask { margin-top: 20px; }
+.side-ask input { box-sizing: border-box; width: 100%; padding: 8px 12px; border: 1px solid #333; font-size: 13px; }
+.side-ask .side-ai-btn { margin-top: 8px; }
+.side-ai-answer[hidden] { display: none; }
+.side-count-num.is-zero { color: #999; }   /* 미처리 신고가 없을 때 */
 
 /* 지도 60 : 예측 데이터 40 */
 .dash-map {
@@ -55,6 +88,13 @@
 .forecast-route { margin-top: 8px; }
 .forecast-route[hidden] { display: none; }
 .forecast-title { font-weight: bold; }
+.forecast-summary { margin-top: 6px; font-size: 14px; }
+.forecast-summary .fs-muted { color: #888; font-size: 12px; }
+/* 평소보다 10% 이상 벗어났을 때 강조: 평소보다 혼잡이면 빨강, 한산이면 파랑 */
+.forecast-summary .fs-alert { display: block; margin-top: 2px; font-weight: bold; }
+.forecast-summary .fs-alert.is-up { color: #E53935; }
+.forecast-summary .fs-alert.is-down { color: #1a5fd0; }
+.forecast-chart { position: relative; height: 180px; margin-top: 8px; }
 .dir-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
 
 /* 노선 목록 항목 아래: 지금 보는 방향 한 줄(작게) / 방금 누른 노선의 펼친 방향 선택 */
@@ -126,6 +166,7 @@
 .route-tooltip .tt-head { font-weight: bold; margin-bottom: 4px; }
 .route-tooltip .tt-line { color: #333; }
 .route-tooltip .tt-muted { color: #888; font-size: 12px; margin-top: 2px; }
+.route-tooltip .tt-open { font-weight: bold; color: red; }   /* 미처리 신고 합계 */
 
 /* 정류장 사이가 넓을 때 선 가운데에 넣는 진행 방향 V (마우스 동작은 아래 선이 받음) */
 .seg-arrow { width: 12px; height: 12px; pointer-events: none; }
@@ -221,7 +262,22 @@
   border: 1px solid #ccc;
   cursor: pointer;
 }
+.route-btn { position: relative; }
 .route-btn:hover { background: #f5f5f5; }
+/* 노선 버튼 오른쪽 위: 미처리(접수 + 처리중) 신고 합계 */
+.open-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 1px 8px;
+  background: #E53935;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.open-badge[hidden] { display: none; }
+.open-badge.is-zero { background: #eee; color: #888; font-weight: normal; }
 .route-btn small { display: block; margin-top: 2px; color: #666; font-size: 12px; }
 .route-btn.is-active { border-color: #333; background: #eef2ff; font-weight: bold; }  /* 지도에 표시 중인 노선(선택한 노선) */
 .route-btn.is-hover { border-color: #333; background: #fff3c4; }                       /* 지도에서 마우스를 올린 노선 */
@@ -243,8 +299,8 @@
 
 /* 좁은 화면: 목록, 지도, 예측 데이터를 세로로 쌓고 여백은 없앰 */
 @media (max-width: 900px) {
-  :root { --dash-right-gap: 0px; }
   .dash { flex-direction: column; height: auto; }
+  .dash-side { width: auto; border-left: 0; border-top: 1px solid #ccc; }
   .dash-list { width: auto; border-right: 0; border-bottom: 1px solid #ccc; }
   .dash-map { flex: none; height: 55vh; }
   .dash-forecast { flex: none; min-height: 240px; }

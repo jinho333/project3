@@ -53,10 +53,48 @@
         <!-- 노선 하나를 선택했을 때: 노선 정보 (JS 가 채움) -->
         <div id="forecastRoute" class="forecast-route" hidden>
           <p id="forecastTitle" class="forecast-title"></p>
+          <!-- 접속 시각 1시간 뒤 예측 한 줄 요약 (평소와 10% 이상 다르면 강조) -->
+          <p id="forecastSummary" class="forecast-summary"></p>
+          <!-- 시간대별 평소 평균 혼잡도 곡선 + 1시간 뒤 예측 점 (Chart.js) -->
+          <div class="forecast-chart"><canvas id="forecastChart"></canvas></div>
         </div>
         <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
       </section>
     </div>
+
+    <!-- 오른쪽 패널: 노선을 클릭하면 그 노선의 미처리 신고 수 (이 아래에 AI 답변이 들어올 자리) -->
+    <aside class="dash-side">
+      <h3>신고 현황</h3>
+      <p id="sideEmpty" class="side-empty">지도에서 노선을 클릭하면 그 노선의 미처리 신고가 표시됩니다.</p>
+      <div id="sideRoute" class="side-route" hidden>
+        <p id="sideTitle" class="side-title"></p>
+        <p class="side-note">신고 관리의 접수 + 처리중 (완료는 제외)</p>
+        <div id="sideCounts" class="side-counts">
+          <div class="side-count">
+            <span class="side-count-label">접수</span>
+            <span id="sideReceived" class="side-count-num">-</span>
+          </div>
+          <div class="side-count">
+            <span class="side-count-label">처리중</span>
+            <span id="sideProcessing" class="side-count-num">-</span>
+          </div>
+        </div>
+        <p id="sideUnknown" class="side-note" hidden>신고 수를 불러오지 못했습니다.</p>
+
+        <!-- AI 분석: 이 노선의 미처리 신고 + 1시간 뒤 혼잡도 예측을 보고 답함 (버튼을 눌렀을 때만 호출) -->
+        <button type="button" id="sideAiBtn" class="side-ai-btn">AI 분석</button>
+        <p class="side-note">미처리 신고와 1시간 뒤 혼잡도 예측을 바탕으로 분석합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
+        <p id="sideAiResult" class="side-ai-answer" hidden></p>
+
+        <!-- 이 노선에 대해 직접 질문하기: 같은 신고와 예측 데이터를 보고 답함 -->
+        <div class="side-ask">
+          <input type="text" id="sideAskInput" maxlength="300" autocomplete="off"
+            placeholder="이 노선에 대해 질문하기 (예: 어떤 신고부터 처리할까?)" aria-label="이 노선에 대한 질문">
+          <button type="button" id="sideAskBtn" class="side-ai-btn">질문하기</button>
+        </div>
+        <p id="sideAskResult" class="side-ai-answer" hidden></p>
+      </div>
+    </aside>
   </div>
 </th:block>
 
@@ -64,6 +102,7 @@
   <!-- 카카오맵 SDK: 키가 없으면 불러오지 않음 (키는 application.yaml 의 kakao.js.key) -->
   <script th:if="${kakaoJsKey != null and !kakaoJsKey.isBlank()}"
     th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false|"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/js/pages/admin/dashboard_map.js"></script>
 </th:block>
 

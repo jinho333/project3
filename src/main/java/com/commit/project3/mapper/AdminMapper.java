@@ -2,6 +2,7 @@ package com.commit.project3.mapper;
 
 import com.commit.project3.dto.ReportDTO;
 import com.commit.project3.dto.RouteDTO;
+import com.commit.project3.dto.RouteOpenCountDTO;
 import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.dto.StatDTO;
 import org.apache.ibatis.annotations.Mapper;
@@ -32,6 +33,14 @@ public interface AdminMapper {
     List<StatDTO> selectTypeStat(@Param("days") int days);
     List<StatDTO> selectDailyStat(@Param("days") int days);      // 날짜별 접수 건수 (AI 분석용)
     List<ReportDTO> selectRecentReportText(@Param("days") int days, @Param("limit") int limit);   // 신고 내용 샘플 (AI 분석용)
+
+    // 지도(버스 혼잡도): 노선별 아직 끝나지 않은 신고 수 (routeNo 가 null 이면 신고가 남은 모든 노선)
+    List<RouteOpenCountDTO> selectOpenCountByRoute(@Param("routeNo") String routeNo);
+
+    // 지도 AI 분석용: 노선 하나의 미처리 신고 (가장 오래된 신고가 며칠째인지 / 유형별 건수 / 내용 샘플)
+    Integer selectOpenOldestDays(@Param("routeNo") String routeNo);     // 미처리 신고가 없으면 null
+    List<StatDTO> selectOpenTypeStat(@Param("routeNo") String routeNo);
+    List<ReportDTO> selectOpenReportText(@Param("routeNo") String routeNo, @Param("limit") int limit);
 
     // 노선 관리
     List<RouteDTO> selectAdminRouteList(String keyword);

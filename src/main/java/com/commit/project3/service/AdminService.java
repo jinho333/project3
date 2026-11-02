@@ -2,6 +2,7 @@ package com.commit.project3.service;
 
 import com.commit.project3.dto.ReportDTO;
 import com.commit.project3.dto.RouteDTO;
+import com.commit.project3.dto.RouteOpenCountDTO;
 import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.dto.StatDTO;
 import com.commit.project3.mapper.AdminMapper;
@@ -107,6 +108,37 @@ public class AdminService {
 
     public List<StatDTO> getTypeStat(int days) {
         return adminMapper.selectTypeStat(days);
+    }
+
+    // ===== 지도(버스 혼잡도) =====
+
+    // 미처리(접수 + 처리중) 신고가 남아 있는 모든 노선의 건수
+    public List<RouteOpenCountDTO> getOpenCountByRoute() {
+        return adminMapper.selectOpenCountByRoute(null);
+    }
+
+    // 노선 하나의 미처리 신고 건수: 신고가 없으면 0건으로 채워서 돌려줌
+    public RouteOpenCountDTO getOpenCount(String routeNo) {
+        List<RouteOpenCountDTO> list = adminMapper.selectOpenCountByRoute(routeNo);
+        if (!list.isEmpty()) {
+            return list.get(0);
+        }
+        RouteOpenCountDTO empty = new RouteOpenCountDTO();
+        empty.setRouteNo(routeNo);
+        return empty;
+    }
+
+    // 노선 하나의 미처리 신고 상세 (AI 분석용)
+    public Integer getOpenOldestDays(String routeNo) {
+        return adminMapper.selectOpenOldestDays(routeNo);
+    }
+
+    public List<StatDTO> getOpenTypeStat(String routeNo) {
+        return adminMapper.selectOpenTypeStat(routeNo);
+    }
+
+    public List<ReportDTO> getOpenReportText(String routeNo, int limit) {
+        return adminMapper.selectOpenReportText(routeNo, limit);
     }
 
     // ===== 노선 관리 =====
