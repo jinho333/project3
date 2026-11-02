@@ -271,6 +271,7 @@ document.querySelector('#aiApplyBtn').addEventListener('click', () => {
   content.value = aiResultText.textContent.substring(0, MAX_CONTENT_LENGTH);
   content.dispatchEvent(new Event('input'));    // 글자 수 표시 갱신
   // 결과 창은 닫지 않음 (닫기 버튼을 눌러야 닫힘)
+  content.focus();                              // 이어서 고쳐 쓸 수 있게 내용 칸으로 포커스 이동
 });
 
 document.querySelector('#aiCloseBtn').addEventListener('click', () => {
