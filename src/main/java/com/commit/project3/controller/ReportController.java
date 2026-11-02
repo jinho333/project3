@@ -6,6 +6,8 @@ import com.commit.project3.dto.ReportDTO;
 import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.service.ReportService;
 import com.commit.project3.util.SearchUtil;
+import com.commit.project3.util.LoginRedirectUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,10 +34,11 @@ public class ReportController {
 
     // 신고 접수 화면 (로그인한 회원만 이용 가능)
     @GetMapping("/report")
-    public String reportForm(@RequestParam(required = false) Integer typeNo, HttpSession session, Model model) {
-        // 비로그인이면 로그인 화면으로 보내고, 로그인 화면에서 안내 문구를 띄움
+    public String reportForm(@RequestParam(required = false) Integer typeNo, HttpServletRequest request,
+                             HttpSession session, Model model) {
+        // 비로그인이면 로그인 화면으로 보내고(로그인 후 이 주소로 돌아옴), 로그인 화면에서 안내 문구를 띄움
         if (session.getAttribute("loginInfo") == null) {
-            return "redirect:/member/login?needLogin=true";
+            return LoginRedirectUtil.loginUrl(request);
         }
         model.addAttribute("typeGroupList", reportService.getTypeGroupList());
         model.addAttribute("reportToken", issueToken(session));
@@ -51,10 +54,11 @@ public class ReportController {
     // 신고 목록 화면: 로그인한 회원 본인의 신고만 보여줌 (검색 조건 + 정렬 + 페이징)
     // BindingResult가 있으면 ?typeNo=abc 처럼 형식이 틀린 값이 와도 오류 화면 대신 그 조건만 무시됨
     @GetMapping("/report/list")
-    public String reportList(SearchDTO searchDTO, BindingResult bindingResult, HttpSession session, Model model) {
+    public String reportList(SearchDTO searchDTO, BindingResult bindingResult, HttpServletRequest request,
+                             HttpSession session, Model model) {
         MemberDTO loginInfo = (MemberDTO) session.getAttribute("loginInfo");
         if (loginInfo == null) {
-            return "redirect:/member/login?needLogin=true";
+            return LoginRedirectUtil.loginUrl(request);
         }
         // 주소창으로 값을 바꿔 보내도 소용없도록 서버에서 다시 지정·정리
         searchDTO.setMemberNo(loginInfo.getMemberNo());
@@ -76,10 +80,11 @@ public class ReportController {
     // 신고 상세 화면: 본인 신고가 아니거나 없는 번호면 목록으로
     // 숫자가 아닌 주소(/report/abc)는 이 매핑에 걸리지 않아 404 처리됨
     @GetMapping("/report/{reportNo:\\d{1,9}}")
-    public String reportDetail(@PathVariable int reportNo, HttpSession session, Model model) {
+    public String reportDetail(@PathVariable int reportNo, HttpServletRequest request,
+                               HttpSession session, Model model) {
         MemberDTO loginInfo = (MemberDTO) session.getAttribute("loginInfo");
         if (loginInfo == null) {
-            return "redirect:/member/login?needLogin=true";
+            return LoginRedirectUtil.loginUrl(request);
         }
         ReportDTO reportDTO = reportService.getReportDetail(reportNo, loginInfo.getMemberNo());
         if (reportDTO == null) {
@@ -127,10 +132,11 @@ public class ReportController {
 
     // 신고 수정 화면: 본인 신고이면서 '접수' 상태일 때만 열림
     @GetMapping("/report/{reportNo:\\d{1,9}}/edit")
-    public String editForm(@PathVariable int reportNo, HttpSession session, Model model) {
+    public String editForm(@PathVariable int reportNo, HttpServletRequest request,
+                           HttpSession session, Model model) {
         MemberDTO loginInfo = (MemberDTO) session.getAttribute("loginInfo");
         if (loginInfo == null) {
-            return "redirect:/member/login?needLogin=true";
+            return LoginRedirectUtil.loginUrl(request);
         }
         ReportDTO reportDTO = reportService.getReportDetail(reportNo, loginInfo.getMemberNo());
         if (reportDTO == null || !"RECEIVED".equals(reportDTO.getStatus())) {
