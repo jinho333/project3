@@ -76,7 +76,9 @@ body.user .big-title {
 .rank-section .big-title { font-size: clamp(24px, 3.6vh, 52px); margin-bottom: var(--band-title-gap); }   /* 회색 영역 제목과 같은 아래 여백 */
 .rank-col { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: clamp(4px, 1.1vh, 36px) 0; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); }   /* 한 화면에 들어오도록 줄인 위아래 안쪽 여백 */
 .rank-colhead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 0 28px clamp(2px, 0.4vh, 8px); }
+.rank-title { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .rank-colhead h3 { font-size: clamp(16px, 2.4vh, 22px); line-height: 1.4; }
+.rank-basis { color: var(--body); font-size: 13px; white-space: nowrap; }   /* 통계 기준: 제목 바로 옆 */
 .rank-hint { color: var(--body); font-size: 14px; }
 .rank-list { list-style: none; }
 .rank-list li + li .rank-row { border-top: 1px solid rgba(0, 0, 0, 0.15); }
@@ -100,7 +102,6 @@ body.user .big-title {
 /* 막대: 1위를 100%로 한 비율 */
 .rank-track { flex: 1; min-width: 40px; height: 8px; background: var(--soft); border-radius: 999px; overflow: hidden; }
 .rank-fill { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
-.rank-cnt { flex-shrink: 0; width: 56px; text-align: right; font-size: clamp(14px, 2vh, 16px); font-weight: 700; }
 .rank-empty { padding: 24px; color: var(--body); }
 
 /* 푸터는 메인에서만 한 줄로 줄여서 높이를 아낌 */
