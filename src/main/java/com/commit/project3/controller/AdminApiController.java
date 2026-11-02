@@ -1,7 +1,10 @@
 package com.commit.project3.controller;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,9 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.commit.project3.dto.RouteOpenCountDTO;
+import com.commit.project3.service.AdminService;
 import com.commit.project3.service.RoadRouteService;
+import com.commit.project3.service.RouteForecastService;
 import com.commit.project3.service.RouteGeometryService;
 import com.commit.project3.service.RouteListService;
+import com.commit.project3.util.AdminUtil;
 
 // 관리자 화면이 JS 로 부르는 JSON 주소 모음 (/admin/api/...)
 // TODO: 로그인 구현 후 ROLE 이 관리자인 회원만 접근하도록 제한
@@ -25,12 +32,17 @@ public class AdminApiController {
     private final RouteGeometryService routeGeometryService;
     private final RouteListService routeListService;
     private final RoadRouteService roadRouteService;
+    private final AdminService adminService;
+    private final RouteForecastService routeForecastService;
 
     public AdminApiController(RouteGeometryService routeGeometryService, RouteListService routeListService,
-                              RoadRouteService roadRouteService) {
+                              RoadRouteService roadRouteService, AdminService adminService,
+                              RouteForecastService routeForecastService) {
         this.routeGeometryService = routeGeometryService;
         this.routeListService = routeListService;
         this.roadRouteService = roadRouteService;
+        this.adminService = adminService;
+        this.routeForecastService = routeForecastService;
     }
 
     // 지도에 보여 줄 노선 목록 (노선번호, 순위, 혼잡 등급, 이름)
@@ -42,6 +54,65 @@ public class AdminApiController {
 
     // 오류 응답 모양: { "code": "...", "message": "..." }
     public record ApiError(String code, String message) {}
+
+    // 노선 하나의 미처리 신고 수: received(접수) + processing(처리중) = total
+    public record OpenCount(int received, int processing, int total) {
+        static OpenCount of(RouteOpenCountDTO dto) {
+            return new OpenCount(dto.getReceivedCnt(), dto.getProcessingCnt(), dto.getReceivedCnt() + dto.getProcessingCnt());
+        }
+    }
+
+    // 모든 노선의 미처리 신고 수: { "134": { received, processing, total }, ... }
+    // 미처리 신고가 없는 노선은 빠져 있으므로 화면에서는 0건으로 보면 됨 (지도를 열 때 한 번 받아 두고 호버에 사용)
+    // 200 / 403: 관리자가 아님
+    @GetMapping(value = "/routes/report-counts", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> reportCounts(HttpSession session) {
+        if (AdminUtil.checkAdmin(session) != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
+        }
+        Map<String, OpenCount> counts = new LinkedHashMap<>();
+        for (RouteOpenCountDTO dto : adminService.getOpenCountByRoute()) {
+            counts.put(dto.getRouteNo(), OpenCount.of(dto));
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(counts);
+    }
+
+    // 노선 하나의 혼잡도 예측: 시간대별 평소 평균 곡선 + 접속 시각 1시간 뒤의 예측값 (지금은 임시 값)
+    // hour 는 시험용: 접속 시각(0~23)을 바꿔서 운행 시간 밖 같은 경우를 확인할 때만 씀 (없으면 지금 시각)
+    // 200 / 400: 노선번호 형식이나 hour 가 이상함 / 403: 관리자가 아님 / 404: 예측 노선 목록에 없음
+    @GetMapping(value = "/routes/{routeNo}/forecast", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> forecast(@PathVariable String routeNo, @RequestParam(required = false) Integer hour,
+                                           HttpSession session) {
+        if (AdminUtil.checkAdmin(session) != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
+        }
+        if (!routeGeometryService.isValidRouteNo(routeNo) || (hour != null && (hour < 0 || hour > 23))) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiError("INVALID_REQUEST", "잘못된 요청입니다."));
+        }
+        java.util.Optional<RouteForecastService.Forecast> result = hour == null
+            ? routeForecastService.find(routeNo) : routeForecastService.find(routeNo, hour);
+        return result.<ResponseEntity<Object>>map(f -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(f))
+            .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError("ROUTE_NOT_FOUND", routeNo + "번 노선의 예측 데이터가 없습니다.")));
+    }
+
+    // 노선 하나의 미처리 신고 수 (노선을 클릭했을 때 최신 값으로 갱신하는 용도)
+    // 200 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님
+    @GetMapping(value = "/routes/{routeNo}/report-counts", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> reportCount(@PathVariable String routeNo, HttpSession session) {
+        if (AdminUtil.checkAdmin(session) != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
+        }
+        if (!routeGeometryService.isValidRouteNo(routeNo)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OpenCount.of(adminService.getOpenCount(routeNo)));
+    }
 
     // 노선 선과 정류장 (GeoJSON)
     // 200: 노선 있음 / 400: 노선번호 형식이 이상함 / 404: 없는 노선이거나 데이터가 없음

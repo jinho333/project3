@@ -6,7 +6,9 @@
 //  4) "전체 노선 보기" 버튼으로 처음 상태로 돌아감
 //  5) 방향: 기본은 노선당 대표 1방향, 노선 목록의 "양방향" 토글로 모든 방향 표시.
 //     노선 하나를 선택하면 예측 영역의 방향 칩으로 그 노선의 방향을 고름
-//  6) 선에 마우스를 올리면 툴팁(버스번호, 방향, 혼잡도)이 뜨고 그 방향의 선 외에는(같은 노선의 반대 방향 포함) 흐려짐
+//  6) 선에 마우스를 올리면 툴팁(버스번호, 방향, 혼잡도, 미처리 신고 합계)이 뜨고 그 방향의 선 외에는(같은 노선의 반대 방향 포함) 흐려짐.
+//     미처리 신고 = 신고 관리의 접수 + 처리중. 마지막으로 누른 노선 하나의 접수와 처리중을 오른쪽 패널에 나눠서 보여 줌
+//     (노선 목록의 배지와 호버 툴팁은 모든 노선의 합계)
 //  7) 정류장: 전체 보기에서는 표시 안 함 / 노선을 선택하면 기점·종점 표시 /
 //     조금 확대(DIRECTION_ZOOM_LEVEL 이하)하면 선 위에 일정 간격으로 진행 방향 V 만 표시 /
 //     더 확대(STOP_ZOOM_LEVEL 이하)하면 화면 안의 정류장을 작은 버스 아이콘(진한 회색 한 가지 색)으로 표시, 여러 노선이 지나는 정류장은 아이콘 하나 /
@@ -18,7 +20,8 @@
 //     정류장 점은 실제 위치 그대로, 선과 방향 V 만 벌어진 선을 따라감. 전체 보기에서는 벌리지 않음.
 //     선마다 아래에 흰 테두리를 깔아서, 같은 색 선이 나란히 있어도 서로 구분됨
 // 노선 목록은 /admin/api/routes, 노선 선은 /admin/api/routes/{노선번호}/geometry,
-// 도로 선은 /admin/api/routes/{노선번호}/road?brtId= 에서 받음
+// 도로 선은 /admin/api/routes/{노선번호}/road?brtId= 에서 받음,
+// 미처리 신고 수는 /admin/api/routes/report-counts (전체), /admin/api/routes/{노선번호}/report-counts (한 노선) 에서 받음
 (function () {
   const mapEl = document.querySelector('#map');
   const messageEl = document.querySelector('#mapMessage');
@@ -32,8 +35,24 @@
   const forecastRouteEl = document.querySelector('#forecastRoute');
   const forecastTitleEl = document.querySelector('#forecastTitle');
   const forecastEmptyEl = document.querySelector('#forecastEmpty');
+  const forecastSummaryEl = document.querySelector('#forecastSummary');
+  const forecastCanvasEl = document.querySelector('#forecastChart');
+  // 오른쪽 패널: 노선 하나를 선택하면 그 노선의 미처리 신고 수 (접수 / 처리중)
+  const sideEmptyEl = document.querySelector('#sideEmpty');
+  const sideRouteEl = document.querySelector('#sideRoute');
+  const sideTitleEl = document.querySelector('#sideTitle');
+  const sideReceivedEl = document.querySelector('#sideReceived');
+  const sideProcessingEl = document.querySelector('#sideProcessing');
+  const sideCountsEl = document.querySelector('#sideCounts');
+  const sideUnknownEl = document.querySelector('#sideUnknown');
+  const sideAiBtn = document.querySelector('#sideAiBtn');
+  const sideAiResultEl = document.querySelector('#sideAiResult');
+  const sideAskInputEl = document.querySelector('#sideAskInput');
+  const sideAskBtn = document.querySelector('#sideAskBtn');
+  const sideAskResultEl = document.querySelector('#sideAskResult');
 
   const ROUTE_API = '/admin/api/routes';
+  const OPEN_REFRESH_MS = 5000;   // 같은 노선을 다시 클릭해도 이 시간(ms) 안에는 신고 수를 다시 받지 않음
   const GRADE_COLOR = { HIGH: '#E53935', MID: '#F9A825', LOW: '#43A047' }; // 혼잡 / 보통 / 여유
   const GRADE_LABEL = { HIGH: '혼잡', MID: '보통', LOW: '여유' };
   const LINE_WEIGHT = 5;          // 선 굵기
@@ -54,6 +73,12 @@
   const STOP_ICON_COLOR = '#555'; // 일반 정류장 아이콘 색 (노선, 혼잡 등급과 상관없이 한 가지)
   const LINE_OPACITY_DIM = 0.5;  // 마우스를 올렸을 때 다른 노선의 투명도
   const FLASH_OPACITY = 0.15;     // 노선을 고른 직후 깜빡일 때 가장 흐려지는 투명도
+  // 처음 들어왔을 때와 "전체 노선 보기" 때, 모든 노선이 화면에 딱 들어오는 확대 수준에서 이만큼(단계) 더 확대해서 보여 줌
+  // (0 이면 모든 노선이 다 들어오게, 1 이면 한 단계 더 확대해서 바깥쪽 노선 끝은 화면 밖으로 조금 잘림)
+  const FIT_ZOOM_IN = 2;
+  // 처음 들어왔을 때와 "전체 노선 보기" 때 화면 가운데에 두는 곳: 울산광역시청 (위도, 경도)
+  // 확대 수준은 위에서 정하고, 위치만 이 좌표로 고정해서 시작 화면이 늘 같은 자리에서 시작함
+  const CITY_HALL = { lat: 35.5384, lng: 129.3114 };
   const ARROW_SPACING_PX = 130;   // 진행 방향 V 사이의 화면 간격(px), 너무 촘촘하지 않게
   const DIRECTION_ZOOM_LEVEL = 7; // 이 확대 수준 이하(더 확대)가 되면 선 위에 진행 방향 V 를 표시 (숫자가 작을수록 확대)
   const STOP_ZOOM_LEVEL = 5;  // 이 확대 수준 이하(더 확대)가 되면 기점·종점 외 정류장도 표시 (숫자가 작을수록 확대)
@@ -76,6 +101,7 @@
   // 노선번호 -> { dirs: [{ brtId, label, isLoop, lines: [Polyline...] }], rep: 대표 방향, bounds } (불러온 노선만)
   const layers = {};
   const buttons = {};             // 노선번호 -> 목록의 버튼
+  const badges = {};              // 노선번호 -> 목록 버튼 오른쪽 위의 "미처리 N건" 배지
   const items = {};               // 노선번호 -> 목록의 항목(li), 검색으로 걸러낼 때 숨김/표시
   const details = {};             // 노선번호 -> 목록 항목 안의 방향 선택 영역 (펼침)
   const dirLines = {};            // 노선번호 -> 목록 항목 아래의 한 줄 (지금 보고 있는 방향)
@@ -85,6 +111,14 @@
   let dirChoice = {};             // 노선번호 -> 방향 칩으로 고른 값 (방향ID 또는 'all'), 없으면 dirMode 를 따름
   let openRoute = null;           // 목록에서 방향 칩을 펼쳐 둔 노선번호 (한 번에 하나만, 없으면 모두 접힘)
   let stopMarkers = [];           // 지도에 올라가 있는 정류장 표시 [{ routeNo, overlay, el }]
+  // 노선번호 -> 미처리(접수 + 처리중) 신고 수 { received, processing, total }
+  // 처음에 전체를 한 번 받아 두고(호버 툴팁이 바로 뜨게), 노선을 클릭하면 그 노선만 최신 값으로 갱신
+  const openCounts = {};
+  let openAllLoaded = false;      // 전체 신고 수를 받았는지 (받았는데 없는 노선이면 0건)
+  const openFetchedAt = {};       // 노선번호 -> 마지막으로 갱신한 시각(ms)
+  let focusRoute = null;          // 마지막으로 누른 노선번호 (오른쪽 패널이 이 노선의 신고 수를 보여 줌)
+  let sideRoute = null;           // 오른쪽 패널에 지금 보여 주는 노선번호
+  let forecastShown = null;       // 예측 영역에 차트를 그려 둔 노선번호
 
   // ---------- 안내 문구 ----------
   function showMessage(text, type) {            // type: 'info'(파랑) 또는 'error'(주황)
@@ -115,6 +149,168 @@
 
   function findRoute(routeNo) {
     return routes.find(function (r) { return r.routeNo === routeNo; });
+  }
+
+  // ---------- 미처리 신고 수 (신고 관리의 접수 + 처리중, 완료는 제외) ----------
+  // 모르면 null (아직 못 받았거나 받지 못함), 신고가 없는 노선은 0건
+  function openCountOf(routeNo) {
+    if (openCounts[routeNo]) return openCounts[routeNo];
+    return openAllLoaded ? { received: 0, processing: 0, total: 0 } : null;
+  }
+
+  // 호버 툴팁에 쓰는 한 줄 글: 합계만
+  function openTotalText(routeNo) {
+    const c = openCountOf(routeNo);
+    if (!c) return '확인 불가';
+    return c.total === 0 ? '없음' : c.total + '건';
+  }
+
+  async function loadOpenCounts() {
+    try {
+      const res = await fetch(ROUTE_API + '/report-counts');
+      if (!res.ok) throw new Error('report-counts ' + res.status);
+      const all = await res.json();
+      Object.keys(openCounts).forEach(function (no) { delete openCounts[no]; });
+      Object.assign(openCounts, all);
+      openAllLoaded = true;
+    } catch (e) {
+      openAllLoaded = false;      // 신고 수만 못 받은 것이라 지도는 그대로 쓰고, 툴팁에는 '확인 불가'로 보임
+    }
+  }
+
+  // 노선 목록의 배지: 미처리 신고 합계를 한눈에 (모르면 배지를 숨김)
+  function renderOpenBadges() {
+    Object.keys(badges).forEach(function (no) {
+      const c = openCountOf(no);
+      const badge = badges[no];
+      badge.hidden = !c;
+      if (!c) return;
+      badge.textContent = c.total === 0 ? '미처리 없음' : '미처리 ' + c.total + '건';
+      badge.classList.toggle('is-zero', c.total === 0);
+    });
+  }
+
+  // ---------- AI 분석 / 질문 (오른쪽 패널, 버튼을 눌렀을 때만 호출) ----------
+  // 서버에는 노선번호(와 질문)만 보냄: 서버가 그 노선의 미처리 신고와 1시간 뒤 혼잡도 예측을 직접 모아서 AI 에 물어봄
+  // 분석(네 줄)과 질문은 서로 답변 칸이 따로라서, 질문을 해도 분석 결과가 지워지지 않음
+  const aiSlots = [
+    { btn: sideAiBtn, result: sideAiResultEl, idle: 'AI 분석', wait: '분석 중...', n: 0 },
+    { btn: sideAskBtn, result: sideAskResultEl, idle: '질문하기', wait: '답변 중...', n: 0 }
+  ];
+
+  // 노선이 바뀌면 이전 노선의 답변과 질문은 지움 (n 을 올려 두면 늦게 온 답변은 버려짐)
+  function clearAi() {
+    aiSlots.forEach(function (slot) {
+      slot.n++;
+      slot.btn.disabled = false;
+      slot.btn.textContent = slot.idle;
+      slot.result.hidden = true;
+      slot.result.classList.remove('is-error');
+      slot.result.textContent = '';
+    });
+    sideAskInputEl.value = '';
+  }
+
+  async function callAi(slot, extra) {
+    const routeNo = sideRoute;
+    if (!routeNo) return;
+    const req = ++slot.n;
+    slot.btn.disabled = true;
+    slot.btn.textContent = slot.wait;
+    slot.result.hidden = false;
+    slot.result.classList.remove('is-error');
+    slot.result.textContent = 'AI가 답변을 만드는 중입니다. 몇 초 걸릴 수 있어요...';
+
+    const body = Object.assign({ routeNo: routeNo }, extra);
+    if (testHour !== null) body.hour = Number(testHour);    // 시험용: 주소의 ?hour= 와 같은 시각으로 분석
+    let text, isError = false;
+    try {
+      const res = await fetch('/admin/api/ai/route', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.message || '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      text = data.answer;
+    } catch (e) {
+      isError = true;
+      text = e.message || '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+    }
+    if (req !== slot.n) return;                   // 그사이 노선이 바뀌었으면 버림 (버튼은 clearAi 가 이미 되돌림)
+    slot.result.classList.toggle('is-error', isError);
+    slot.result.textContent = text;               // 답변은 textContent 로 넣어 글자 그대로 보여 줌
+    slot.btn.disabled = false;
+    slot.btn.textContent = slot.idle;
+  }
+
+  function askAi() {
+    const question = sideAskInputEl.value.trim();
+    if (!question) {
+      const slot = aiSlots[1];
+      slot.result.hidden = false;
+      slot.result.classList.add('is-error');
+      slot.result.textContent = '질문을 입력해 주세요.';
+      sideAskInputEl.focus();
+      return;
+    }
+    callAi(aiSlots[1], { question: question });
+  }
+
+  sideAiBtn.addEventListener('click', function () { callAi(aiSlots[0], {}); });
+  sideAskBtn.addEventListener('click', askAi);
+  sideAskInputEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); askAi(); }
+  });
+
+  // 오른쪽 패널의 노선: 마지막으로 누른 노선 하나 (이어서 눌러 여러 노선이 쌓여 있어도 그중 하나만).
+  // AI 답변도 이 노선 기준으로 붙일 예정이라, 패널의 숫자와 답변이 항상 같은 노선을 가리키게 함
+  function focusedRoute() {
+    if (mode !== 'select' || selected.size === 0) return null;
+    if (focusRoute && selected.has(focusRoute)) return focusRoute;
+    return Array.from(selected).pop();            // 마지막으로 누른 노선이 빠졌으면 남은 것 중 가장 최근에 쌓인 노선
+  }
+
+  // 오른쪽 패널: 그 노선의 미처리 신고 수 (접수와 처리중을 나눠서), 노선이 없으면 안내 문구만
+  function renderSideOpen(routeNo) {
+    if (sideRoute !== routeNo) clearAi();         // 노선이 바뀌면 이전 노선의 답변은 지움 (같은 노선의 갱신에서는 그대로 둠)
+    sideRoute = routeNo;
+    sideEmptyEl.hidden = !!routeNo;
+    sideRouteEl.hidden = !routeNo;
+    if (!routeNo) return;
+
+    const route = findRoute(routeNo);
+    sideTitleEl.textContent = routeNo + '번 · ' + (route ? route.label : '');
+    const c = openCountOf(routeNo);
+    sideCountsEl.hidden = !c;
+    sideUnknownEl.hidden = !!c;
+    if (!c) return;
+    sideReceivedEl.textContent = c.received + '건';
+    sideProcessingEl.textContent = c.processing + '건';
+    sideReceivedEl.classList.toggle('is-zero', c.received === 0);
+    sideProcessingEl.classList.toggle('is-zero', c.processing === 0);
+  }
+
+  // 받아 둔 값을 먼저 보여 주고, 최신 값을 받아 오면 바꿈
+  function updateSide() {
+    const no = focusedRoute();
+    renderSideOpen(no);
+    if (no) refreshOpenCount(no);
+  }
+
+  // 노선을 클릭했을 때 그 노선의 최신 신고 수를 받아 와서 갱신 (같은 노선은 OPEN_REFRESH_MS 안에는 다시 받지 않음)
+  async function refreshOpenCount(routeNo) {
+    const now = Date.now();
+    if (openFetchedAt[routeNo] && now - openFetchedAt[routeNo] < OPEN_REFRESH_MS) return;
+    openFetchedAt[routeNo] = now;
+    try {
+      const res = await fetch(ROUTE_API + '/' + encodeURIComponent(routeNo) + '/report-counts');
+      if (!res.ok) throw new Error('report-counts ' + res.status);
+      openCounts[routeNo] = await res.json();
+    } catch (e) {
+      delete openFetchedAt[routeNo];  // 실패하면 다음 클릭 때 다시 시도 (화면에는 받아 둔 값을 그대로 둠)
+      return;
+    }
+    renderOpenBadges();
+    if (sideRoute === routeNo) renderSideOpen(routeNo);   // 그사이 다른 노선으로 바뀌었으면 건드리지 않음
   }
 
   // ---------- 호버 툴팁 (선에 마우스를 올리면 버스번호, 방향, 혼잡도를 보여 줌) ----------
@@ -171,6 +367,11 @@
     level.className = 'tt-line';
     level.textContent = '혼잡도: ' + GRADE_LABEL[grade];
 
+    // 신고 관리의 미처리(접수 + 처리중) 합계, 접수와 처리중을 나눈 값은 노선을 클릭하면 예측 영역에 보임
+    const open = document.createElement('div');
+    open.className = 'tt-line tt-open';
+    open.textContent = '미처리 신고: ' + openTotalText(route.routeNo);
+
     // 예측 수치가 연결되면 이 줄에 예상 승차 인원 등을 넣을 자리
     const forecast = document.createElement('div');
     forecast.className = 'tt-line tt-muted';
@@ -178,6 +379,7 @@
 
     tooltipEl.appendChild(direction);
     tooltipEl.appendChild(level);
+    tooltipEl.appendChild(open);
     tooltipEl.appendChild(forecast);
 
     // 지금 그려진 선이 도로 기준인지 정류장을 이은 직선인지 (도로 선을 못 받은 노선을 알아볼 수 있게)
@@ -863,6 +1065,10 @@
       all.extend(layers[no].bounds.getNorthEast());
     });
     map.setBounds(all, 40, 40, 40, 40);          // 보이는 노선이 모두 화면에 들어오게 자동 확대
+    if (FIT_ZOOM_IN > 0) {                       // 거기서 FIT_ZOOM_IN 단계 더 확대 (숫자가 작을수록 확대)
+      map.setLevel(Math.max(1, map.getLevel() - FIT_ZOOM_IN), { animate: false });
+    }
+    map.setCenter(new kakao.maps.LatLng(CITY_HALL.lat, CITY_HALL.lng));   // 화면 가운데는 울산광역시청
   }
 
   // 클릭했을 때는 지금 보고 있는 화면(확대 수준, 위치)을 그대로 둠.
@@ -897,17 +1103,10 @@
     });
   }
 
-  // 노선 하나만 선택했을 때의 노선번호 (아니면 null)
-  function singleSelected() {
-    const nos = visibleRouteNos();
-    return mode === 'select' && nos.length === 1 ? nos[0] : null;
-  }
-
   function render() {
     hideTooltip();                                // 선이 바뀌면 남아 있을 수 있는 호버 표시를 정리
     clearHover();
     const visible = new Set(visibleRouteNos());
-    const single = singleSelected();
     Object.keys(layers).forEach(function (no) {
       const shown = visible.has(no) ? new Set(shownDirs(no)) : new Set();
       layers[no].dirs.forEach(function (d) {
@@ -923,28 +1122,163 @@
     applyFilter();                                // 검색 중에도 선택한 노선은 목록에 남겨 둠
     applyOffsets();                               // 겹치는 선은 옆으로 벌림 (정류장과 방향 V 가 벌어진 선을 따라가도록 먼저 함)
     refreshStops();
-    renderDirControls(single);
-    ensureRoads();                                // 보이는 방향의 도로 선을 받아 오면 선과 방향 V 가 도로 모양으로 바뀜
+    renderDirControls();
+    ensureRoads();                               // 보이는 방향의 도로 선을 받아 오면 선과 방향 V 가 도로 모양으로 바뀜
+  }
+
+  // ---------- 혼잡도 예측 차트 (예측 영역) ----------
+  // /admin/api/routes/{노선번호}/forecast: 시간대별 평소 평균 혼잡도(%) 곡선 + 접속 시각 1시간 뒤의 예측값 (지금은 임시 값)
+  // 평소 대비 비율이 10% 이상 벗어나면(높든 낮든) 점과 문구를 강조
+  const ALERT_UP_COLOR = '#E53935';
+  const ALERT_DOWN_COLOR = '#1a5fd0';
+  const ALERT_TEXT = '평소와 크게 다릅니다. 관리자가 확인해야 할 사항이 있을 수 있습니다.';
+  // 시험용: 주소에 ?hour=22 처럼 붙이면 접속 시각을 그 시(0~23)로 보고 예측 (운행 시간 밖을 확인할 때)
+  const testHour = /^\d{1,2}$/.test(new URLSearchParams(location.search).get('hour') || '')
+    ? new URLSearchParams(location.search).get('hour') : null;
+  let forecastChart = null;
+  let forecastReqNo = 0;          // 응답이 늦게 와도 지금 노선의 것만 그리도록 요청마다 번호를 매김
+
+  function clearForecastChart() {
+    if (forecastChart) { forecastChart.destroy(); forecastChart = null; }
+  }
+
+  // 차트 바닥에 깔리는 것: 혼잡 등급 띠(서버 기준과 같음) + 지금 시각의 세로선
+  const forecastGuides = {
+    id: 'forecastGuides',
+    beforeDatasetsDraw: function (chart) {
+      const f = chart.options.plugins.forecastGuides.forecast;
+      const ctx = chart.ctx, a = chart.chartArea, y = chart.scales.y, x = chart.scales.x;
+      const band = function (from, to, color) {
+        const top = y.getPixelForValue(to), bottom = y.getPixelForValue(from);
+        ctx.fillStyle = color;
+        ctx.fillRect(a.left, top, a.right - a.left, bottom - top);
+      };
+      ctx.save();
+      band(f.gradeHighMin, 100, 'rgba(229, 57, 53, 0.08)');
+      band(f.gradeMidMin, f.gradeHighMin, 'rgba(249, 168, 37, 0.08)');
+      band(0, f.gradeMidMin, 'rgba(67, 160, 71, 0.08)');
+      const idx = f.hours.indexOf(f.nowHour);
+      if (idx !== -1) {                           // 지금이 운행 시간대일 때만
+        const px = x.getPixelForValue(idx);
+        ctx.strokeStyle = '#999';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#666';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('지금', px, a.top - 4);
+      }
+      ctx.restore();
+    }
+  };
+
+  function renderForecast(f) {
+    forecastSummaryEl.textContent = '';
+    if (f.status === 'OUTSIDE_HOURS') {
+      forecastSummaryEl.appendChild(document.createTextNode(f.message + ' (평소 평균 곡선만 표시합니다)'));
+    } else {
+      const up = f.deviationPct > 0;
+      const line = document.createElement('span');
+      line.textContent = f.targetHour + '시(1시간 뒤) 예상 혼잡도 ' + f.forecast + '% · 평소 ' + f.baselineAtTarget
+        + '%보다 ' + Math.abs(f.deviationPct) + '% ' + (f.deviationPct === 0 ? '같음' : (up ? '높음 ▲' : '낮음 ▼')) + ' ';
+      const muted = document.createElement('span');
+      muted.className = 'fs-muted';
+      muted.textContent = f.temp ? '(임시 데이터)' : '';
+      forecastSummaryEl.appendChild(line);
+      forecastSummaryEl.appendChild(muted);
+      if (f.alert) {
+        const alertEl = document.createElement('span');
+        alertEl.className = 'fs-alert ' + (up ? 'is-up' : 'is-down');
+        alertEl.textContent = '⚠ ' + ALERT_TEXT;
+        forecastSummaryEl.appendChild(alertEl);
+      }
+    }
+
+    clearForecastChart();
+    if (typeof Chart === 'undefined') {           // 차트 라이브러리를 못 받았으면 위의 글만 보여 줌
+      forecastSummaryEl.appendChild(document.createElement('br'));
+      forecastSummaryEl.appendChild(document.createTextNode('(차트를 불러오지 못했습니다)'));
+      return;
+    }
+    const targetIdx = f.status === 'OK' ? f.hours.indexOf(f.targetHour) : -1;
+    const predicted = f.hours.map(function (h, i) { return i === targetIdx ? f.forecast : null; });
+    const pointColor = f.alert ? (f.deviationPct > 0 ? ALERT_UP_COLOR : ALERT_DOWN_COLOR) : '#333';
+    forecastChart = new Chart(forecastCanvasEl, {
+      type: 'line',
+      data: {
+        labels: f.hours.map(function (h) { return h + '시'; }),
+        datasets: [
+          { label: '평소 평균', data: f.baseline, borderColor: '#777', backgroundColor: '#777',
+            borderWidth: 2, pointRadius: 2, tension: 0.3 },
+          { label: '1시간 뒤 예측', data: predicted, showLine: false, borderColor: '#fff', borderWidth: 2,
+            backgroundColor: pointColor, pointRadius: f.alert ? 11 : 8, pointHoverRadius: f.alert ? 12 : 9 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: { padding: { top: 14 } },
+        scales: {
+          y: { min: 0, max: 100, ticks: { callback: function (v) { return v + '%'; } } },
+          x: { ticks: { maxRotation: 0, autoSkip: true } }
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12 } },
+          tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + c.parsed.y + '%'; } } },
+          forecastGuides: { forecast: f }
+        }
+      },
+      plugins: [forecastGuides]
+    });
+  }
+
+  async function loadForecast(routeNo) {
+    const req = ++forecastReqNo;
+    forecastSummaryEl.textContent = '예측을 불러오는 중...';
+    clearForecastChart();
+    try {
+      const res = await fetch(ROUTE_API + '/' + encodeURIComponent(routeNo) + '/forecast'
+        + (testHour !== null ? '?hour=' + testHour : ''));
+      if (!res.ok) throw new Error('forecast ' + res.status);
+      const f = await res.json();
+      if (req !== forecastReqNo) return;          // 그사이 다른 노선으로 바뀌었으면 버림
+      renderForecast(f);
+    } catch (e) {
+      if (req !== forecastReqNo) return;
+      forecastSummaryEl.textContent = '예측을 불러오지 못했습니다. 잠시 후 다시 시도하세요.';
+    }
   }
 
   // ---------- 방향 컨트롤: 노선 목록 위의 토글(전체 기본값) / 방금 누른 노선 항목 안의 방향 칩 ----------
-  function renderDirControls(single) {
+  function renderDirControls() {
     dirOneBtn.classList.toggle('is-on', dirMode === 'one');
     dirBothBtn.classList.toggle('is-on', dirMode === 'both');
     renderRouteDetails();
+    updateFocusViews();
+  }
 
-    // 예측 영역: 노선 하나만 볼 때 그 노선 정보를 보여 줌 (예측 차트가 들어올 자리)
-    forecastRouteEl.hidden = !single;
-    forecastEmptyEl.hidden = !!single;
-    if (!single) return;
+  // 마지막으로 누른 노선을 따라가는 두 곳: 예측 영역(혼잡도 차트)과 오른쪽 패널(미처리 신고 수, AI)
+  // 노선을 누르는 모든 경로(목록, 지도의 선, 검색)에서 이 함수로 같이 바꿔서 서로 다른 노선을 보여 주지 않게 함
+  function updateFocusViews() {
+    const focus = focusedRoute();
+    forecastRouteEl.hidden = !focus;
+    forecastEmptyEl.hidden = !!focus;
+    updateSide();                     // 오른쪽 패널: 마지막으로 누른 노선의 미처리 신고 수 (전체 보기에서는 안내 문구만)
+    if (!focus) { forecastReqNo++; clearForecastChart(); forecastShown = null; return; }
 
-    const route = findRoute(single);
+    const route = findRoute(focus);
     forecastTitleEl.textContent = '';
     const dot = document.createElement('span');
     dot.className = 'dot grade-' + route.grade;
     forecastTitleEl.appendChild(dot);
     forecastTitleEl.appendChild(document.createTextNode(
       route.routeNo + '번 · ' + route.gradeLabel + ' · ' + route.label));
+    if (forecastShown !== focus) {                // 노선이 바뀔 때만 다시 받음 (방향 칩을 눌러 다시 그릴 때는 그대로 둠)
+      forecastShown = focus;
+      loadForecast(focus);
+    }
   }
 
   // 노선 목록의 항목 아래:
@@ -1004,6 +1338,7 @@
     selected.delete(routeNo);
     if (selected.size === 0) mode = 'all';
     if (openRoute === routeNo) openRoute = null;
+    if (focusRoute === routeNo) focusRoute = null;
     render();
   }
 
@@ -1020,6 +1355,7 @@
     selected = new Set();
     dirChoice = {};
     openRoute = null;
+    focusRoute = null;
     render();
     fitToVisible();
     hideMessage();
@@ -1039,6 +1375,8 @@
     if (mode === 'select' && selected.has(routeNo)) {
       if (!addOnly) { removeRoute(routeNo); return; }
       openRoute = routeNo;
+      focusRoute = routeNo;                       // 이미 표시 중인 노선을 다시 고르면 예측 영역과 오른쪽 패널도 그 노선으로
+      updateFocusViews();
       renderRouteDetails();
       items[routeNo].scrollIntoView({ block: 'nearest' });
       panToStartIfHidden(routeNo);                // 이미 표시 중인 노선을 다시 고르면(검색 엔터, 지도의 선) 찾아가서 보여 줌
@@ -1056,6 +1394,7 @@
       selected.add(routeNo);
     }
     openRoute = routeNo;
+    focusRoute = routeNo;
     render();
     panToStartIfHidden(routeNo);                  // 확대 수준은 유지 (자동 확대하지 않음)
     flashRoute(routeNo);
@@ -1078,8 +1417,14 @@
       const small = document.createElement('small');
       small.textContent = route.gradeLabel + ' · ' + route.label;
 
+      const badge = document.createElement('span');
+      badge.className = 'open-badge';
+      badge.hidden = true;                       // 신고 수를 받으면 renderOpenBadges 가 채움
+      badges[route.routeNo] = badge;
+
       btn.appendChild(dot);
       btn.appendChild(title);
+      btn.appendChild(badge);
       btn.appendChild(small);
       btn.addEventListener('click', function () { selectRoute(route.routeNo); });
 
@@ -1144,7 +1489,9 @@
     }
     renderList();
 
-    const results = await Promise.all(routes.map(loadRoute));   // 모든 노선의 선을 한꺼번에 받음
+    // 모든 노선의 선과 노선별 미처리 신고 수를 한꺼번에 받음 (신고 수를 못 받아도 지도는 그대로 뜸)
+    const [results] = await Promise.all([Promise.all(routes.map(loadRoute)), loadOpenCounts()]);
+    renderOpenBadges();
     showAll();
     const failed = routes.filter(function (r, i) { return !results[i]; });
     if (failed.length > 0) {
@@ -1177,7 +1524,7 @@
 
   kakao.maps.load(function () {
     map = new kakao.maps.Map(mapEl, {
-      center: new kakao.maps.LatLng(35.5384, 129.3114), // 울산 중심 부근 (위도, 경도 순서)
+      center: new kakao.maps.LatLng(CITY_HALL.lat, CITY_HALL.lng), // 울산광역시청 (위도, 경도 순서)
       level: 9                                          // 숫자가 작을수록 확대
     });
     map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
