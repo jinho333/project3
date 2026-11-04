@@ -33,6 +33,18 @@ MIN_KEY_LENGTH = 16                                   # 이보다 짧은 키는 
 ROUTE_NO_RE = re.compile(r"^[0-9A-Za-z\-]{1,10}$")
 NOTICE = "합성데이터 기반 통계적 경향 예측입니다(개별 값의 정밀 예측 아님)."
 DAY_LABELS = "월화수목금토일"
+HORIZON_WARN_DAYS = 28                                # 예측 가능한 마지막 날까지 이 일수 이하로 남으면 /health 에서 알린다(재학습할 시간을 두기 위해)
+
+
+def horizon_warning(horizon_end: date, today: date) -> str | None:
+    """예측 가능한 마지막 날(horizon_end)이 가까워졌거나 지났으면 안내 문구, 아니면 None. 날짜 비교만 하므로 today 를 직접 넣어 시험한다."""
+    left = (horizon_end - today).days
+    if left < 0:
+        return f"예측 가능 기간이 끝났습니다(마지막 날 {horizon_end}). 이 날짜 이후는 모든 노선이 예측되지 않으니 모델을 다시 학습해 저장해야 합니다."
+    if left <= HORIZON_WARN_DAYS:
+        when = "오늘이 마지막 날입니다" if left == 0 else f"{left}일 남았습니다"
+        return f"예측 가능 기간이 곧 끝납니다: {when}(마지막 날 {horizon_end}). 모델을 다시 학습해 저장해야 합니다."
+    return None
 
 
 class ModelHolder:
@@ -107,12 +119,13 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None) ->
     def health() -> dict:
         """상태 확인(키 없이 로컬에서). status: ok(예측 모델 사용 가능) / no_model(없음)."""
         bundle = models.get()
+        expiry = None if bundle is None else horizon_warning(bundle.horizon_end(), date.today())
         return {"status": "ok" if bundle is not None else "no_model",
                 "modelLoaded": bundle is not None,
                 "model": None if bundle is None else {"name": bundle.model_name, "version": bundle.model_version,
                                                       "scope": bundle.scope, "trainedEnd": bundle.trained_end.isoformat()},
                 "lastError": models.last_error,
-                "warnings": [f"예측 모델 {w}" for w in models.warnings]}
+                "warnings": [f"예측 모델 {w}" for w in models.warnings] + ([expiry] if expiry else [])}
 
     @app.get("/predict", dependencies=[Depends(require_key)], response_model=PredictResponse)
     def predict(route_no: Annotated[str, Query(alias="routeNo", description="노선번호 (예: 106)")],
