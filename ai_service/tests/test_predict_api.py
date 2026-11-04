@@ -92,6 +92,29 @@ def test_health_works_without_key(client):
     assert r.json()["modelLoaded"] is True
 
 
+def test_horizon_warning_by_days_left():
+    end = date(2026, 12, 3)
+    assert predict_api.horizon_warning(end, date(2026, 11, 4)) is None                         # 29일 남음: 아직 조용
+    assert "28일 남았습니다" in predict_api.horizon_warning(end, date(2026, 11, 5))            # 경계: 28일
+    assert "오늘이 마지막 날" in predict_api.horizon_warning(end, end)
+    assert "끝났습니다" in predict_api.horizon_warning(end, date(2026, 12, 4))
+
+
+def test_health_adds_horizon_warning_only_when_close(client, bundle, monkeypatch):
+    class FakeDate(date):
+        today_value = bundle.horizon_end() - timedelta(days=3)
+
+        @classmethod
+        def today(cls):
+            return cls.today_value
+
+    monkeypatch.setattr(predict_api, "date", FakeDate)
+    warnings = client.get("/health").json()["warnings"]
+    assert any("3일 남았습니다" in w for w in warnings)
+    FakeDate.today_value = bundle.horizon_end() - timedelta(days=100)
+    assert not any("예측 가능 기간" in w for w in client.get("/health").json()["warnings"])
+
+
 def test_no_model_gives_503_and_health_says_so(tmp_path):
     app = predict_api.create_app(holder=predict_api.ModelHolder(tmp_path, "ALL"), api_key=KEY)
     with TestClient(app, client=("127.0.0.1", 50000)) as c:
