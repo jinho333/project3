@@ -117,7 +117,8 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None) ->
     @app.get("/predict", dependencies=[Depends(require_key)], response_model=PredictResponse)
     def predict(route_no: Annotated[str, Query(alias="routeNo", description="노선번호 (예: 106)")],
                 from_: Annotated[date, Query(alias="from", description="시작 날짜 YYYY-MM-DD")],
-                to: Annotated[date | None, Query(description="끝 날짜(생략하면 시작 날짜 하루)")] = None) -> dict:
+                to: Annotated[date | None, Query(description="끝 날짜(생략하면 시작 날짜 하루)")] = None,
+                clamp: Annotated[bool, Query(description="true 면 끝 날짜가 예측 가능한 마지막 날을 넘을 때 그 날까지만 돌려준다(시작 날짜가 범위 밖이면 그대로 422)")] = False) -> dict:
         if not ROUTE_NO_RE.match(route_no):
             raise HTTPException(422, "노선번호 형식이 올바르지 않습니다.")
         end = to or from_
@@ -128,6 +129,9 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None) ->
         bundle = models.get()
         if bundle is None:
             raise HTTPException(503, "저장된 모델이 없습니다. python -m app.model ... --save-model 로 모델을 저장하세요.")
+        last_day = bundle.horizon_end()
+        if clamp and from_ <= last_day < end:             # 오늘부터 N일 같은 창이 마지막 날을 걸칠 때, 앞쪽 유효한 날짜는 살린다
+            end = last_day
         days = [from_ + timedelta(days=i) for i in range((end - from_).days + 1)]
         try:
             out = bundle.predict([route_no], days)

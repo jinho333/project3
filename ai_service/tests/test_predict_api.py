@@ -71,6 +71,20 @@ def test_range_over_31_days_is_rejected(client, bundle):
     assert r.status_code == 422
 
 
+def test_clamp_keeps_the_valid_days_when_the_window_passes_the_last_predictable_day(client, bundle):
+    h = {"X-API-Key": KEY}
+    last = bundle.horizon_end()
+    params = {"routeNo": bundle.routes[0], "from": (last - timedelta(days=2)).isoformat(), "to": (last + timedelta(days=10)).isoformat()}
+    assert client.get("/predict", params=params, headers=h).status_code == 422                 # 기본은 예전처럼 거절
+    r = client.get("/predict", params={**params, "clamp": "true"}, headers=h)
+    assert r.status_code == 200
+    assert [p["date"] for p in r.json()["predictions"]][-1] == last.isoformat()
+    assert len(r.json()["predictions"]) == 3
+    # 시작 날짜 자체가 범위 밖이면 clamp 해도 거절
+    out = {**params, "from": (last + timedelta(days=1)).isoformat(), "clamp": "true"}
+    assert client.get("/predict", params=out, headers=h).status_code == 422
+
+
 def test_health_works_without_key(client):
     r = client.get("/health")
     assert r.status_code == 200

@@ -57,7 +57,8 @@ class RidershipForecastServiceTest {
         assertEquals(2, r.days().size());
         assertEquals(1234, r.days().get(0).predicted());
         assertEquals("secret-key-secret-key", lastApiKey);
-        assertTrue(lastQuery.contains("routeNo=134") && lastQuery.contains("from=2026-11-04") && lastQuery.contains("to=2026-11-17"), lastQuery);
+        assertTrue(lastQuery.contains("routeNo=134") && lastQuery.contains("from=2026-11-04") && lastQuery.contains("to=2026-11-17")
+            && lastQuery.contains("clamp=true"), lastQuery);
     }
 
     @Test

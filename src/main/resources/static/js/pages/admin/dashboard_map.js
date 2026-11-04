@@ -1261,12 +1261,14 @@
   // status 가 OK 가 아니면(서버 꺼짐, 모델이 모르는 노선, 예측 가능 기간 밖) 차트 대신 message 를 보여 줌
   let ridershipChart = null;
   let ridershipReqNo = 0;         // 응답이 늦게 와도 지금 노선의 것만 그리도록 요청마다 번호를 매김
+  let ridershipState = 'idle';    // idle(아직 안 받음) / loading / ok / failed (failed 일 때만 같은 노선을 다시 눌러 재시도)
 
   function clearRidershipChart() {
     if (ridershipChart) { ridershipChart.destroy(); ridershipChart = null; }
   }
 
   function showRidershipMessage(text) {
+    ridershipState = 'failed';
     clearRidershipChart();
     ridershipChartBoxEl.hidden = true;
     ridershipNoticeEl.textContent = '';
@@ -1279,6 +1281,7 @@
       showRidershipMessage(r.message || '이용자 수 예측을 표시할 수 없습니다.');
       return;
     }
+    ridershipState = 'ok';
     ridershipSummaryEl.classList.remove('is-error');
     const total = r.days.reduce(function (sum, d) { return sum + d.predicted; }, 0);
     ridershipSummaryEl.textContent = r.days[0].date + ' ~ ' + r.days[r.days.length - 1].date
@@ -1315,6 +1318,7 @@
 
   async function loadRidership(routeNo) {
     const req = ++ridershipReqNo;
+    ridershipState = 'loading';
     clearRidershipChart();
     ridershipChartBoxEl.hidden = true;
     ridershipNoticeEl.textContent = '';
@@ -1347,7 +1351,7 @@
     forecastRouteEl.hidden = !focus;
     forecastEmptyEl.hidden = !!focus;
     updateSide();                     // 오른쪽 패널: 마지막으로 누른 노선의 미처리 신고 수 (전체 보기에서는 안내 문구만)
-    if (!focus) { forecastReqNo++; clearForecastChart(); ridershipReqNo++; clearRidershipChart(); forecastShown = null; return; }
+    if (!focus) { forecastReqNo++; clearForecastChart(); ridershipReqNo++; clearRidershipChart(); ridershipState = 'idle'; forecastShown = null; return; }
 
     const route = findRoute(focus);
     forecastTitleEl.textContent = '';
@@ -1360,6 +1364,8 @@
       forecastShown = focus;
       loadForecast(focus);
       loadRidership(focus);
+    } else if (ridershipState === 'failed') {
+      loadRidership(focus);                       // 예측 서버 오류 등으로 실패한 뒤 같은 노선을 다시 누르면 다시 시도
     }
   }
 

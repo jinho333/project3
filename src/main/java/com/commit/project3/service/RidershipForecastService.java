@@ -70,7 +70,9 @@ public class RidershipForecastService {
         try {
             JsonNode body = client.get()
                 .uri(b -> b.path("/predict").queryParam("routeNo", routeNo)
-                    .queryParam("from", from.toString()).queryParam("to", to.toString()).build())
+                    .queryParam("from", from.toString()).queryParam("to", to.toString())
+                    .queryParam("clamp", "true")           // 14일 창이 예측 가능한 마지막 날을 걸쳐도 앞쪽 날짜는 받음
+                    .build())
                 .header("X-API-Key", apiKey)            // 키는 주소가 아니라 헤더로 보냄
                 .retrieve()
                 .body(JsonNode.class);
