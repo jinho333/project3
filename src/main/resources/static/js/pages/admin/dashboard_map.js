@@ -37,6 +37,11 @@
   const forecastEmptyEl = document.querySelector('#forecastEmpty');
   const forecastSummaryEl = document.querySelector('#forecastSummary');
   const forecastCanvasEl = document.querySelector('#forecastChart');
+  // 일별 이용자 수 예측 (예측 서버 결과)
+  const ridershipSummaryEl = document.querySelector('#ridershipSummary');
+  const ridershipChartBoxEl = document.querySelector('#ridershipChartBox');
+  const ridershipCanvasEl = document.querySelector('#ridershipChart');
+  const ridershipNoticeEl = document.querySelector('#ridershipNotice');
   // 오른쪽 패널: 노선 하나를 선택하면 그 노선의 미처리 신고 수 (접수 / 처리중)
   const sideEmptyEl = document.querySelector('#sideEmpty');
   const sideRouteEl = document.querySelector('#sideRoute');
@@ -1251,6 +1256,82 @@
     }
   }
 
+  // ---------- 일별 이용자 수 예측 (예측 영역 아래) ----------
+  // /admin/api/routes/{노선번호}/ridership: 예측 서버(ai_service)가 만든 오늘부터 14일의 하루 이용자 수(명)
+  // status 가 OK 가 아니면(서버 꺼짐, 모델이 모르는 노선, 예측 가능 기간 밖) 차트 대신 message 를 보여 줌
+  let ridershipChart = null;
+  let ridershipReqNo = 0;         // 응답이 늦게 와도 지금 노선의 것만 그리도록 요청마다 번호를 매김
+
+  function clearRidershipChart() {
+    if (ridershipChart) { ridershipChart.destroy(); ridershipChart = null; }
+  }
+
+  function showRidershipMessage(text) {
+    clearRidershipChart();
+    ridershipChartBoxEl.hidden = true;
+    ridershipNoticeEl.textContent = '';
+    ridershipSummaryEl.textContent = text;
+    ridershipSummaryEl.classList.add('is-error');
+  }
+
+  function renderRidership(r) {
+    if (r.status !== 'OK' || !r.days.length) {
+      showRidershipMessage(r.message || '이용자 수 예측을 표시할 수 없습니다.');
+      return;
+    }
+    ridershipSummaryEl.classList.remove('is-error');
+    const total = r.days.reduce(function (sum, d) { return sum + d.predicted; }, 0);
+    ridershipSummaryEl.textContent = r.days[0].date + ' ~ ' + r.days[r.days.length - 1].date
+      + ' 하루 평균 약 ' + Math.round(total / r.days.length).toLocaleString() + '명';
+    ridershipNoticeEl.textContent = r.notice + ' (모델 학습 ' + r.trainedEnd + '까지)';
+
+    clearRidershipChart();
+    if (typeof Chart === 'undefined') {
+      ridershipChartBoxEl.hidden = true;
+      ridershipSummaryEl.appendChild(document.createTextNode(' (차트를 불러오지 못했습니다)'));
+      return;
+    }
+    ridershipChartBoxEl.hidden = false;
+    ridershipChart = new Chart(ridershipCanvasEl, {
+      type: 'bar',
+      data: {
+        labels: r.days.map(function (d) { return d.date.slice(5) + '(' + d.dayOfWeek + ')'; }),
+        datasets: [{ label: '예상 이용자 수', data: r.days.map(function (d) { return d.predicted; }),
+          backgroundColor: '#5b8def' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return v.toLocaleString(); } } },
+                  x: { ticks: { maxRotation: 60, autoSkip: false, font: { size: 10 } } } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (c) { return c.parsed.y.toLocaleString() + '명'; } } }
+        }
+      }
+    });
+  }
+
+  async function loadRidership(routeNo) {
+    const req = ++ridershipReqNo;
+    clearRidershipChart();
+    ridershipChartBoxEl.hidden = true;
+    ridershipNoticeEl.textContent = '';
+    ridershipSummaryEl.classList.remove('is-error');
+    ridershipSummaryEl.textContent = '이용자 수 예측을 불러오는 중...';
+    try {
+      const res = await fetch(ROUTE_API + '/' + encodeURIComponent(routeNo) + '/ridership');
+      if (!res.ok) throw new Error('ridership ' + res.status);
+      const r = await res.json();
+      if (req !== ridershipReqNo) return;         // 그사이 다른 노선으로 바뀌었으면 버림
+      renderRidership(r);
+    } catch (e) {
+      if (req !== ridershipReqNo) return;
+      showRidershipMessage('이용자 수 예측을 불러오지 못했습니다. 잠시 후 다시 시도하세요.');
+    }
+  }
+
   // ---------- 방향 컨트롤: 노선 목록 위의 토글(전체 기본값) / 방금 누른 노선 항목 안의 방향 칩 ----------
   function renderDirControls() {
     dirOneBtn.classList.toggle('is-on', dirMode === 'one');
@@ -1266,7 +1347,7 @@
     forecastRouteEl.hidden = !focus;
     forecastEmptyEl.hidden = !!focus;
     updateSide();                     // 오른쪽 패널: 마지막으로 누른 노선의 미처리 신고 수 (전체 보기에서는 안내 문구만)
-    if (!focus) { forecastReqNo++; clearForecastChart(); forecastShown = null; return; }
+    if (!focus) { forecastReqNo++; clearForecastChart(); ridershipReqNo++; clearRidershipChart(); forecastShown = null; return; }
 
     const route = findRoute(focus);
     forecastTitleEl.textContent = '';
@@ -1278,6 +1359,7 @@
     if (forecastShown !== focus) {                // 노선이 바뀔 때만 다시 받음 (방향 칩을 눌러 다시 그릴 때는 그대로 둠)
       forecastShown = focus;
       loadForecast(focus);
+      loadRidership(focus);
     }
   }
 
