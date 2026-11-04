@@ -1,0 +1,27 @@
+{
+  "model_name": "baseline_vac",
+  "label": "기준선: 같은 유형 평균 x 하계휴가 보정",
+  "scope": "ALL",
+  "model_version": "cmp-v4",
+  "trained_start": "2024-12-21",
+  "trained_end": "2026-10-08",
+  "trained_rows": 108432,
+  "route_count": 194,
+  "champion_basis": "CV",
+  "holdout_wape": 0.10849562178263565,
+  "created_at": "2026-11-03T09:19:29",
+  "format_version": 1,
+  "predict_until": "2026-12-03",
+  "library_versions": {
+    "python": "3.14.7",
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "joblib": "1.6.0"
+  },
+  "file": "ALL.joblib",
+  "sha256": "a36e8eed9b81b0dbc0bf056a7c4c1bb5d496e67a8bba0db8dfa04a4b1929a57c",
+  "size_bytes": 8621
+}

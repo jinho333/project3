@@ -1,0 +1,13 @@
+# 예측 서버를 실행하는 데 필요한 것만 (수집·학습용 라이브러리는 만든 사람의 로컬에서 관리)
+# 모델 파일(models/ALL.joblib)을 만든 환경과 같은 버전을 쓴다: Python 3.14.7, scikit-learn 1.9.1, pandas 3.0.5
+fastapi==0.150.0
+uvicorn==0.53.0
+httpx==0.28.1
+pandas==3.0.5
+python-dotenv==1.2.3
+sqlalchemy==2.1.5
+holidays==0.107
+scikit-learn==1.9.1
+xgboost==3.4.1
+lightgbm==4.7.0
+pytest==9.1.1
