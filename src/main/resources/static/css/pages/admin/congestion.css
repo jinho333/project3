@@ -95,6 +95,15 @@
 .forecast-summary .fs-alert.is-up { color: #E53935; }
 .forecast-summary .fs-alert.is-down { color: #1a5fd0; }
 .forecast-chart { position: relative; height: 180px; margin-top: 8px; }
+
+/* 일별 이용자 수 예측 (예측 서버 결과) */
+.ridership-box { margin-top: 16px; padding-top: 12px; border-top: 1px dashed #ccc; }
+.ridership-title { font-weight: bold; }
+.ridership-summary { margin-top: 6px; font-size: 14px; }
+.ridership-summary.is-error { color: #b26a00; }   /* 서버 장애·범위 밖 같은 안내는 주황 톤 */
+.ridership-chart { position: relative; height: 180px; margin-top: 8px; }
+.ridership-chart[hidden] { display: none; }
+.ridership-notice { margin-top: 4px; font-size: 12px; color: #888; }
 .dir-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
 
 /* 노선 목록 항목 아래: 지금 보는 방향 한 줄(작게) / 방금 누른 노선의 펼친 방향 선택 */

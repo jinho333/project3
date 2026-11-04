@@ -57,6 +57,14 @@
           <p id="forecastSummary" class="forecast-summary"></p>
           <!-- 시간대별 평소 평균 혼잡도 곡선 + 1시간 뒤 예측 점 (Chart.js) -->
           <div class="forecast-chart"><canvas id="forecastChart"></canvas></div>
+
+          <!-- 일별 이용자 수 예측: 예측 서버(ai_service)의 결과, 오늘부터 14일 (Chart.js) -->
+          <div class="ridership-box">
+            <p class="ridership-title">일별 이용자 수 예측 (오늘부터 14일)</p>
+            <p id="ridershipSummary" class="ridership-summary"></p>
+            <div id="ridershipChartBox" class="ridership-chart"><canvas id="ridershipChart"></canvas></div>
+            <p id="ridershipNotice" class="ridership-notice"></p>
+          </div>
         </div>
         <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
       </section>

@@ -38,3 +38,8 @@ out/
 
 ### Spring Boot Configuration ###
 **/src/main/resources/application.yaml
+
+### ai_service (예측 서버) ###
+ai_service/.env
+ai_service/.pytest_cache/
+__pycache__/
