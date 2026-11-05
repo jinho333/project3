@@ -65,6 +65,15 @@
             <div id="ridershipChartBox" class="ridership-chart"><canvas id="ridershipChart"></canvas></div>
             <p id="ridershipNotice" class="ridership-notice"></p>
           </div>
+
+          <!-- 시간대별 예상 승차 인원: 예측 서버의 일별 예측 x 시각 비율, 오늘부터 7일 중 하루 선택 (hourly_ridership.js 가 채움) -->
+          <div id="hourlyBox" class="ridership-box">
+            <p class="ridership-title">시간대별 예상 승차 인원 (오늘부터 7일)</p>
+            <div id="hourlyDates" class="hourly-dates" role="group" aria-label="날짜 선택"></div>
+            <p id="hourlySummary" class="ridership-summary" aria-live="polite"></p>
+            <div id="hourlyChartBox" class="ridership-chart" hidden><canvas id="hourlyChart"></canvas></div>
+            <p id="hourlyNotice" class="ridership-notice"></p>
+          </div>
         </div>
         <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
       </section>
@@ -111,6 +120,7 @@
   <script th:if="${kakaoJsKey != null and !kakaoJsKey.isBlank()}"
     th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false|"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/js/pages/admin/hourly_ridership.js"></script>
   <script src="/js/pages/admin/dashboard_map.js"></script>
 </th:block>
 
