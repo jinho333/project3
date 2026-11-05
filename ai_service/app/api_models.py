@@ -32,6 +32,26 @@ class PredictResponse(BaseModel):
     notice: str
 
 
+class HourPrediction(BaseModel):
+    hour: int                       # 0~23 (해당 시각의 한 시간 동안)
+    predicted: int                  # 예상 승차 인원(명)
+
+
+class HourlyResponse(BaseModel):
+    """시간대별 예상 승차 인원 = 그날 일별 예측값 x 시각 비율. 시각별 값은 반올림해서 합이 dailyPredicted 와 1~2명 다를 수 있다."""
+    routeNo: str
+    date: str
+    dayOfWeek: str
+    dailyPredicted: int
+    hours: list[HourPrediction]
+    shareBasis: Literal["route", "blend", "global"]   # 비율의 근거: 노선 자체 / 전체 평균을 섞음 / 전체 평균(이 노선 자료 없음)
+    shareDayKind: int                                 # 비율에 쓴 날 유형(0 평일 1 토 2 일·공휴일 3 명절). 요청 날의 유형 자료가 없으면 가까운 유형
+    limited: bool                                     # true 면 비율 근거가 약함: 다른 날 유형 비율로 대신했거나 그 유형의 날짜가 3일 미만
+    provisional: bool                                 # true 면 임시 비율표(자료가 적음)
+    model: PredictModelInfo
+    notice: str
+
+
 class PredictorHealth(BaseModel):
     name: str
     version: str

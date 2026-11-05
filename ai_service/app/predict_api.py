@@ -22,8 +22,10 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 
 from app import artifact
-from app.api_models import HealthResponse, PredictResponse
+from app.api_models import HealthResponse, HourlyResponse, PredictResponse
 from app.config import settings
+from app.features import calendar_features
+from app.hourly import HourlyHolder
 from app.localonly import local_only
 
 log = logging.getLogger("predict_api")
@@ -96,9 +98,10 @@ class ModelHolder:
             return self._bundle
 
 
-def create_app(holder: ModelHolder | None = None, api_key: str | None = None) -> FastAPI:
+def create_app(holder: ModelHolder | None = None, api_key: str | None = None, hourly: HourlyHolder | None = None) -> FastAPI:
     key = settings.predict_api_key if api_key is None else api_key
     models = holder or ModelHolder(settings.model_dir, settings.model_scope)
+    hourly_shares = hourly or HourlyHolder(models.directory, models.scope)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -159,6 +162,38 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None) ->
                       "championBasis": bundle.champion_basis, "partial": bundle.scope != "ALL"},
             "predictions": [{"date": r.basic_day.isoformat(), "dayOfWeek": DAY_LABELS[r.basic_day.weekday()],
                              "predicted": int(round(r.predicted))} for r in out.itertuples()],
+            "notice": NOTICE,
+        }
+
+    @app.get("/predict/hourly", dependencies=[Depends(require_key)], response_model=HourlyResponse)
+    def predict_hourly(route_no: Annotated[str, Query(alias="routeNo", description="노선번호 (예: 106)")],
+                       day: Annotated[date, Query(alias="date", description="날짜 YYYY-MM-DD (하루)")]) -> dict:
+        """그날의 일별 예측값에 (노선, 날 유형, 시각) 비율을 곱해 시간대별 예상 승차 인원을 돌려준다."""
+        if not ROUTE_NO_RE.match(route_no):
+            raise HTTPException(422, "노선번호 형식이 올바르지 않습니다.")
+        bundle = models.get()
+        if bundle is None:
+            raise HTTPException(503, "저장된 모델이 없습니다. python -m app.model ... --save-model 로 모델을 저장하세요.")
+        table = hourly_shares.get()
+        if table is None:
+            raise HTTPException(503, "시간대 비율표가 없습니다(models/ALL_hourly.json). 일별 예측(/predict)은 계속 쓸 수 있습니다.")
+        try:
+            daily = bundle.predict([route_no], [day])
+        except artifact.UnknownRouteError as e:
+            raise HTTPException(404, str(e))
+        except artifact.PredictInputError as e:
+            raise HTTPException(422, str(e))
+        total = max(0.0, float(daily["predicted"].iloc[0]))
+        kind = int(calendar_features(day, day)["day_kind"].iloc[0])
+        shares, basis, used_kind, limited = table.shares(route_no, kind)
+        return {
+            "routeNo": route_no, "date": day.isoformat(), "dayOfWeek": DAY_LABELS[day.weekday()],
+            "dailyPredicted": int(round(total)),
+            "hours": [{"hour": h, "predicted": int(round(total * s))} for h, s in enumerate(shares)],
+            "shareBasis": basis, "shareDayKind": used_kind, "limited": limited, "provisional": table.provisional,
+            "model": {"name": bundle.model_name, "label": bundle.label, "version": bundle.model_version, "scope": bundle.scope,
+                      "trainedEnd": bundle.trained_end.isoformat(), "predictUntil": bundle.horizon_end().isoformat(),
+                      "championBasis": bundle.champion_basis, "partial": bundle.scope != "ALL"},
             "notice": NOTICE,
         }
 
