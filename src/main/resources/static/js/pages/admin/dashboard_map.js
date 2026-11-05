@@ -1351,7 +1351,7 @@
     forecastRouteEl.hidden = !focus;
     forecastEmptyEl.hidden = !!focus;
     updateSide();                     // 오른쪽 패널: 마지막으로 누른 노선의 미처리 신고 수 (전체 보기에서는 안내 문구만)
-    if (!focus) { forecastReqNo++; clearForecastChart(); ridershipReqNo++; clearRidershipChart(); ridershipState = 'idle'; forecastShown = null; return; }
+    if (!focus) { forecastReqNo++; clearForecastChart(); ridershipReqNo++; clearRidershipChart(); ridershipState = 'idle'; if (window.HourlyRidership) window.HourlyRidership.clear(); forecastShown = null; return; }
 
     const route = findRoute(focus);
     forecastTitleEl.textContent = '';
@@ -1364,9 +1364,11 @@
       forecastShown = focus;
       loadForecast(focus);
       loadRidership(focus);
+      if (window.HourlyRidership) window.HourlyRidership.load(focus);   // 시간대별 예상 승차 인원 (hourly_ridership.js, 못 불러와도 다른 영역은 그대로)
     } else if (ridershipState === 'failed') {
       loadRidership(focus);                       // 예측 서버 오류 등으로 실패한 뒤 같은 노선을 다시 누르면 다시 시도
     }
+    if (window.HourlyRidership) window.HourlyRidership.retryIfFailed(focus);  // 시간대별 쪽도 실패한 뒤 같은 노선을 다시 누르면 다시 시도
   }
 
   // 노선 목록의 항목 아래:
