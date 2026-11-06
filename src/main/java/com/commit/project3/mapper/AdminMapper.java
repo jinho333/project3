@@ -19,6 +19,12 @@ public interface AdminMapper {
     // 검색 조건에 맞는 전체 개수
     int selectAdminReportCount(SearchDTO searchDTO);
 
+    // 우선순위 계산용: 아직 끝나지 않은(접수 + 처리중) 모든 신고 (페이징 없음)
+    List<ReportDTO> selectOpenReportAll();
+
+    // 최근 4주 노선·유형별 신고 수 (LABEL = "노선번호|유형번호"): 반복 신고인지 판단하는 데 씀
+    List<StatDTO> selectRecentRouteTypeCount();
+
     // 신고 상세: 회원 제한 없이 번호만으로 조회 (없으면 null)
     ReportDTO getAdminReportDetail(int reportNo);
 

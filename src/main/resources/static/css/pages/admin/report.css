@@ -40,7 +40,16 @@
 .process-row textarea { flex: 1; height: 160px; }
 .answer-date { margin-left: 100px; color: var(--ink-3); font-size: var(--fs-sub); }
 .process-btns { display: flex; align-items: center; gap: 8px; margin-top: 16px; margin-left: 100px; }
-.process-btns button { width: 120px; }
+.process-btns button { min-width: 120px; }
+
+/* 처리 우선순위 카드: 대기열 몇 번째인지와 근거 */
+.priority-card { margin-bottom: var(--gutter); padding: 14px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.priority-card p { margin: 0 0 6px; }
+.priority-card a { margin-left: 8px; color: var(--primary); }
+.priority-card.priority-urgent { background: var(--bad-bg); border-color: var(--bad); }
+.priority-parts { color: var(--ink-2); font-size: var(--fs-sub); }
+.reason-badge { display: inline-block; margin: 2px 6px 0 0; padding: 2px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); font-size: var(--fs-sub); }
+.reason-badge.reason-urgent { color: var(--bad); border-color: var(--bad); }
 .process-btns a { display: inline-flex; align-items: center; height: var(--control-h); padding: 0 14px; color: var(--ink-2); }
 .process-btns a:hover { color: var(--primary); }
 
@@ -58,3 +67,12 @@
   .answer-date,
   .process-btns { margin-left: 0; }
 }
+
+/* 신고 관리 목록의 처리 우선순위 표시 */
+.priority-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.priority-formula { color: var(--ink-3); font-size: var(--fs-sub); }
+.rank-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--primary-weak); color: var(--primary-dark); font-weight: 700; }
+.tag-urgent { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--bad-bg); color: var(--bad); font-size: var(--fs-sub); font-weight: 700; }
+.score-text { color: var(--ink-3); font-size: var(--fs-sub); }
+.priority-cell { white-space: nowrap; }
+.row-urgent td { background: var(--bad-bg); }

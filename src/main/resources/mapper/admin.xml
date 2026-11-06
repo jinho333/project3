@@ -80,6 +80,15 @@
       <when test='sort == "old"'>
         ORDER BY R.REPORT_NO ASC
       </when>
+      <!-- 우선순위순: 미처리 신고는 서버가 계산한 처리 순서대로 먼저, 나머지(완료 등)는 최신순 -->
+      <when test='sort == "priority" and priorityNoList != null and !priorityNoList.isEmpty()'>
+        ORDER BY CASE WHEN R.REPORT_NO IN
+                   <foreach collection="priorityNoList" item="no" open="(" separator="," close=")">#{no}</foreach>
+                 THEN 0 ELSE 1 END,
+                 FIELD(R.REPORT_NO,
+                   <foreach collection="priorityNoList" item="no" separator=",">#{no}</foreach>),
+                 R.REPORT_NO DESC
+      </when>
       <otherwise>
         ORDER BY R.REPORT_NO DESC
       </otherwise>
@@ -91,6 +100,26 @@
     SELECT COUNT(*)
     FROM REPORT R
     <include refid="adminSearchWhere"/>
+  </select>
+
+  <!-- 우선순위 계산용: 미처리(접수 + 처리중) 신고 전부. 정렬은 서비스에서 점수로 하므로 번호순만 맞춰 둠 -->
+  <select id="selectOpenReportAll" resultMap="adminReport">
+    SELECT R.REPORT_NO, R.MEMBER_NO, R.REPORTER_NAME, R.TYPE_NO, R.ROUTE_NO,
+           R.CONTENT, R.STATUS, R.REG_DATE, G.GROUP_NAME, T.TYPE_NAME,
+           <include refid="statusName"/>
+    FROM REPORT R
+    INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
+    INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO
+    WHERE R.STATUS IN ('RECEIVED', 'PROCESSING')
+    ORDER BY R.REPORT_NO
+  </select>
+
+  <!-- 최근 4주 같은 노선·같은 유형 신고 수 (완료된 신고 포함) -->
+  <select id="selectRecentRouteTypeCount" resultMap="stat">
+    SELECT CONCAT(ROUTE_NO, '|', TYPE_NO) AS LABEL, COUNT(*) AS CNT
+    FROM REPORT
+    WHERE REG_DATE &gt;= DATE_SUB(NOW(), INTERVAL 28 DAY)
+    GROUP BY ROUTE_NO, TYPE_NO
   </select>
 
   <select id="getAdminReportDetail" resultMap="adminReport">

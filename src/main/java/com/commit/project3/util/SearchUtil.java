@@ -19,7 +19,7 @@ public class SearchUtil {
         if (!SIZE_LIST.contains(searchDTO.getDisplayDataCnt())) {
             searchDTO.setDisplayDataCnt(10);
         }
-        if (!"old".equals(searchDTO.getSort())) {
+        if (!"old".equals(searchDTO.getSort()) && !"priority".equals(searchDTO.getSort())) {
             searchDTO.setSort("new");
         }
         searchDTO.setKeyword(cleanText(searchDTO.getKeyword(), 50));

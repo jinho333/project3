@@ -4,6 +4,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 import org.springframework.stereotype.Service;
 
@@ -80,6 +81,23 @@ public class RouteForecastService {
 
     public Optional<Forecast> find(String routeNo) {
         return find(routeNo, LocalTime.now().getHour());
+    }
+
+    // 지금(nowHour)부터 hours 시간 동안의 예측 혼잡도(%) 평균: 신고 처리 우선순위의 이용자규모에 씀
+    // 운행 시간 안의 시간대만 평균내고, 운행이 끝났거나 시작 전이면 다음 운행 시작(OPEN_HOUR)부터 hours 시간을 봄
+    // 노선 목록에 없는 노선이면 비어 있는 값 (예측이 없다는 뜻)
+    public OptionalDouble averageAhead(String routeNo, int nowHour, int hours) {
+        String grade = findListGrade(routeNo);
+        if (grade == null) {
+            return OptionalDouble.empty();
+        }
+        int start = (nowHour < OPEN_HOUR || nowHour >= CLOSE_HOUR) ? OPEN_HOUR : nowHour;
+        int end = Math.min(start + hours, CLOSE_HOUR);
+        double sum = 0;
+        for (int h = start; h < end; h++) {
+            sum += tempForecast(routeNo, h, tempBaseline(grade, h));
+        }
+        return OptionalDouble.of(sum / (end - start));
     }
 
     public static String gradeOf(double congestion) {
