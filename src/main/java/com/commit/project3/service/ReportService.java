@@ -44,7 +44,7 @@ public class ReportService {
         return reportMapper.selectTypeGroupList();
     }
 
-    // 메인 화면용: 신고가 많은 유형 TOP 5
+    // 메인 화면용: 신고가 많은 유형 TOP 5 (한 사람이 반복 신고로 순위를 부풀리지 못하게 주 단위로 중복 제외)
     public List<TypeRankDTO> getTopTypeList() {
         return reportMapper.selectTopTypeList(5);
     }
