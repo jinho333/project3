@@ -14,6 +14,19 @@
   <p class="info-msg" th:if="${param.saved != null}">처리 내용이 저장되었습니다.</p>
   <p class="warn-msg" th:if="${errorMsg != null}" th:text="${errorMsg}"></p>
 
+  <!-- 처리 우선순위: 미처리 신고일 때만, 몇 번째로 처리할 신고이고 왜 그런지 보여줌 -->
+  <div class="priority-card" th:if="${priority != null}" th:classappend="${priority.urgent} ? 'priority-urgent'">
+    <p>
+      <strong th:text="|처리 우선순위 ${priority.rank}번째|"></strong>
+      <span th:text="|점수 ${#numbers.formatDecimal(priority.score, 1, 1)}|"></span>
+      <a href="/admin/report/list">목록 보기</a>
+    </p>
+    <p class="priority-parts"
+      th:text="|심각도 ${#numbers.formatDecimal(priority.severityScore, 1, 0)} · 이용자규모 ${priority.scaleScore == null ? '예측 없음' : #numbers.formatDecimal(priority.scaleScore, 1, 1)} · 방치 ${#numbers.formatDecimal(priority.waitScore, 1, 1)} · 누적 ${#numbers.formatDecimal(priority.repeatScore, 1, 1)}|"></p>
+    <span class="reason-badge" th:each="reason : ${priority.reasonList}"
+      th:classappend="${reason == '안전 관련 긴급' or reason == '장기 방치 승격'} ? 'reason-urgent'" th:text="${reason}"></span>
+  </div>
+
   <table class="admin-table detail-table">
     <tr>
       <th>신고번호</th>
@@ -72,6 +85,8 @@
       th:text="|마지막 답변일 ${#temporals.format(report.answerDate, 'yyyy-MM-dd HH:mm')}|"></p>
     <div class="process-btns">
       <button type="submit" class="btn-primary">저장</button>
+      <!-- 미처리 신고일 때만: 저장하고 대기열의 다음 신고로 바로 이동 -->
+      <button type="submit" name="next" value="true" th:if="${priority != null}">저장 후 다음 신고</button>
       <a href="/admin/report/list">목록으로</a>
     </div>
   </form>

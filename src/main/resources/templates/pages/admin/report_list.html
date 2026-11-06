@@ -42,6 +42,7 @@
     <input type="date" name="endDate" th:value="${searchDTO.endDate}">
 
     <select name="sort">
+      <option value="priority" th:selected="${searchDTO.sort == 'priority'}">우선순위순</option>
       <option value="new" th:selected="${searchDTO.sort == 'new'}">최신순</option>
       <option value="old" th:selected="${searchDTO.sort == 'old'}">오래된순</option>
     </select>
@@ -59,10 +60,17 @@
   </form>
 
   <p class="total-cnt" th:text="|전체 ${pageDTO.totalCnt}건|"></p>
+  <!-- 처리 우선순위: 미처리 신고를 어떤 순서로 처리하면 되는지 -->
+  <p class="priority-summary">
+    <strong th:text="|미처리 ${summary.openCnt}건|"></strong>
+    <span th:if="${summary.urgentCnt > 0}" class="tag-urgent" th:text="|긴급 ${summary.urgentCnt}건|"></span>
+    <span class="priority-formula" th:text="|우선순위 = ${formula} (안전 관련·14일 이상 방치는 맨 앞)|"></span>
+  </p>
 
   <table class="admin-table list-table">
     <thead>
       <tr>
+        <th>우선순위</th>
         <th>번호</th>
         <th>유형</th>
         <th>노선</th>
@@ -73,7 +81,17 @@
       </tr>
     </thead>
     <tbody>
-      <tr th:each="r : ${reportList}">
+      <tr th:each="r : ${reportList}" th:with="p=${priorityMap.get(r.reportNo)}"
+        th:classappend="${p != null and p.urgent} ? 'row-urgent'">
+        <td class="priority-cell">
+          <th:block th:if="${p != null}">
+            <span class="rank-chip" th:text="${p.rank}"
+              th:title="${#strings.listJoin(p.reasonList, ' · ')}"></span>
+            <span class="tag-urgent" th:if="${p.urgent}" th:text="${p.aged ? '장기 방치' : '긴급'}"></span>
+            <span class="score-text" th:text="|${#numbers.formatDecimal(p.score, 1, 1)}점|"></span>
+          </th:block>
+          <span th:if="${p == null}" class="score-text">-</span>
+        </td>
         <td th:text="${r.reportNo}"></td>
         <td th:text="${r.typeName}"></td>
         <td><a class="route-chip" th:href="@{/admin/report/list(routeNo=${r.routeNo})}" th:title="|${r.routeNo}번 노선 신고만 보기|"
@@ -87,7 +105,7 @@
         <td th:text="${#temporals.format(r.regDate, 'yyyy-MM-dd')}"></td>
       </tr>
       <tr th:if="${#lists.isEmpty(reportList)}">
-        <td colspan="7" class="empty-cell">조회된 신고가 없습니다.</td>
+        <td colspan="8" class="empty-cell">조회된 신고가 없습니다.</td>
       </tr>
     </tbody>
   </table>
