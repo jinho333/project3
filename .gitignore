@@ -43,3 +43,6 @@ out/
 ai_service/.env
 ai_service/.pytest_cache/
 __pycache__/
+
+### Impeccable (디자인 작업 도구 산출물: 스케치, 검토 스크린샷, 내부 설정) ###
+.impeccable/

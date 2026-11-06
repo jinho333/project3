@@ -8,6 +8,7 @@
 </th:block>
 
 <th:block layout:fragment="content">
+  <div class="page-narrow">
   <h2 class="admin-title">노선 관리</h2>
 
   <!-- 등록·수정·삭제 결과는 redirect 후 한 번만 보임 (flash) -->
@@ -19,49 +20,51 @@
     <h3>노선 등록</h3>
     <input type="text" name="routeNo" placeholder="노선번호 (예: 3600)" maxlength="20" required>
     <input type="text" name="routeName" class="name-input" placeholder="노선 이름 (예: 서울-수원)" maxlength="100" required>
-    <button type="submit">등록</button>
+    <button type="submit" class="btn-primary">등록</button>
   </form>
 
-  <!-- 노선 검색 -->
-  <form class="route-search-form" method="get" action="/admin/route">
-    <input type="text" name="keyword" placeholder="노선번호 또는 이름" th:value="${keyword}">
-    <button type="submit">검색</button>
-    <a class="reset-btn" href="/admin/route">초기화</a>
-  </form>
-
-  <p class="total-cnt" th:text="|전체 ${#lists.size(routeList)}건|"></p>
+  <!-- 목록 위 줄: 왼쪽은 전체 건수, 오른쪽은 그 목록을 거르는 검색 -->
+  <div class="list-head">
+    <p class="total-cnt" th:text="|전체 ${#lists.size(routeList)}건|"></p>
+    <form class="route-search-form" method="get" action="/admin/route">
+      <input type="text" name="keyword" placeholder="노선번호 또는 이름" th:value="${keyword}" aria-label="노선 검색">
+      <button type="submit" class="btn-primary">검색</button>
+      <a class="reset-btn" href="/admin/route">초기화</a>
+    </form>
+  </div>
 
   <!-- 노선번호는 신고와 연결돼 있어 바꿀 수 없고, 이름만 수정 가능 -->
-  <table class="admin-table">
+  <table class="admin-table list-table route-table">
     <thead>
       <tr>
         <th>노선번호</th>
-        <th>노선 이름</th>
-        <th>관리</th>
+        <th class="left">노선 이름 · 관리</th>
       </tr>
     </thead>
     <tbody>
       <tr th:each="route : ${routeList}">
-        <td th:text="${route.routeNo}"></td>
-        <td>
-          <form class="edit-form" method="post" action="/admin/route/edit">
-            <input type="hidden" name="routeNo" th:value="${route.routeNo}">
-            <input type="text" name="routeName" class="name-input" maxlength="100" th:value="${route.routeName}">
-            <button type="submit">이름 수정</button>
-          </form>
-        </td>
-        <td>
-          <form class="delete-form" method="post" action="/admin/route/delete">
-            <input type="hidden" name="routeNo" th:value="${route.routeNo}">
-            <button type="button" class="delete-btn" th:data-route-no="${route.routeNo}">삭제</button>
-          </form>
+        <td><span class="route-chip" th:text="${route.routeNo}"></span></td>
+        <!-- 이름 수정과 삭제를 한 칸에 나란히: 한 줄이 하나의 단위로 읽힘 -->
+        <td class="left">
+          <div class="route-actions">
+            <form class="edit-form" method="post" action="/admin/route/edit">
+              <input type="hidden" name="routeNo" th:value="${route.routeNo}">
+              <input type="text" name="routeName" class="name-input" maxlength="100" th:value="${route.routeName}">
+              <button type="submit">이름 수정</button>
+            </form>
+            <form class="delete-form" method="post" action="/admin/route/delete">
+              <input type="hidden" name="routeNo" th:value="${route.routeNo}">
+              <button type="button" class="delete-btn btn-danger" th:data-route-no="${route.routeNo}">삭제</button>
+            </form>
+          </div>
         </td>
       </tr>
       <tr th:if="${#lists.isEmpty(routeList)}">
-        <td colspan="3" class="empty-cell">등록된 노선이 없습니다.</td>
+        <td colspan="2" class="empty-cell">등록된 노선이 없습니다.</td>
       </tr>
     </tbody>
   </table>
+  </div>
 </th:block>
 
 <th:block layout:fragment="content_js">

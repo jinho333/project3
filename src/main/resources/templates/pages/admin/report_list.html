@@ -14,6 +14,7 @@
 
   <!-- 검색 조건: 선택한 값은 searchDTO로 다시 채움 -->
   <form class="search-form" action="/admin/report/list" method="get">
+    <div class="search-row">
     <select name="status">
       <option value="">처리상태 전체</option>
       <option value="RECEIVED" th:selected="${searchDTO.status == 'RECEIVED'}">접수</option>
@@ -33,7 +34,9 @@
       th:value="${searchDTO.routeNo}">
     <input type="text" name="keyword" class="keyword-filter" placeholder="내용·신고자 이름" maxlength="50"
       th:value="${searchDTO.keyword}">
+    </div>
 
+    <div class="search-row">
     <input type="date" name="startDate" th:value="${searchDTO.startDate}">
     <span>~</span>
     <input type="date" name="endDate" th:value="${searchDTO.endDate}">
@@ -48,19 +51,22 @@
       <option value="50" th:selected="${searchDTO.displayDataCnt == 50}">50개씩</option>
     </select>
 
-    <button type="submit">조회</button>
-    <a class="reset-btn" href="/admin/report/list">초기화</a>
+    <div class="search-actions">
+      <button type="submit" class="btn-primary">조회</button>
+      <a class="reset-btn" href="/admin/report/list">초기화</a>
+    </div>
+    </div>
   </form>
 
   <p class="total-cnt" th:text="|전체 ${pageDTO.totalCnt}건|"></p>
 
-  <table class="admin-table">
+  <table class="admin-table list-table">
     <thead>
       <tr>
         <th>번호</th>
         <th>유형</th>
         <th>노선</th>
-        <th>내용</th>
+        <th class="left">내용</th>
         <th>신고자</th>
         <th>처리상태</th>
         <th>접수일</th>
@@ -70,7 +76,7 @@
       <tr th:each="r : ${reportList}">
         <td th:text="${r.reportNo}"></td>
         <td th:text="${r.typeName}"></td>
-        <td><a th:href="@{/admin/report/list(routeNo=${r.routeNo})}" th:title="|${r.routeNo}번 노선 신고만 보기|"
+        <td><a class="route-chip" th:href="@{/admin/report/list(routeNo=${r.routeNo})}" th:title="|${r.routeNo}번 노선 신고만 보기|"
             th:text="${r.routeNo}"></a></td>
         <td class="left">
           <a th:href="@{/admin/report/{no}(no=${r.reportNo})}" title="처리 화면으로 이동"

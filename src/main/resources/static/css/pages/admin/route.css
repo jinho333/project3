@@ -1,18 +1,37 @@
-/* 관리자 노선 관리: 디자인 전 단계, 배치만 잡음 */
-.route-add-form { display: flex; align-items: center; gap: 8px; border: 1px solid #ccc; padding: 16px; margin-bottom: 24px; }
-.route-add-form h3 { margin-right: 12px; }
-.route-add-form input,
-.route-add-form button,
-.route-search-form input,
-.route-search-form button,
-.edit-form input,
-.edit-form button { height: 36px; }
+/* 관리자 노선 관리: 표는 admin_layout.css 의 공통 규칙을 쓴다 */
+.route-add-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--gutter);
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.route-add-form h3 { margin-right: 12px; white-space: nowrap; }
+.route-add-form input[name="routeNo"] { flex: none; width: 200px; }
+.route-add-form .name-input { flex: 1; width: auto; min-width: 0; }   /* 이름 입력칸이 남는 폭을 쓴다 */
 .name-input { width: 300px; }
 
-.route-search-form { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
-.reset-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border: 1px solid #ccc; }
+/* 목록 위 줄 오른쪽의 검색 (왼쪽 전체 건수는 .list-head 공통 규칙) */
+.route-search-form { display: flex; align-items: center; gap: 8px; }
+.route-search-form input { width: 280px; }
 
-.total-cnt { margin-bottom: 8px; }
-.empty-cell { padding: 40px; }
-.edit-form { display: flex; justify-content: center; gap: 8px; }
-.delete-btn { height: 36px; }
+/* 노선 표: 번호 칸은 좁게, 이름 입력칸이 남는 폭을 쓰고 이름 수정·삭제가 바로 옆에 붙는다 */
+.route-table th:first-child,
+.route-table td:first-child { width: 140px; }
+.route-table td { height: 64px; }   /* 입력칸(40px) 위아래로 12px씩 여유 */
+.route-actions { display: flex; align-items: center; gap: 12px; }
+.edit-form { flex: 1; display: flex; gap: 8px; min-width: 0; }
+.route-actions .name-input { flex: 1; width: auto; min-width: 0; }
+
+/* 좁은 화면: 등록·검색 줄이 줄바꿈되고 입력칸이 한 줄을 다 쓴다 */
+@media (max-width: 720px) {
+  .route-add-form,
+  .route-search-form,
+  .list-head { flex-wrap: wrap; }
+  .route-add-form h3 { width: 100%; margin-right: 0; }
+  .route-add-form input,
+  .route-search-form input { flex: 1 1 100%; width: 100%; }
+}

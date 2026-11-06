@@ -1,42 +1,72 @@
-/* 대시보드: 디자인 전 단계, 배치만 잡음 */
-.stat-cards { display: flex; gap: 16px; margin-bottom: 32px; }
-.stat-card { flex: 1; border: 1px solid #ccc; padding: 20px; text-align: center; }
-.stat-label { color: #666; margin-bottom: 8px; }
-.stat-num { font-size: 32px; font-weight: bold; }
+/* 대시보드: 요약이 먼저. 지금 처리할 일 한 줄 → 지난 기간 실적 한 줄 → 노선·유형 상위 5개 → AI 비서 */
+.block-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
+.period-note { color: var(--ink-2); font-size: var(--fs-sub); }   /* 조회 시각·기간·AI 안내 문장: 보조 문구도 읽혀야 해서 한 단계 진하게 */
+.period-refresh { display: inline-flex; margin-left: -6px; color: var(--primary); }
+.period-refresh svg { display: block; width: 16px; height: 16px; }
+.period-refresh:hover { color: var(--primary-dark); }
 
-.stat-groups { display: flex; gap: 32px; flex-wrap: wrap; }
-.stat-group { flex: 1; min-width: 360px; border: 1px solid #ccc; padding: 20px; }
-.stat-group h3 { margin-bottom: 16px; }
-.stat-empty { color: #888; }
+.stat-label { color: var(--ink-2); font-size: var(--fs-body); }   /* 숫자가 무엇인지 알려 주는 라벨은 본문 크기 */
+.stat-num { font-size: var(--fs-num); font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
 
-.bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.bar-label { width: 110px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-a.bar-label { color: #1a5fd0; text-decoration: underline; }
-.bar-track { flex: 1; height: 18px; background: #eee; }
-.bar-fill { height: 100%; background: #1a5fd0; }
-.bar-cnt { width: 50px; text-align: right; }
+/* 지금 처리해야 할 일: 카드 격자가 아니라 구분선으로 나눈 한 줄 */
+.now-block { margin-bottom: var(--gutter); }
+.now-strip { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.now-item {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  color: inherit;
+}
+.now-item + .now-item { border-left: 1px solid var(--line); }
+.now-item:hover { background: var(--hover); }
+.now-item .stat-label { font-weight: 500; color: var(--ink); }
+.stat-num.is-received { color: var(--st-received); }
+.stat-num.is-processing { color: var(--st-processing); }
 
-/* 카드 묶음: 지금 처리할 일(강조) / 지난 기간 실적(차분) */
-.stat-block { margin-bottom: 32px; }
-.stat-block .stat-cards { margin-bottom: 0; }
-.block-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 12px; }
-.block-head .period-refresh { margin-left: -6px; color: #1a5fd0; font-size: 18px; line-height: 1; text-decoration: none; }  /* 조회 시각 바로 옆 동기화 기호 */
-.block-head .period-refresh:hover { color: #0d3d91; }
-.period-note { color: #777; font-size: 13px; }
+/* 지난 기간 실적: 보조 한 줄 */
+.past-block { margin-bottom: var(--gutter); }
+.past-strip { display: flex; gap: 32px; padding: 0 4px; }
+.past-item { display: flex; align-items: baseline; gap: 10px; }
+.past-item .stat-num { font-size: var(--fs-heading); color: var(--ink-2); }
 
-.now-card { border: 2px solid #e8590c; background: #fff4e6; color: inherit; }
-.now-card:hover { background: #ffe8cc; }
-.now-card .stat-num { color: #c2410c; }
-.past-card { border: 1px solid #ddd; background: #f6f6f6; }
-.past-card .stat-num { color: #555; }
+/* 노선별 / 유형별 막대 */
+.stat-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); }
+.stat-group h3 { margin-bottom: 14px; }
+.stat-empty { color: var(--ink-3); }
+
+.bar-row { display: flex; align-items: center; gap: 12px; height: 40px; }
+.bar-label { width: 72px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row.is-type .bar-label { width: 120px; color: var(--ink); }
+.bar-track { flex: 1; height: 8px; background: var(--bg); border-radius: var(--radius-pill); overflow: hidden; }
+.bar-fill { height: 100%; background: var(--primary); border-radius: var(--radius-pill); }
+.bar-row.is-type .bar-fill { background: var(--bar-muted); }
+.bar-cnt { width: 48px; text-align: right; color: var(--ink-2); }
+
+.bar-more { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+.bar-more summary { height: 32px; display: flex; align-items: center; color: var(--primary); cursor: pointer; list-style: none; }
+.bar-more summary::-webkit-details-marker { display: none; }
+.bar-more summary:hover { color: var(--primary-dark); }
+.bar-more[open] summary { margin-bottom: 4px; }
 
 /* AI 비서 */
-.ai-box { margin-top: 32px; border-top: 1px solid #ccc; padding-top: 24px; }
-.ai-btn { margin-top: 12px; padding: 8px 16px; border: 1px solid #1a5fd0; background: #fff; color: #1a5fd0; cursor: pointer; }
-.ai-btn:hover { background: #f3f7ff; }
-.ai-btn:disabled { color: #999; border-color: #ccc; cursor: default; }
-.ai-ask { display: flex; gap: 8px; margin-top: 20px; }
-.ai-ask input { flex: 1; padding: 8px 12px; border: 1px solid #333; }
+.ai-box { margin-top: var(--gutter); }
+.ai-btn { margin-top: 4px; height: var(--control-h); padding: 0 16px; border: 1px solid var(--primary); background: var(--surface); color: var(--primary); border-radius: 8px; font-weight: 600; }
+.ai-btn:hover { background: var(--primary-weak); }
+.ai-btn.is-solid { background: var(--primary); color: #fff; }
+.ai-btn.is-solid:hover { background: var(--primary-dark); }
+.ai-btn:disabled { color: var(--ink-3); border-color: var(--line-strong); background: var(--bg); }
+.ai-ask { display: flex; gap: 8px; margin-top: 16px; }
+.ai-ask input { flex: 1; }
 .ai-ask .ai-btn { margin-top: 0; }
-.ai-answer { margin-top: 12px; padding: 14px 16px; background: #f6f8fc; border: 1px solid #dde5f5; white-space: pre-wrap; line-height: 1.7; }
-.ai-answer.is-error { background: #fff4e5; border-color: #f0b86e; }
+.ai-answer { margin-top: 12px; padding: 14px 16px; background: var(--primary-weak); border-radius: var(--radius); white-space: pre-wrap; line-height: 1.75; }
+.ai-answer[hidden] { display: none; }
+.ai-answer.is-error { background: var(--warn-bg); color: var(--warn); }
+
+@media (max-width: 900px) {
+  .stat-groups { grid-template-columns: minmax(0, 1fr); }
+  .now-strip { flex-direction: column; }
+  .now-item + .now-item { border-left: 0; border-top: 1px solid var(--line); }
+}

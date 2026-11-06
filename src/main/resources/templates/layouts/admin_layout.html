@@ -5,15 +5,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>버스 불편 신고 - 관리자</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo_bus.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/css/layouts/common.css">
+  <link rel="stylesheet" href="/css/layouts/admin_tokens.css">
   <link rel="stylesheet" href="/css/layouts/admin_layout.css">
   <!-- 페이지별 css -->
   <th:block layout:fragment="content_css"></th:block>
 </head>
-<body>
+<body class="admin">
   <!-- 헤더 -->
   <header class="header">
-    <a class="logo" href="/admin">버스 불편 신고 관리자</a>
+    <a class="logo" href="/admin">
+      <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><path d="M17 26c0-7 5-12 15-12s15 5 15 12v22H17z" fill="#fff"/><rect x="21" y="22" width="22" height="11" rx="2" fill="currentColor"/><rect x="26" y="17" width="12" height="2" rx="1" fill="currentColor"/><circle cx="23" cy="40" r="2.8" fill="currentColor"/><circle cx="41" cy="40" r="2.8" fill="currentColor"/><rect x="20" y="48" width="6" height="7" rx="3" fill="#fff"/><rect x="38" y="48" width="6" height="7" rx="3" fill="#fff"/></svg>
+      <span>버스 불편 신고 관리자</span>
+    </a>
     <nav class="header-menu">
       <span th:text="|${session.loginInfo.memberName}님|"></span>
       <a href="/">사용자 화면</a>
@@ -22,13 +28,13 @@
   </header>
 
   <div class="admin-body">
-    <!-- 사이드 메뉴: 현재 화면(menu)에 해당하는 항목을 강조 -->
-    <aside class="side-menu">
-      <a href="/admin" th:classappend="${menu == 'dashboard'} ? 'active'">대시보드</a>
-      <a href="/admin/report/list" th:classappend="${menu == 'report'} ? 'active'">신고 관리</a>
-      <a href="/admin/route" th:classappend="${menu == 'route'} ? 'active'">노선 관리</a>
-      <a href="/admin/congestion" th:classappend="${menu == 'congestion'} ? 'active'">버스 혼잡도</a>
-    </aside>
+    <!-- 상단 탭: 현재 화면(menu)에 해당하는 항목을 강조 -->
+    <nav class="admin-tabs" aria-label="관리자 메뉴">
+      <a href="/admin" th:classappend="${menu == 'dashboard'} ? 'active'" th:attr="aria-current=${menu == 'dashboard'} ? 'page'">대시보드</a>
+      <a href="/admin/report/list" th:classappend="${menu == 'report'} ? 'active'" th:attr="aria-current=${menu == 'report'} ? 'page'">신고 관리</a>
+      <a href="/admin/route" th:classappend="${menu == 'route'} ? 'active'" th:attr="aria-current=${menu == 'route'} ? 'page'">노선 관리</a>
+      <a href="/admin/congestion" th:classappend="${menu == 'congestion'} ? 'active'" th:attr="aria-current=${menu == 'congestion'} ? 'page'">버스 혼잡도</a>
+    </nav>
 
     <!-- 본문 -->
     <main class="admin-content">

@@ -36,11 +36,14 @@ body.user .header {
   position: sticky;
   top: 0;
   z-index: 50;
-  padding: 16px 32px;
+  box-sizing: border-box;
+  height: 64px;          /* 관리자 화면 헤더(admin_tokens.css 의 --header-h)와 같은 높이 */
+  padding: 0 25px;       /* 로고 시작 위치도 관리자 화면(--gutter)과 같게 */
   background: var(--canvas);
   border-bottom: 0;
 }
-body.user .logo { font-size: 22px; font-weight: 700; }
+body.user .logo { display: inline-flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 700; }
+body.user .logo-mark { width: 36px; height: 36px; flex-shrink: 0; color: #243b8f; }   /* 관리자 화면과 같은 로고·색 */
 body.user .header-menu { align-items: center; gap: 8px; font-weight: 500; }
 body.user .header-menu > span { margin: 0 8px; }
 body.user .nav-pill {
@@ -139,7 +142,7 @@ body.user .warn-msg { color: var(--ink); background: var(--soft); border-radius:
 
 /* ===== 좁은 화면 ===== */
 @media (max-width: 720px) {
-  body.user .header { padding: 12px 16px; }
+  body.user .header { padding: 0 16px; }
   body.user .content { padding: 16px; }
   body.user .header-menu > span { display: none; }
 }
