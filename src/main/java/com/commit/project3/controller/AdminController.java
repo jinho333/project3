@@ -59,7 +59,7 @@ public class AdminController {
         return "pages/admin/dashboard";
     }
 
-    // 버스 혼잡도: 노선 목록 + 지도 + 예측 데이터
+    // 버스 이용수요: 노선 목록 + 지도 + 예측 데이터
     @GetMapping("/admin/congestion")
     public String congestion(HttpSession session, Model model) {
         String redirect = AdminUtil.checkAdmin(session);

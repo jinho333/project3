@@ -3,6 +3,7 @@ package com.commit.project3.service;
 import com.commit.project3.dto.ReportDTO;
 import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.dto.RouteOpenCountDTO;
+import com.commit.project3.dto.RoutePriorityDTO;
 import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.dto.StatDTO;
 import com.commit.project3.mapper.AdminMapper;
@@ -10,6 +11,8 @@ import com.commit.project3.mapper.ReportMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -115,6 +118,23 @@ public class AdminService {
     // 미처리(접수 + 처리중) 신고가 남아 있는 모든 노선의 건수
     public List<RouteOpenCountDTO> getOpenCountByRoute() {
         return adminMapper.selectOpenCountByRoute(null);
+    }
+
+    // 노선 우선순위 (임시 기준): 미처리 신고가 있는 노선만, 미처리 건수가 많은 순 -> 가장 오래된 신고가 오래된 순 -> 노선번호 순
+    // 대시보드 우선순위가 정해지면 이 계산만 바꾸면 이 화면과 대시보드가 같은 순서를 씀
+    public List<RoutePriorityDTO> getRoutePriority() {
+        List<RoutePriorityDTO> list = new ArrayList<>();
+        for (RouteOpenCountDTO dto : getOpenCountByRoute()) {
+            int total = dto.getReceivedCnt() + dto.getProcessingCnt();
+            if (total > 0) {
+                list.add(new RoutePriorityDTO(dto.getRouteNo(), dto.getReceivedCnt(), dto.getProcessingCnt(), total,
+                    getOpenOldestDays(dto.getRouteNo())));
+            }
+        }
+        list.sort(Comparator.comparingInt(RoutePriorityDTO::total).reversed()
+            .thenComparing(RoutePriorityDTO::oldestDays, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(RoutePriorityDTO::routeNo));
+        return list;
     }
 
     // 노선 하나의 미처리 신고 건수: 신고가 없으면 0건으로 채워서 돌려줌
