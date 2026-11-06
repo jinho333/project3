@@ -247,10 +247,14 @@
 .route-btn.is-hover { border-color: var(--primary); background: var(--bg); }                              /* 지도에서 마우스를 올린 노선 */
 .route-btn.is-missing { color: var(--ink-3); border-style: dashed; }                                      /* 데이터를 불러오지 못한 노선 */
 
-/* 목록의 "비교" 체크: 선택한 노선이 있을 때 다른 노선 항목 아래에 나타남 */
-.compare-chk { display: block; padding: 2px 12px 0; font-size: var(--fs-sub); color: var(--ink-2); cursor: pointer; }
-.compare-chk[hidden] { display: none; }
-.compare-chk input { margin-right: 4px; }
+/* 목록 항목: 왼쪽 비교 체크 칸 + 노선 버튼 */
+.route-item { display: flex; align-items: stretch; gap: 6px; }
+.route-item .route-btn { flex: 1; width: auto; min-width: 0; }
+/* 비교 체크: 선택한 노선이 있을 때만 보임(자리는 늘 차지해서 목록이 밀리지 않음). 체크 색은 JS 가 노선 색으로 지정 */
+.compare-chk { flex: none; display: flex; align-items: center; justify-content: center; width: 22px; cursor: pointer; }
+.compare-chk.is-off { visibility: hidden; }
+.compare-chk.is-main { pointer-events: none; }   /* 선택한 노선은 체크된 채로 눌러도 바뀌지 않음 */
+.compare-chk input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
 .route-btn.is-compare { border-color: var(--primary); border-style: dashed; background: var(--primary-weak); }   /* 비교 노선 */
 
 /* 미처리 신고가 없는 노선을 접어 두는 버튼과 목록 */

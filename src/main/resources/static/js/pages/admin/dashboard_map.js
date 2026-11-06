@@ -1133,14 +1133,20 @@
         });
       });
     });
-    // 목록의 버튼: 선택한 노선과 비교 노선만 강조 (처음 화면에서는 강조 없음), 비교 체크는 선택한 노선이 있을 때 다른 노선에만 보임
+    // 목록의 버튼: 선택한 노선과 비교 노선만 강조 (처음 화면에서는 강조 없음)
+    // 왼쪽 체크 칸: 선택한 노선이 있을 때만 보임(자리는 늘 차지해서 목록이 밀리지 않음). 선택한 노선과 비교 노선은 노선 색으로 체크,
+    // 선택한 노선은 눌러도 바뀌지 않음
+    const mainNo = mode === 'select' ? focusRoute : null;
     const cmpNo = comparedRoute();
     Object.keys(buttons).forEach(function (no) {
-      buttons[no].classList.toggle('is-active', mode === 'select' && no === focusRoute);
+      buttons[no].classList.toggle('is-active', no === mainNo);
       buttons[no].classList.toggle('is-compare', no === cmpNo);
       const box = compareBoxes[no];
-      box.label.hidden = !(mode === 'select' && focusRoute && no !== focusRoute);
-      box.input.checked = no === cmpNo;
+      box.label.classList.toggle('is-off', !mainNo);
+      box.label.classList.toggle('is-main', no === mainNo);
+      box.label.title = no === mainNo ? '선택한 노선' : '비교 노선으로 선택';
+      box.input.checked = no === mainNo || no === cmpNo;
+      box.input.tabIndex = no === mainNo ? -1 : 0;
     });
     applyFilter();                                // 검색 중에도 선택한 노선은 목록에 남겨 둠
     applyOffsets();                               // 겹치는 선은 옆으로 벌림 (정류장과 방향 V 가 벌어진 선을 따라가도록 먼저 함)
@@ -1459,20 +1465,21 @@
     btn.appendChild(small);
     btn.addEventListener('click', function () { selectRoute(route.routeNo); });
 
-    // 비교 체크: 선택한 노선이 있을 때 다른 노선 항목에만 보임 (render 가 보이고 숨김)
+    // 비교 체크: 노선 왼쪽 칸, 체크하면 그 노선 색 (render 가 보이고 숨김, 선택 상태를 맞춤)
     const label = document.createElement('label');
-    label.className = 'compare-chk';
-    label.hidden = true;
+    label.className = 'compare-chk is-off';
     const input = document.createElement('input');
     input.type = 'checkbox';
+    input.style.accentColor = colorOf(route);
+    input.setAttribute('aria-label', route.routeNo + '번을 비교 노선으로 선택');
     input.addEventListener('change', function () {
       if (input.checked) setCompare(route.routeNo); else clearCompare();
     });
     label.appendChild(input);
-    label.appendChild(document.createTextNode('비교'));
 
-    li.appendChild(btn);
+    li.className = 'route-item';
     li.appendChild(label);
+    li.appendChild(btn);
     buttons[route.routeNo] = btn;
     items[route.routeNo] = li;
     compareBoxes[route.routeNo] = { label: label, input: input };
