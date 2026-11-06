@@ -17,7 +17,7 @@ public interface ReportMapper {
     // 유형선택 모달용: 대분류와 그 안의 유형 목록
     List<ReportTypeGroupDTO> selectTypeGroupList();
 
-    // 메인 화면용: 신고가 많은 유형 상위 limit개
+    // 메인 화면용: 신고가 많은 유형 상위 limit개 (같은 사람이 같은 유형을 같은 주에 여러 번 신고한 것은 1건)
     List<TypeRankDTO> selectTopTypeList(int limit);
 
     // 신고 등록 (등록 후 reportNo에 생성된 번호가 담김)
