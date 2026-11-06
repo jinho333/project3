@@ -1,0 +1,63 @@
+/* 관리자 화면 디자인 토큰: 색·글자·간격·모서리는 이 파일 한 곳에서만 정한다.
+   사용자 화면(user_design.css)과 별개이며 admin_layout.html 에서만 불러온다. */
+:root {
+  color-scheme: light;
+
+  /* 바탕과 면 */
+  --bg: #f2f5fa;
+  --surface: #ffffff;
+  --line: #e1e6f0;
+  --line-strong: #cbd3e1;
+  --surface-2: #f8f9fc;       /* 표 머리글·상세 표의 라벨 칸 */
+  --hover: #f6f9ff;           /* 표 행·요약 줄에 마우스를 올렸을 때 */
+
+  /* 글자: 보조 글자도 흰 면 위에서 4.5:1 이상 */
+  --ink: #1b2433;
+  --ink-2: #4f5b6e;
+  --ink-3: #5f6b80;
+
+  /* 주색: 링크·주 버튼·선택 탭·노선 번호에만 쓴다 */
+  --primary: #243b8f;
+  --primary-dark: #19296b;
+  --primary-weak: #e9ecf8;
+  --primary-weak-hover: #d8dcf0;
+
+  /* 상태색: 주색과 분리하고 모든 화면에서 같은 의미로 쓴다 */
+  --st-received: #5b3ea8;
+  --st-received-bg: #efeafa;
+  --st-processing: #0b6aa3;
+  --st-processing-bg: #e3f1fa;
+  --st-done: #25683f;
+  --st-done-bg: #e2f3e8;
+  --bad: #b3261e;            /* 긴급·지연 */
+  --bad-bg: #fdeceb;
+  --bad-bg-hover: #f9d9d6;
+  --warn: #8a5200;           /* 주의: 배경은 옅게, 글자는 짙게 */
+  --warn-bg: #fff2d9;
+
+  /* 글자 크기: 요약 숫자 32 > 페이지 제목 28 > 블록 제목 20 > 본문 16 > 보조 14 (로고 글자 22는 별도 역할) */
+  --fs-num: 32px;            /* 요약 숫자 */
+  --fs-title: 28px;          /* 페이지 제목 */
+  --fs-heading: 20px;        /* 블록 제목(카드·섹션 제목) */
+  --fs-body: 16px;
+  --fs-sub: 14px;
+  --fs-logo: 22px;           /* 서비스 이름(로고 글자): 사용자 화면 로고와 같은 크기 */
+
+  /* 막대 그래프의 보조 색 (유형 막대) */
+  --bar-muted: #7f8da6;
+
+  /* 지도 위 노선선의 혼잡 등급 색: dashboard_map.js 의 GRADE_COLOR 와 같은 값으로 맞출 것 */
+  --grade-high: #E53935;
+  --grade-mid: #F9A825;
+  --grade-low: #43A047;
+
+  /* 모서리와 칸 높이 */
+  --radius: 10px;
+  --radius-pill: 999px;
+  --row-h: 48px;
+  --control-h: 40px;
+
+  --gutter: 25px;            /* 화면 양 옆 여백이자 섹션 사이 간격: 헤더·탭·본문이 같은 기준선, 사용자 화면 헤더와도 같은 값 */
+  --header-h: 64px;
+  --tabs-h: 56px;
+}

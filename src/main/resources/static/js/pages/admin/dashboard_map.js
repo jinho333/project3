@@ -1135,7 +1135,7 @@
   // /admin/api/routes/{노선번호}/forecast: 시간대별 평소 평균 혼잡도(%) 곡선 + 접속 시각 1시간 뒤의 예측값 (지금은 임시 값)
   // 평소 대비 비율이 10% 이상 벗어나면(높든 낮든) 점과 문구를 강조
   const ALERT_UP_COLOR = '#E53935';
-  const ALERT_DOWN_COLOR = '#1a5fd0';
+  const ALERT_DOWN_COLOR = '#43A047';
   const ALERT_TEXT = '평소와 크게 다릅니다. 관리자가 확인해야 할 사항이 있을 수 있습니다.';
   // 시험용: 주소에 ?hour=22 처럼 붙이면 접속 시각을 그 시(0~23)로 보고 예측 (운행 시간 밖을 확인할 때)
   const testHour = /^\d{1,2}$/.test(new URLSearchParams(location.search).get('hour') || '')
@@ -1300,7 +1300,7 @@
       data: {
         labels: r.days.map(function (d) { return d.date.slice(5) + '(' + d.dayOfWeek + ')'; }),
         datasets: [{ label: '예상 이용자 수', data: r.days.map(function (d) { return d.predicted; }),
-          backgroundColor: '#5b8def' }]
+          backgroundColor: '#243b8f' }]
       },
       options: {
         responsive: true,

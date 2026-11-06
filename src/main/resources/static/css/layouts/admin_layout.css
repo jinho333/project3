@@ -1,30 +1,225 @@
-/* 관리자 레이아웃: 헤더 아래 가로 메뉴 + 그 아래 본문 (디자인 전 단계, 배치만 잡음) */
-.admin-body { display: flex; flex-direction: column; min-height: calc(100vh - 62px); }
+/* 관리자 공통 틀: 헤더 + 탭 + 본문, 그리고 모든 관리자 페이지가 같이 쓰는 표·입력칸·버튼·상태 표시.
+   색과 크기는 admin_tokens.css 의 변수만 쓴다. common.css 는 사용자 화면과 같이 쓰므로 body.admin 아래에서만 덮어쓴다. */
 
-.side-menu {
+body.admin {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Pretendard Variable", Pretendard, system-ui, "Malgun Gothic", sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  scrollbar-color: var(--line-strong) transparent;
+}
+body.admin ::selection { background: var(--primary-weak); color: var(--primary-dark); }
+body.admin h2, body.admin h3 { font-weight: 700; letter-spacing: 0; line-height: 1.3; }
+body.admin h3 { font-size: var(--fs-heading); }   /* 모든 관리자 화면의 블록 제목은 같은 크기 */
+
+/* ===== 헤더 + 탭 (같은 흰 띠) ===== */
+body.admin .header {
+  height: var(--header-h);
+  padding: 0 var(--gutter);
+  background: var(--surface);
+  border-bottom: 0;
+}
+body.admin .logo { display: inline-flex; align-items: center; gap: 10px; font-size: var(--fs-logo); font-weight: 700; }
+.logo-mark { width: 36px; height: 36px; flex-shrink: 0; color: var(--primary); }   /* 로고 색은 주색을 따라간다 */
+body.admin .header-menu { align-items: center; gap: 20px; color: var(--ink-2); font-size: var(--fs-body); }
+body.admin .header-menu a:hover { color: var(--primary); }
+
+.admin-body { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-h)); }
+
+.admin-tabs {
   box-sizing: border-box;
-  height: 48px;                /* 지도 화면(congestion.css)의 높이 계산과 같은 값 */
+  height: var(--tabs-h);
   flex-shrink: 0;
   display: flex;
-  flex-direction: row;
-  border-bottom: 1px solid #ccc;
-  padding: 0 24px;
+  gap: 4px;
+  padding: 0 calc(var(--gutter) - 18px);   /* 첫 탭 글자가 본문 왼쪽 끝과 같은 선에서 시작 */
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
-.side-menu a { display: flex; align-items: center; padding: 0 20px; }
-.side-menu a:hover { background: #f3f7ff; }
-.side-menu a.active { background: #e3ecff; font-weight: bold; border-bottom: 3px solid #1a5fd0; }
+/* 탭: 선택 안 된 탭도 진한 글자(500), 선택된 탭은 남색 굵은 글자 + 4px 밑줄 + 연한 남색 바탕으로 한눈에 */
+.admin-tabs a {
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-bottom: 4px solid transparent;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+.admin-tabs a:hover { background: var(--surface-2); border-bottom-color: var(--line-strong); }
+.admin-tabs a.active { color: var(--primary); font-weight: 700; background: var(--primary-weak); border-bottom-color: var(--primary); }
 
-.admin-content { flex: 1; padding: 32px; min-width: 0; }
-.admin-title { margin-bottom: 24px; }
+.admin-content { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; padding: var(--gutter) var(--gutter) 48px; min-width: 0; }
+/* 화면 종류별 본문 폭: 넓은 화면(대시보드·신고 목록·버스 혼잡도)은 위 1440px, 단순한 목록·입력 화면(노선 관리·신고 처리)은 .page-narrow 1040px, 둘 다 가운데 */
+.page-narrow { max-width: 1040px; margin: 0 auto; }
+.admin-title { margin-bottom: var(--gutter); font-size: var(--fs-title); }
 
-/* 관리자 화면 공통 문구 */
-.info-msg { color: green; margin-bottom: 16px; }
-.warn-msg { color: red; margin-bottom: 16px; }
+/* ===== 키보드 이동 표시 ===== */
+body.admin a:focus-visible,
+body.admin button:focus-visible,
+body.admin input:focus-visible,
+body.admin select:focus-visible,
+body.admin textarea:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-/* 관리자 화면 공통 표 */
-.admin-table { width: 100%; border-collapse: collapse; }
-.admin-table th,
-.admin-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-.admin-table .left { text-align: left; }
-.admin-table td a { color: #1a5fd0; text-decoration: underline; }
-.admin-table tbody tr:hover { background: #f3f7ff; }
+/* ===== 공통 문구 ===== */
+.info-msg,
+.warn-msg { margin-bottom: 16px; padding: 10px 14px; border-radius: var(--radius); font-size: var(--fs-body); }
+.info-msg { color: var(--st-done); background: var(--st-done-bg); }
+.warn-msg { color: var(--bad); background: var(--bad-bg); }
+
+/* ===== 입력칸 ===== */
+:where(body.admin) input[type="text"],
+:where(body.admin) input[type="search"],
+:where(body.admin) input[type="date"],
+:where(body.admin) select,
+:where(body.admin) textarea {
+  height: var(--control-h);
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font: inherit;
+}
+:where(body.admin) textarea { height: auto; padding: 10px 12px; line-height: 1.6; resize: vertical; }
+:where(body.admin) input::placeholder,
+:where(body.admin) textarea::placeholder { color: var(--ink-3); }
+:where(body.admin) input:focus,
+:where(body.admin) select:focus,
+:where(body.admin) textarea:focus { border-color: var(--primary); }
+
+/* ===== 버튼: 기본은 흰 바탕 윤곽선, 주 버튼은 .btn-primary, 삭제는 .btn-danger ===== */
+/* 기본 규칙은 :where() 로 우선순위를 낮춰서, 페이지별 CSS 가 항상 덮어쓸 수 있게 함 */
+:where(body.admin) button,
+.btn,
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-h);
+  padding: 0 14px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+:where(body.admin) button:hover,
+.btn:hover,
+.reset-btn:hover { background: var(--bg); }
+:where(body.admin) button:disabled { color: var(--ink-3); cursor: default; background: var(--bg); }
+body.admin .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+body.admin .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+body.admin .btn-danger { color: var(--bad); border-color: var(--bad-bg); background: var(--bad-bg); }
+body.admin .btn-danger:hover { background: var(--bad-bg-hover); }
+
+/* ===== 카드 ===== */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; }   /* 카드 안쪽 좌우 여백은 모두 24px */
+
+/* ===== 표 ===== */
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.admin-table th {
+  padding: 0 16px;
+  height: 44px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--fs-body);   /* 머리글도 내용과 같은 크기: 굵기·색·배경으로 구분 */
+  font-weight: 700;
+  text-align: left;
+}
+.admin-table td {
+  padding: 0 16px;
+  height: var(--row-h);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.admin-table tbody tr:last-child td,
+.admin-table tr:last-child th,
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table td a { color: var(--primary); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.admin-table td a:hover { text-decoration-color: currentColor; }
+.admin-table tbody tr:hover { background: var(--hover); }
+
+/* 목록 표(신고 목록, 노선 관리): 짧은 값은 가운데, 긴 글(.left)은 왼쪽. 머리글은 그 열의 값과 같은 방향 */
+.list-table th,
+.list-table td { text-align: center; }
+.list-table th.left,
+.list-table td.left { text-align: left; }
+
+/* 노선번호 알약: 모든 화면에서 노선은 이 모양 */
+.route-chip {
+  display: inline-block;
+  min-width: 48px;
+  padding: 2px 10px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  text-align: center;
+}
+.admin-table td a.route-chip { color: #fff; text-decoration: none; }   /* 표 안 링크 색(남색)이 알약 글자색을 덮지 않게 */
+.admin-table td a.route-chip:hover { background: var(--primary-dark); text-decoration: none; }
+
+/* 처리 상태 알약: 접수 / 처리중 / 완료 */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sub);
+  font-weight: 600;
+}
+.status-RECEIVED { background: var(--st-received-bg); color: var(--st-received); }
+.status-PROCESSING { background: var(--st-processing-bg); color: var(--st-processing); }
+.status-DONE { background: var(--st-done-bg); color: var(--st-done); }
+
+.total-cnt { margin-bottom: 8px; color: var(--ink-2); font-size: var(--fs-body); font-weight: 500; }
+/* 검색·조회와 초기화 버튼은 한 쌍으로 읽히도록 같은 폭 */
+.search-actions button,
+.search-actions .reset-btn,
+.route-search-form button,
+.route-search-form .reset-btn { min-width: 88px; }
+
+/* 목록 위 줄: 왼쪽은 전체 건수, 오른쪽은 그 목록을 거르는 도구 */
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gutter); margin-bottom: 12px; }
+.list-head .total-cnt { margin: 0; }
+.empty-cell { padding: 48px 16px; color: var(--ink-3); text-align: center !important; }
+
+/* 페이지 번호 */
+.paging { display: flex; justify-content: center; gap: 4px; margin-top: var(--gutter); }
+.paging a,
+.paging strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--ink-2);
+}
+.paging a:hover { background: var(--surface); color: var(--primary); }
+.paging strong { background: var(--primary); color: #fff; }
+
+/* ===== 좁은 화면 ===== */
+@media (max-width: 720px) {
+  body.admin .header { padding: 0 16px; }
+  .admin-tabs { padding: 0 8px; overflow-x: auto; }
+  .admin-content { padding: 20px 16px 40px; }
+  .admin-table { display: block; overflow-x: auto; white-space: nowrap; }   /* 표가 넘치면 표 안에서만 가로 스크롤 */
+}

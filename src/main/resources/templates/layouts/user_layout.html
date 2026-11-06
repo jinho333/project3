@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>버스 불편 신고</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo_bus.svg">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/css/layouts/common.css">
   <link rel="stylesheet" href="/css/layouts/user_design.css">
@@ -14,7 +15,10 @@
 <body class="user">
   <!-- 헤더 -->
   <header class="header">
-    <a class="logo" href="/">버스 불편 신고</a>
+    <a class="logo" href="/">
+      <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><path d="M17 26c0-7 5-12 15-12s15 5 15 12v22H17z" fill="#fff"/><rect x="21" y="22" width="22" height="11" rx="2" fill="currentColor"/><rect x="26" y="17" width="12" height="2" rx="1" fill="currentColor"/><circle cx="23" cy="40" r="2.8" fill="currentColor"/><circle cx="41" cy="40" r="2.8" fill="currentColor"/><rect x="20" y="48" width="6" height="7" rx="3" fill="#fff"/><rect x="38" y="48" width="6" height="7" rx="3" fill="#fff"/></svg>
+      <span>버스 불편 신고</span>
+    </a>
     <nav class="header-menu">
       <!-- 로그아웃 상태 -->
       <th:block th:if="${session.loginInfo == null}">

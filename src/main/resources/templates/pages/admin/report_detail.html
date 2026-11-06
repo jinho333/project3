@@ -8,6 +8,7 @@
 </th:block>
 
 <th:block layout:fragment="content">
+  <div class="page-narrow">
   <h2 class="admin-title">신고 처리</h2>
 
   <p class="info-msg" th:if="${param.saved != null}">처리 내용이 저장되었습니다.</p>
@@ -30,7 +31,7 @@
       <th>유형</th>
       <td th:text="|${report.groupName} > ${report.typeName}|"></td>
       <th>노선</th>
-      <td th:text="${report.routeNo}"></td>
+      <td><span class="route-chip" th:text="${report.routeNo}"></span></td>
     </tr>
     <tr>
       <th>내용</th>
@@ -70,10 +71,11 @@
     <p class="answer-date" th:if="${report.answerDate != null}"
       th:text="|마지막 답변일 ${#temporals.format(report.answerDate, 'yyyy-MM-dd HH:mm')}|"></p>
     <div class="process-btns">
-      <button type="submit">저장</button>
+      <button type="submit" class="btn-primary">저장</button>
       <a href="/admin/report/list">목록으로</a>
     </div>
   </form>
+  </div>
 </th:block>
 
 </html>

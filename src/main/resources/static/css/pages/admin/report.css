@@ -1,38 +1,60 @@
-/* 관리자 신고 관리(목록·처리): 디자인 전 단계, 배치만 잡음 */
-.search-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
-.search-form select,
-.search-form input,
-.search-form button,
-.reset-btn { height: 36px; }
-.reset-btn { display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid #ccc; }
-.route-filter { width: 90px; }
-.keyword-filter { width: 180px; }
+/* 관리자 신고 관리(목록·처리): 표와 상태 알약은 admin_layout.css 의 공통 규칙을 쓴다 */
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--gutter);
+  padding: 16px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+/* 두 줄을 의도해서 나눈다: 윗줄은 무엇을 찾을지, 아랫줄은 기간·보기 방식과 조회 버튼 */
+.search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.search-form span { color: var(--ink-3); }
+.route-filter { width: 120px; }
+.keyword-filter { flex: 1; min-width: 200px; }   /* 윗줄의 남는 폭을 이름 입력칸이 쓴다 */
+/* 아랫줄: 날짜·정렬·개수 칸이 남는 폭을 나눠 쓰고(상한 있음), 조회·초기화는 오른쪽 끝 */
+.search-row input[type="date"] { flex: 1 1 170px; max-width: 240px; }
+.search-row select[name="sort"],
+.search-row select[name="displayDataCnt"] { flex: 1 1 130px; max-width: 160px; }
+.search-actions { display: flex; gap: 8px; margin-left: auto; }   /* 조회·초기화는 아랫줄 오른쪽 끝 */
 
-.total-cnt { margin-bottom: 8px; }
-.empty-cell { padding: 40px; }
+/* 처리 화면: 표·첨부·처리 폼은 .page-narrow 안에서 같은 폭 */
+.detail-table th { width: 140px; background: var(--surface-2); }
+.detail-table td { height: auto; padding-top: 12px; padding-bottom: 12px; }
+.content-cell { white-space: pre-wrap; min-height: 120px; line-height: 1.7; }
 
-.status-badge { padding: 2px 10px; border: 1px solid #ccc; border-radius: 10px; font-size: 14px; }
-.status-RECEIVED { background: #fff4e0; }
-.status-PROCESSING { background: #e3ecff; }
-.status-DONE { background: #e3f6e3; }
-
-.paging { display: flex; justify-content: center; gap: 12px; margin-top: 24px; }
-
-/* 처리 화면 */
-.detail-table th { width: 140px; }
-.content-cell { white-space: pre-wrap; min-height: 120px; }
-
-.file-area { margin-top: 24px; }
+.file-area { margin-top: var(--gutter); }
+.file-area h3 { margin-bottom: 4px; }
 .file-item { margin-top: 16px; }
 .file-item img,
-.file-item video { max-width: 100%; }
+.file-item video { max-width: 100%; border-radius: var(--radius); }
+.file-item a { color: var(--primary); }
+.file-desc { margin-top: 4px; color: var(--ink-2); font-size: var(--fs-sub); }
 
-.process-form { margin-top: 32px; border: 1px solid #ccc; padding: 20px; }
+.process-form { margin-top: var(--gutter); padding: 20px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 .process-form h3 { margin-bottom: 16px; }
 .process-row { display: flex; align-items: flex-start; margin-bottom: 16px; }
-.process-row label { width: 100px; padding-top: 6px; }
-.process-row select { height: 36px; }
-.process-row textarea { width: 600px; height: 160px; }
-.answer-date { margin-left: 100px; color: #666; font-size: 14px; }
-.process-btns { display: flex; align-items: center; gap: 16px; margin-top: 16px; margin-left: 100px; }
-.process-btns button { width: 120px; height: 40px; }
+.process-row label { width: 100px; padding-top: 8px; color: var(--ink-2); }
+.process-row textarea { flex: 1; height: 160px; }
+.answer-date { margin-left: 100px; color: var(--ink-3); font-size: var(--fs-sub); }
+.process-btns { display: flex; align-items: center; gap: 8px; margin-top: 16px; margin-left: 100px; }
+.process-btns button { width: 120px; }
+.process-btns a { display: inline-flex; align-items: center; height: var(--control-h); padding: 0 14px; color: var(--ink-2); }
+.process-btns a:hover { color: var(--primary); }
+
+/* 좁은 화면: 신고 상세 표는 라벨/값 두 칸으로 쌓아서 값이 잘리지 않게 한다 */
+@media (max-width: 720px) {
+  .detail-table,
+  .detail-table tbody { display: block; white-space: normal; overflow: visible; }
+  .detail-table tr { display: grid; grid-template-columns: 96px minmax(0, 1fr); }
+  .detail-table th,
+  .detail-table td { width: auto; height: auto; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .detail-table td[colspan] { grid-column: 2; }
+  .process-row { flex-direction: column; }
+  .process-row label { width: auto; padding-top: 0; margin-bottom: 4px; }
+  .process-row textarea { flex: none; width: 100%; }
+  .answer-date,
+  .process-btns { margin-left: 0; }
+}

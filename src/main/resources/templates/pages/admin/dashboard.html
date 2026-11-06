@@ -11,78 +11,97 @@
   <h2 class="admin-title">대시보드</h2>
 
   <!-- 지금 처리해야 할 일: 기간과 상관없이 현재 남아 있는 건수, 누르면 해당 목록으로 이동 -->
-  <section class="stat-block now-block">
+  <section class="now-block">
     <div class="block-head">
       <h3>지금 처리해야 할 일</h3>
-      <span class="period-note" th:text="|조회 시각: ${#temporals.format(baseTime, 'yyyy-MM-dd HH:mm')}|"></span>
-      <a class="period-refresh" th:href="@{/admin}" title="새로고침" aria-label="새로고침">&#10227;</a>
+      <span class="period-note" th:text="|조회 시각 ${#temporals.format(baseTime, 'yyyy-MM-dd HH:mm')}|"></span>
+      <a class="period-refresh" th:href="@{/admin}" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.15"/><path d="M13.5 2.5v3h-3"/></svg></a>
     </div>
-    <div class="stat-cards">
-      <a class="stat-card now-card" th:href="@{/admin/report/list(status='RECEIVED')}">
-        <div class="stat-label">접수 (처리 대기)</div>
-        <div class="stat-num" th:text="${statusStat[0].cnt}"></div>
+    <div class="now-strip">
+      <a class="now-item" th:href="@{/admin/report/list(status='RECEIVED')}">
+        <span class="stat-label">접수 (처리 대기)</span>
+        <span class="stat-num is-received" th:text="${statusStat[0].cnt}"></span>
       </a>
-      <a class="stat-card now-card" th:href="@{/admin/report/list(status='PROCESSING')}">
-        <div class="stat-label">처리중</div>
-        <div class="stat-num" th:text="${statusStat[1].cnt}"></div>
+      <a class="now-item" th:href="@{/admin/report/list(status='PROCESSING')}">
+        <span class="stat-label">처리중</span>
+        <span class="stat-num is-processing" th:text="${statusStat[1].cnt}"></span>
       </a>
     </div>
   </section>
 
   <!-- 지난 기간 실적: 어제까지 최근 7일 (오늘은 아직 쌓이는 중이라 제외) -->
-  <section class="stat-block past-block">
+  <section class="past-block">
     <div class="block-head">
       <h3 th:text="|최근 ${days}일 실적|"></h3>
       <span class="period-note"
         th:text="|${#temporals.format(periodStart, 'yyyy-MM-dd')} ~ ${#temporals.format(periodEnd, 'yyyy-MM-dd')} (오늘 제외)|"></span>
     </div>
-    <div class="stat-cards">
-      <div class="stat-card past-card">
-        <div class="stat-label" th:text="|최근 ${days}일 접수된 신고|"></div>
-        <div class="stat-num" th:text="${periodCnt}"></div>
+    <div class="past-strip">
+      <div class="past-item">
+        <span class="stat-label" th:text="|접수된 신고|"></span>
+        <span class="stat-num" th:text="${periodCnt}"></span>
       </div>
-      <div class="stat-card past-card">
-        <div class="stat-label" th:text="|최근 ${days}일 처리 완료|"></div>
-        <div class="stat-num" th:text="${doneCnt}"></div>
+      <div class="past-item">
+        <span class="stat-label" th:text="|처리 완료|"></span>
+        <span class="stat-num" th:text="${doneCnt}"></span>
       </div>
     </div>
   </section>
 
-  <!-- 노선별 / 유형별 막대: 가장 큰 값을 100%로 두고 비율로 길이를 정함 -->
+  <!-- 노선별 / 유형별 막대: 가장 큰 값을 100%로 두고 비율로 길이를 정함. 위 5개만 보이고 나머지는 펼쳐서 봄 -->
   <div class="stat-groups">
-    <section class="stat-group">
-      <h3 th:text="|최근 ${days}일 신고가 많은 노선 TOP 10|"></h3>
+    <section class="stat-group panel">
+      <h3 th:text="|최근 ${days}일 신고가 많은 노선|"></h3>
       <p class="stat-empty" th:if="${#lists.isEmpty(routeStat)}">데이터가 없습니다.</p>
-      <div class="bar-row" th:each="s : ${routeStat}">
-        <a class="bar-label" th:href="@{/admin/report/list(routeNo=${s.label})}" th:text="${s.label}"
+      <div class="bar-row" th:each="s, st : ${routeStat}" th:if="${st.index < 5}">
+        <a class="bar-label route-chip" th:href="@{/admin/report/list(routeNo=${s.label})}" th:text="${s.label}"
           title="이 노선의 신고 보기"></a>
         <div class="bar-track"><div class="bar-fill" th:style="|width: ${s.cnt * 100 / routeMax}%|"></div></div>
         <span class="bar-cnt" th:text="|${s.cnt}건|"></span>
       </div>
+      <details class="bar-more" th:if="${#lists.size(routeStat) > 5}">
+        <summary th:text="|나머지 ${#lists.size(routeStat) - 5}개 더 보기|"></summary>
+        <div class="bar-row" th:each="s, st : ${routeStat}" th:if="${st.index >= 5}">
+          <a class="bar-label route-chip" th:href="@{/admin/report/list(routeNo=${s.label})}" th:text="${s.label}"
+            title="이 노선의 신고 보기"></a>
+          <div class="bar-track"><div class="bar-fill" th:style="|width: ${s.cnt * 100 / routeMax}%|"></div></div>
+          <span class="bar-cnt" th:text="|${s.cnt}건|"></span>
+        </div>
+      </details>
     </section>
 
-    <section class="stat-group">
-      <h3 th:text="|최근 ${days}일 신고가 많은 유형 TOP 10|"></h3>
+    <section class="stat-group panel">
+      <h3 th:text="|최근 ${days}일 신고가 많은 유형|"></h3>
       <p class="stat-empty" th:if="${#lists.isEmpty(typeStat)}">데이터가 없습니다.</p>
-      <div class="bar-row" th:each="s : ${typeStat}">
+      <div class="bar-row is-type" th:each="s, st : ${typeStat}" th:if="${st.index < 5}">
         <span class="bar-label" th:text="${s.label}"></span>
         <div class="bar-track"><div class="bar-fill" th:style="|width: ${s.cnt * 100 / typeMax}%|"></div></div>
         <span class="bar-cnt" th:text="|${s.cnt}건|"></span>
       </div>
+      <details class="bar-more" th:if="${#lists.size(typeStat) > 5}">
+        <summary th:text="|나머지 ${#lists.size(typeStat) - 5}개 더 보기|"></summary>
+        <div class="bar-row is-type" th:each="s, st : ${typeStat}" th:if="${st.index >= 5}">
+          <span class="bar-label" th:text="${s.label}"></span>
+          <div class="bar-track"><div class="bar-fill" th:style="|width: ${s.cnt * 100 / typeMax}%|"></div></div>
+          <span class="bar-cnt" th:text="|${s.cnt}건|"></span>
+        </div>
+      </details>
     </section>
   </div>
 
   <!-- AI 비서: 위의 신고 통계를 근거로 인사이트와 답변을 만들어 줌 (Gemini) -->
-  <section class="ai-box">
-    <h3>AI 비서</h3>
-    <p class="period-note">최근 7일 신고 통계와 신고 내용 일부를 바탕으로 답합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
+  <section class="ai-box panel">
+    <div class="block-head">
+      <h3>AI 비서</h3>
+      <span class="period-note">최근 7일 신고 통계와 신고 내용 일부를 바탕으로 답합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</span>
+    </div>
 
     <button type="button" id="insightBtn" class="ai-btn">AI 인사이트 보기</button>
     <p id="insightResult" class="ai-answer" hidden></p>
 
     <div class="ai-ask">
-      <input type="text" id="askInput" maxlength="300" placeholder="예) 신고가 가장 많은 노선은 어떤 문제가 많아?" autocomplete="off">
-      <button type="button" id="askBtn" class="ai-btn">질문하기</button>
+      <input type="text" id="askInput" maxlength="300" placeholder="예) 신고가 가장 많은 노선은 어떤 문제가 많아?" autocomplete="off" aria-label="AI 비서에게 질문">
+      <button type="button" id="askBtn" class="ai-btn is-solid">질문하기</button>
     </div>
     <p id="askResult" class="ai-answer" hidden></p>
   </section>
