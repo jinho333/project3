@@ -1475,6 +1475,10 @@
     input.addEventListener('change', function () {
       if (input.checked) setCompare(route.routeNo); else clearCompare();
     });
+    // 체크 칸이 버튼 위에 겹쳐 있어서, 선택한 노선의 체크 칸을 눌러도 체크가 풀리거나 노선 선택이 바뀌지 않게 막음
+    label.addEventListener('click', function (e) {
+      if (label.classList.contains('is-main')) e.preventDefault();
+    });
     label.appendChild(input);
 
     li.className = 'route-item';
