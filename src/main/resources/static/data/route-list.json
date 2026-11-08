@@ -3,14 +3,6 @@
  "note": "임시 데이터: 혼잡도는 가짜(순서대로 혼잡/보통/여유)",
  "routes": [
   {
-   "routeNo": "134",
-   "rank": 1,
-   "grade": "HIGH",
-   "gradeLabel": "혼잡",
-   "label": "율리공영차고지 ↔ 꽃바위(종점)",
-   "directions": 2
-  },
-  {
    "routeNo": "114",
    "rank": 2,
    "grade": "HIGH",
@@ -27,11 +19,11 @@
    "directions": 2
   },
   {
-   "routeNo": "432",
-   "rank": 4,
+   "routeNo": "118",
+   "rank": 7,
    "grade": "MID",
    "gradeLabel": "보통",
-   "label": "율리공영차고지 ↔ 부영1단지하차",
+   "label": "꽃바위(기점) ↔ 꽃바위(종점)",
    "directions": 3
   },
   {
@@ -43,6 +35,22 @@
    "directions": 3
   },
   {
+   "routeNo": "134",
+   "rank": 1,
+   "grade": "HIGH",
+   "gradeLabel": "혼잡",
+   "label": "율리공영차고지 ↔ 꽃바위(종점)",
+   "directions": 2
+  },
+  {
+   "routeNo": "142",
+   "rank": 10,
+   "grade": "LOW",
+   "gradeLabel": "여유",
+   "label": "농소공영차고지 ↔ 꽃바위(종점)",
+   "directions": 3
+  },
+  {
    "routeNo": "215",
    "rank": 6,
    "grade": "MID",
@@ -51,20 +59,12 @@
    "directions": 2
   },
   {
-   "routeNo": "118",
-   "rank": 7,
+   "routeNo": "432",
+   "rank": 4,
    "grade": "MID",
    "gradeLabel": "보통",
-   "label": "꽃바위(기점) ↔ 꽃바위(종점)",
+   "label": "율리공영차고지 ↔ 부영1단지하차",
    "directions": 3
-  },
-  {
-   "routeNo": "753",
-   "rank": 8,
-   "grade": "LOW",
-   "gradeLabel": "여유",
-   "label": "울산과학기술원(기점) ↔ 명촌차고지(종점)",
-   "directions": 2
   },
   {
    "routeNo": "711",
@@ -75,12 +75,12 @@
    "directions": 2
   },
   {
-   "routeNo": "142",
-   "rank": 10,
+   "routeNo": "753",
+   "rank": 8,
    "grade": "LOW",
    "gradeLabel": "여유",
-   "label": "농소공영차고지 ↔ 꽃바위(종점)",
-   "directions": 3
+   "label": "울산과학기술원(기점) ↔ 명촌차고지(종점)",
+   "directions": 2
   }
  ]
 }
