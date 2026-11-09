@@ -53,22 +53,22 @@ public class AdminAiController {
         }
     }
 
-    // 지도에서 노선을 골랐을 때: 그 노선의 미처리 신고 + 1시간 뒤 혼잡도 예측을 본 분석 (노선번호만 받음)
-    // question 을 같이 보내면 같은 데이터를 보고 그 질문에 답함. hour 는 시험용(없으면 지금 시각)
+    // 지도에서 노선을 골랐을 때: 그 노선의 미완료 신고 + 이용자 수 예측을 본 분석 (노선번호만 받음)
+    // compareRouteNo 를 같이 보내면 두 노선을 비교해서 답하고, question 을 같이 보내면 같은 데이터를 보고 그 질문에 답함
     @PostMapping("/route")
     public ResponseEntity<Map<String, String>> route(@RequestBody Map<String, Object> body, HttpSession session) {
         if (AdminUtil.checkAdmin(session) != null) {
             return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
         }
         Object routeNo = body.get("routeNo");
-        Object hour = body.get("hour");
+        Object compare = body.get("compareRouteNo");
         Object question = body.get("question");
         String no = routeNo instanceof String s ? s : null;
-        Integer nowHour = hour instanceof Number n ? Integer.valueOf(n.intValue()) : null;
+        String compareNo = compare instanceof String c ? c : null;
         try {
-            // question 이 있으면 그 노선에 대한 질문, 없으면 정해진 분석(네 줄)
-            String answer = question == null ? aiService.analyzeRoute(no, nowHour)
-                : aiService.askRoute(no, nowHour, question instanceof String q ? q : "");
+            // question 이 있으면 그 노선(들)에 대한 질문, 없으면 정해진 분석(네 줄)
+            String answer = question == null ? aiService.analyzeRoute(no, compareNo)
+                : aiService.askRoute(no, compareNo, question instanceof String q ? q : "");
             return ResponseEntity.ok(Map.of("answer", answer));
         } catch (IllegalArgumentException e) {
             return fail(HttpStatus.BAD_REQUEST, e.getMessage());

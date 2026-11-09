@@ -16,7 +16,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 // 노선 하나의 일별 이용자 수 예측: 파이썬 예측 서버(ai_service)의 GET /predict 를 불러서 화면용 모양으로 바꿈
-// 혼잡도(RouteForecastService, 시간대별 %)와는 별개: 이쪽은 "하루 이용자 수(명)"이고 값은 합성데이터로 학습한 통계적 경향
+// 값은 "하루 이용자 수(명)"이고 합성데이터로 학습한 통계적 경향
 // 예측 서버가 꺼져 있거나 키가 없어도 예외를 던지지 않고 status 로 알려 줘서, 화면의 다른 부분은 그대로 동작함
 @Service
 public class RidershipForecastService {

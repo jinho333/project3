@@ -1,8 +1,10 @@
 package com.commit.project3.service;
 
 import com.commit.project3.dto.ReportDTO;
+import com.commit.project3.dto.ReportPriorityDTO;
 import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.dto.RouteOpenCountDTO;
+import com.commit.project3.dto.RoutePriorityDTO;
 import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.dto.StatDTO;
 import com.commit.project3.mapper.AdminMapper;
@@ -10,7 +12,11 @@ import com.commit.project3.mapper.ReportMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdminService {
@@ -22,10 +28,12 @@ public class AdminService {
 
     private final AdminMapper adminMapper;
     private final ReportMapper reportMapper;    // 첨부파일 목록·유형 목록은 사용자 쪽 쿼리를 그대로 사용
+    private final ReportPriorityService reportPriorityService;    // 노선 우선순위를 신고 처리 우선순위와 같은 원칙으로 정함
 
-    public AdminService(AdminMapper adminMapper, ReportMapper reportMapper) {
+    public AdminService(AdminMapper adminMapper, ReportMapper reportMapper, ReportPriorityService reportPriorityService) {
         this.adminMapper = adminMapper;
         this.reportMapper = reportMapper;
+        this.reportPriorityService = reportPriorityService;
     }
 
     // ===== 신고 관리 =====
@@ -115,6 +123,29 @@ public class AdminService {
     // 미처리(접수 + 처리중) 신고가 남아 있는 모든 노선의 건수
     public List<RouteOpenCountDTO> getOpenCountByRoute() {
         return adminMapper.selectOpenCountByRoute(null);
+    }
+
+    // 노선 우선순위: 미처리 신고가 있는 노선만, 신고 처리 우선순위(ReportPriorityService)에서 그 노선의 가장 앞선 신고 순위 순
+    // 신고 큐는 "긴급 구간(안전 유형, 14일 이상 방치) 먼저 -> 점수 높은 순 -> 오래된 신고 먼저"로 이미 정렬되어 있어서,
+    // 노선 순서도 신고 관리 화면과 같은 원칙(긴급한 신고가 있는 노선이 먼저)을 따름
+    public List<RoutePriorityDTO> getRoutePriority() {
+        Map<String, Integer> bestRank = new HashMap<>();
+        for (ReportPriorityDTO p : reportPriorityService.getQueue()) {
+            bestRank.putIfAbsent(p.getReport().getRouteNo(), p.getRank());   // 큐에서 처음 나온 신고가 그 노선의 가장 급한 신고
+        }
+
+        List<RoutePriorityDTO> list = new ArrayList<>();
+        for (RouteOpenCountDTO dto : getOpenCountByRoute()) {
+            int total = dto.getReceivedCnt() + dto.getProcessingCnt();
+            if (total > 0) {
+                list.add(new RoutePriorityDTO(dto.getRouteNo(), dto.getReceivedCnt(), dto.getProcessingCnt(), total,
+                    getOpenOldestDays(dto.getRouteNo())));
+            }
+        }
+        // 순위를 못 찾은 노선(건수는 있는데 큐에 없는 경우)은 맨 뒤로, 같으면 노선번호 순
+        list.sort(Comparator.comparingInt((RoutePriorityDTO r) -> bestRank.getOrDefault(r.routeNo(), Integer.MAX_VALUE))
+            .thenComparing(RoutePriorityDTO::routeNo));
+        return list;
     }
 
     // 노선 하나의 미처리 신고 건수: 신고가 없으면 0건으로 채워서 돌려줌

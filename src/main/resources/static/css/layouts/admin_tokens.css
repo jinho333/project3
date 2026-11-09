@@ -46,11 +46,6 @@
   /* 막대 그래프의 보조 색 (유형 막대) */
   --bar-muted: #7f8da6;
 
-  /* 지도 위 노선선의 혼잡 등급 색: dashboard_map.js 의 GRADE_COLOR 와 같은 값으로 맞출 것 */
-  --grade-high: #E53935;
-  --grade-mid: #F9A825;
-  --grade-low: #43A047;
-
   /* 모서리와 칸 높이 */
   --radius: 10px;
   --radius-pill: 999px;

@@ -1,13 +1,14 @@
 // 관리자 대시보드 지도
 // 동작 규칙(임시):
-//  1) 처음에는 노선 10개를 혼잡 등급 색으로 모두 표시
-//  2) 노선 하나를 클릭하면 그 노선만 표시 (목록, 지도의 선, 검색 후 엔터 모두 같음)
-//  3) 이어서 다른 노선을 클릭하거나 검색해서 고르면 그 노선이 추가로 표시 (쌓임), 표시 중인 노선을 다시 클릭하면 빠짐
-//  4) "전체 노선 보기" 버튼으로 처음 상태로 돌아감
-//  5) 방향: 기본은 노선당 대표 1방향, 노선 목록의 "양방향" 토글로 모든 방향 표시.
-//     노선 하나를 선택하면 예측 영역의 방향 칩으로 그 노선의 방향을 고름
-//  6) 선에 마우스를 올리면 툴팁(버스번호, 방향, 혼잡도, 미처리 신고 합계)이 뜨고 그 방향의 선 외에는(같은 노선의 반대 방향 포함) 흐려짐.
-//     미처리 신고 = 신고 관리의 접수 + 처리중. 마지막으로 누른 노선 하나의 접수와 처리중을 오른쪽 패널에 나눠서 보여 줌
+//  1) 처음에는 미완료 신고가 많은 상위 5개 노선을 노선마다 다른 색으로 표시 (색은 노선 목록의 점과 같음)
+//     (미완료 신고가 있는 노선이 하나도 없으면 목록의 앞 5개)
+//  2) 노선 하나를 클릭하면 그 노선만 표시 (목록, 지도의 선, 검색 후 엔터 모두 같음). 선택한 노선을 다시 누르면 처음 화면으로 돌아감
+//  3) 노선을 선택하면 다른 노선 항목에 "비교" 체크가 나타남. 하나를 체크하면 선택 노선 + 비교 노선 두 개만 표시 (최대 2개)
+//  4) "상위 5개 노선 보기" 버튼으로 처음 상태로 돌아감
+//  5) 방향: 노선마다 대표 1방향만 그림 (신고와 예측은 노선번호 단위라 양방향 합계)
+//     목록은 미완료 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 "미완료 신고 없는 노선 N개"로 접어 둠 (검색하면 모두 검색됨)
+//  6) 선에 마우스를 올리면 툴팁(버스번호, 방향, 미완료 신고 합계)이 뜨고 그 방향의 선 외에는(같은 노선의 반대 방향 포함) 흐려짐.
+//     미완료 신고 = 신고 관리의 접수 + 처리중. 마지막으로 누른 노선 하나의 접수와 처리중을 오른쪽 패널에 나눠서 보여 줌
 //     (노선 목록의 배지와 호버 툴팁은 모든 노선의 합계)
 //  7) 정류장: 전체 보기에서는 표시 안 함 / 노선을 선택하면 기점·종점 표시 /
 //     조금 확대(DIRECTION_ZOOM_LEVEL 이하)하면 선 위에 일정 간격으로 진행 방향 V 만 표시 /
@@ -21,7 +22,7 @@
 //     선마다 아래에 흰 테두리를 깔아서, 같은 색 선이 나란히 있어도 서로 구분됨
 // 노선 목록은 /admin/api/routes, 노선 선은 /admin/api/routes/{노선번호}/geometry,
 // 도로 선은 /admin/api/routes/{노선번호}/road?brtId= 에서 받음,
-// 미처리 신고 수는 /admin/api/routes/report-counts (전체), /admin/api/routes/{노선번호}/report-counts (한 노선) 에서 받음
+// 미완료 신고 수는 /admin/api/routes/report-counts (전체), /admin/api/routes/{노선번호}/report-counts (한 노선) 에서 받음
 (function () {
   const mapEl = document.querySelector('#map');
   const messageEl = document.querySelector('#mapMessage');
@@ -30,25 +31,28 @@
   const searchEl = document.querySelector('#routeSearch');
   const countEl = document.querySelector('#routeCount');
   const emptyEl = document.querySelector('#routeEmpty');
-  const dirOneBtn = document.querySelector('#dirOneBtn');
-  const dirBothBtn = document.querySelector('#dirBothBtn');
+  const restToggleEl = document.querySelector('#restToggle');
+  const restListEl = document.querySelector('#routeRestList');
   const forecastRouteEl = document.querySelector('#forecastRoute');
   const forecastTitleEl = document.querySelector('#forecastTitle');
+  const forecastCompareTitleEl = document.querySelector('#forecastCompareTitle');
   const forecastEmptyEl = document.querySelector('#forecastEmpty');
-  const forecastSummaryEl = document.querySelector('#forecastSummary');
-  const forecastCanvasEl = document.querySelector('#forecastChart');
   // 일별 이용자 수 예측 (예측 서버 결과)
   const ridershipSummaryEl = document.querySelector('#ridershipSummary');
   const ridershipChartBoxEl = document.querySelector('#ridershipChartBox');
   const ridershipCanvasEl = document.querySelector('#ridershipChart');
   const ridershipNoticeEl = document.querySelector('#ridershipNotice');
-  // 오른쪽 패널: 노선 하나를 선택하면 그 노선의 미처리 신고 수 (접수 / 처리중)
+  const ridershipGapEl = document.querySelector('#ridershipGap');
+  const ridershipNormBoxEl = document.querySelector('#ridershipNormBox');
+  const ridershipNormEl = document.querySelector('#ridershipNorm');
+  // 오른쪽 패널: 노선 하나를 선택하면 그 노선의 미완료 신고 수 (접수 / 처리중)
   const sideEmptyEl = document.querySelector('#sideEmpty');
   const sideRouteEl = document.querySelector('#sideRoute');
   const sideTitleEl = document.querySelector('#sideTitle');
   const sideReceivedEl = document.querySelector('#sideReceived');
   const sideProcessingEl = document.querySelector('#sideProcessing');
   const sideCountsEl = document.querySelector('#sideCounts');
+  const sideCompareEl = document.querySelector('#sideCompare');
   const sideUnknownEl = document.querySelector('#sideUnknown');
   const sideAiBtn = document.querySelector('#sideAiBtn');
   const sideAiResultEl = document.querySelector('#sideAiResult');
@@ -57,14 +61,15 @@
   const sideAskResultEl = document.querySelector('#sideAskResult');
 
   const ROUTE_API = '/admin/api/routes';
+  const DEFAULT_COUNT = 5;        // 처음 화면에 보여 주는 상위 노선 수
   const OPEN_REFRESH_MS = 5000;   // 같은 노선을 다시 클릭해도 이 시간(ms) 안에는 신고 수를 다시 받지 않음
-  const GRADE_COLOR = { HIGH: '#E53935', MID: '#F9A825', LOW: '#43A047' }; // 혼잡 / 보통 / 여유
-  const GRADE_LABEL = { HIGH: '혼잡', MID: '보통', LOW: '여유' };
+  // 노선마다 다른 선 색 (노선 목록 순서대로 돌려 씀). 흰 테두리가 깔려서 서로 구분되고, 지도의 도로 색과 겹치지 않게 진한 색으로 고름
+  const ROUTE_COLORS = ['#2563EB', '#DC2626', '#059669', '#7C3AED', '#EA580C', '#0891B2', '#DB2777', '#65A30D', '#475569', '#B45309'];
   const LINE_WEIGHT = 5;          // 선 굵기
   const LINE_WEIGHT_HOVER = 8;    // 마우스를 올린 선의 굵기
   const LINE_OPACITY = 0.85;      // 보통 선 투명도
   const LINE_OPACITY_HOVER = 1;   // 마우스를 올린 선 투명도 (가장 진하게)
-  // 선마다 아래에 깔리는 흰 테두리: 같은 색(같은 혼잡 등급) 선이 나란히 있어도 선마다 경계가 보이게 함
+  // 선마다 아래에 깔리는 흰 테두리: 같은 색 선이 나란히 있어도 선마다 경계가 보이게 함
   const OUTLINE_WEIGHT = LINE_WEIGHT + 2;   // 선 양쪽으로 1px 씩 흰 테두리가 보임
   const OUTLINE_OPACITY = 0.9;
   const OUTLINE_OPACITY_DIM = 0.4;          // 마우스를 올렸을 때 다른 노선의 테두리 투명도
@@ -75,7 +80,7 @@
     { extra: 10, opacity: 0.12, z: 8 },   // 바깥쪽 (아주 연함)
     { extra: 5, opacity: 0.25, z: 9 }     // 안쪽 (조금 진함)
   ];
-  const STOP_ICON_COLOR = '#555'; // 일반 정류장 아이콘 색 (노선, 혼잡 등급과 상관없이 한 가지)
+  const STOP_ICON_COLOR = '#555'; // 일반 정류장 아이콘 색 (노선과 상관없이 한 가지)
   const LINE_OPACITY_DIM = 0.5;  // 마우스를 올렸을 때 다른 노선의 투명도
   const FLASH_OPACITY = 0.15;     // 노선을 고른 직후 깜빡일 때 가장 흐려지는 투명도
   // 처음 들어왔을 때와 "전체 노선 보기" 때, 모든 노선이 화면에 딱 들어오는 확대 수준에서 이만큼(단계) 더 확대해서 보여 줌
@@ -102,28 +107,31 @@
     + '카카오 개발자 콘솔의 사이트 도메인 등록(http://localhost:8080), 카카오맵 사용 설정을 확인하세요.';
 
   let map = null;                 // 카카오 지도
-  let routes = [];                // 서버에서 받은 노선 목록 [{routeNo, rank, grade, gradeLabel, label}]
+  let routes = [];                // 서버에서 받은 노선 목록 [{routeNo, label, directions}]
   // 노선번호 -> { dirs: [{ brtId, label, isLoop, lines: [Polyline...] }], rep: 대표 방향, bounds } (불러온 노선만)
   const layers = {};
   const buttons = {};             // 노선번호 -> 목록의 버튼
-  const badges = {};              // 노선번호 -> 목록 버튼 오른쪽 위의 "미처리 N건" 배지
+  const badges = {};              // 노선번호 -> 목록 버튼 오른쪽 위의 "미완료 N건" 배지
   const items = {};               // 노선번호 -> 목록의 항목(li), 검색으로 걸러낼 때 숨김/표시
-  const details = {};             // 노선번호 -> 목록 항목 안의 방향 선택 영역 (펼침)
-  const dirLines = {};            // 노선번호 -> 목록 항목 아래의 한 줄 (지금 보고 있는 방향)
-  let mode = 'all';               // 'all': 전체 표시 / 'select': 선택한 노선만 (선택할수록 늘어남)
-  let selected = new Set();       // select 모드에서 지도에 표시 중인 노선번호
-  let dirMode = 'one';            // 'one': 노선당 대표 1방향 / 'both': 모든 방향
-  let dirChoice = {};             // 노선번호 -> 방향 칩으로 고른 값 (방향ID 또는 'all'), 없으면 dirMode 를 따름
-  let openRoute = null;           // 목록에서 방향 칩을 펼쳐 둔 노선번호 (한 번에 하나만, 없으면 모두 접힘)
+  const compareBoxes = {};        // 노선번호 -> 목록 항목 아래의 "비교" 체크 { label, input }
+  let mode = 'all';               // 'all': 처음 화면(상위 노선) / 'select': 선택한 노선(과 비교 노선)만
+  let selected = new Set();       // select 모드에서 지도에 표시 중인 노선번호 (선택 노선 + 비교 노선, 최대 2개)
+  let compareRoute = null;        // 비교 노선번호 (없으면 null)
+  let priorityOrder = null;       // 미완료 신고가 있는 노선번호의 우선순위 순서 (서버에서 못 받았으면 null)
+  let defaultRoutes = [];         // 처음 화면에 보여 줄 노선번호
+  const restNos = new Set();      // 목록에서 접어 둔 "미완료 신고 없는 노선"
+  let restOpen = false;           // 접어 둔 노선을 펼쳤는지
   let stopMarkers = [];           // 지도에 올라가 있는 정류장 표시 [{ routeNo, overlay, el }]
-  // 노선번호 -> 미처리(접수 + 처리중) 신고 수 { received, processing, total }
+  // 노선번호 -> 미완료(접수 + 처리중) 신고 수 { received, processing, total }
   // 처음에 전체를 한 번 받아 두고(호버 툴팁이 바로 뜨게), 노선을 클릭하면 그 노선만 최신 값으로 갱신
   const openCounts = {};
   let openAllLoaded = false;      // 전체 신고 수를 받았는지 (받았는데 없는 노선이면 0건)
   const openFetchedAt = {};       // 노선번호 -> 마지막으로 갱신한 시각(ms)
-  let focusRoute = null;          // 마지막으로 누른 노선번호 (오른쪽 패널이 이 노선의 신고 수를 보여 줌)
+  let focusRoute = null;          // 선택한 노선번호 (오른쪽 패널과 예측 영역이 이 노선을 보여 줌)
   let sideRoute = null;           // 오른쪽 패널에 지금 보여 주는 노선번호
-  let forecastShown = null;       // 예측 영역에 차트를 그려 둔 노선번호
+  let sideKey = '';               // 오른쪽 패널의 노선 + 비교 노선 조합 (바뀌면 AI 답변을 지움)
+  let forecastShown = null;       // 예측 영역에 이용자 수 예측을 불러 둔 노선번호
+  let compareShown = null;        // 예측 영역에 불러 둔 비교 노선번호
 
   // ---------- 안내 문구 ----------
   function showMessage(text, type) {            // type: 'info'(파랑) 또는 'error'(주황)
@@ -143,20 +151,17 @@
     }
   }
 
-  // ---------- 혼잡 등급 ----------
-  // 노선번호 + 방향ID -> 혼잡 등급. 선 색과 툴팁이 모두 여기서 정함.
-  // 지금은 노선 등급 하나를 쓰고, 예측에 방향별 값(route.directionGrades: [{brtId, grade}])이 오면 그 값을 먼저 씀.
-  // (route.directions 는 방향 개수라서 이름을 겹치지 않게 함)
-  function gradeOf(route, brtId) {
-    const d = (route.directionGrades || []).find(function (x) { return x.brtId === brtId; });
-    return d ? d.grade : route.grade;
-  }
-
   function findRoute(routeNo) {
     return routes.find(function (r) { return r.routeNo === routeNo; });
   }
 
-  // ---------- 미처리 신고 수 (신고 관리의 접수 + 처리중, 완료는 제외) ----------
+  // ---------- 노선 색 ----------
+  // 노선 하나의 색: 선, 정류장 방향 표시, 목록의 점, 툴팁의 점이 모두 같은 색
+  function colorOf(route) {
+    return ROUTE_COLORS[routes.indexOf(route) % ROUTE_COLORS.length];
+  }
+
+  // ---------- 미완료 신고 수 (신고 관리의 접수 + 처리중, 완료는 제외) ----------
   // 모르면 null (아직 못 받았거나 받지 못함), 신고가 없는 노선은 0건
   function openCountOf(routeNo) {
     if (openCounts[routeNo]) return openCounts[routeNo];
@@ -183,20 +188,31 @@
     }
   }
 
-  // 노선 목록의 배지: 미처리 신고 합계를 한눈에 (모르면 배지를 숨김)
+  // 미완료 신고가 있는 노선의 우선순위 순서 (임시 기준은 서버가 정함). 못 받으면 목록을 접지 않고 노선번호 순으로 보여 줌
+  async function loadPriority() {
+    try {
+      const res = await fetch(ROUTE_API + '/priority');
+      if (!res.ok) throw new Error('priority ' + res.status);
+      priorityOrder = (await res.json()).map(function (x) { return x.routeNo; });
+    } catch (e) {
+      priorityOrder = null;
+    }
+  }
+
+  // 노선 목록의 배지: 미완료 신고 합계를 한눈에 (모르면 배지를 숨김)
   function renderOpenBadges() {
     Object.keys(badges).forEach(function (no) {
       const c = openCountOf(no);
       const badge = badges[no];
       badge.hidden = !c;
       if (!c) return;
-      badge.textContent = c.total === 0 ? '미처리 없음' : '미처리 ' + c.total + '건';
+      badge.textContent = c.total === 0 ? '미완료 없음' : '미완료 ' + c.total + '건';
       badge.classList.toggle('is-zero', c.total === 0);
     });
   }
 
   // ---------- AI 분석 / 질문 (오른쪽 패널, 버튼을 눌렀을 때만 호출) ----------
-  // 서버에는 노선번호(와 질문)만 보냄: 서버가 그 노선의 미처리 신고와 1시간 뒤 혼잡도 예측을 직접 모아서 AI 에 물어봄
+  // 서버에는 노선번호(와 질문)만 보냄: 서버가 그 노선의 미완료 신고와 이용자 수 예측을 직접 모아서 AI 에 물어봄
   // 분석(네 줄)과 질문은 서로 답변 칸이 따로라서, 질문을 해도 분석 결과가 지워지지 않음
   const aiSlots = [
     { btn: sideAiBtn, result: sideAiResultEl, idle: 'AI 분석', wait: '분석 중...', n: 0 },
@@ -226,8 +242,8 @@
     slot.result.classList.remove('is-error');
     slot.result.textContent = 'AI가 답변을 만드는 중입니다. 몇 초 걸릴 수 있어요...';
 
-    const body = Object.assign({ routeNo: routeNo }, extra);
-    if (testHour !== null) body.hour = Number(testHour);    // 시험용: 주소의 ?hour= 와 같은 시각으로 분석
+    const compareNo = comparedRoute();
+    const body = Object.assign({ routeNo: routeNo }, compareNo ? { compareRouteNo: compareNo } : {}, extra);
     let text, isError = false;
     try {
       const res = await fetch('/admin/api/ai/route', {
@@ -266,17 +282,26 @@
     if (e.key === 'Enter') { e.preventDefault(); askAi(); }
   });
 
-  // 오른쪽 패널의 노선: 마지막으로 누른 노선 하나 (이어서 눌러 여러 노선이 쌓여 있어도 그중 하나만).
-  // AI 답변도 이 노선 기준으로 붙일 예정이라, 패널의 숫자와 답변이 항상 같은 노선을 가리키게 함
+  // 오른쪽 패널의 노선: 선택한 노선 하나 (AI 답변도 이 노선 기준이라, 패널의 숫자와 답변이 항상 같은 노선을 가리킴)
   function focusedRoute() {
-    if (mode !== 'select' || selected.size === 0) return null;
-    if (focusRoute && selected.has(focusRoute)) return focusRoute;
-    return Array.from(selected).pop();            // 마지막으로 누른 노선이 빠졌으면 남은 것 중 가장 최근에 쌓인 노선
+    return mode === 'select' && focusRoute && selected.has(focusRoute) ? focusRoute : null;
   }
 
-  // 오른쪽 패널: 그 노선의 미처리 신고 수 (접수와 처리중을 나눠서), 노선이 없으면 안내 문구만
+  // 비교 노선: 선택한 노선이 있고 비교 노선이 체크되어 있을 때만
+  function comparedRoute() {
+    return focusedRoute() && compareRoute && selected.has(compareRoute) ? compareRoute : null;
+  }
+
+  function openText(c) {
+    return c ? '접수 ' + c.received + '건 · 처리중 ' + c.processing + '건' : '신고 수를 불러오지 못했습니다';
+  }
+
+  // 오른쪽 패널: 그 노선의 미완료 신고 수 (접수와 처리중을 나눠서), 비교 노선이 있으면 한 줄 더, 노선이 없으면 안내 문구만
   function renderSideOpen(routeNo) {
-    if (sideRoute !== routeNo) clearAi();         // 노선이 바뀌면 이전 노선의 답변은 지움 (같은 노선의 갱신에서는 그대로 둠)
+    const compareNo = routeNo ? comparedRoute() : null;
+    const key = routeNo ? routeNo + '|' + (compareNo || '') : '';
+    if (sideKey !== key) clearAi();               // 노선이나 비교 노선이 바뀌면 이전 답변은 지움 (같은 노선의 갱신에서는 그대로 둠)
+    sideKey = key;
     sideRoute = routeNo;
     sideEmptyEl.hidden = !!routeNo;
     sideRouteEl.hidden = !routeNo;
@@ -284,6 +309,8 @@
 
     const route = findRoute(routeNo);
     sideTitleEl.textContent = routeNo + '번 · ' + (route ? route.label : '');
+    sideCompareEl.hidden = !compareNo;
+    if (compareNo) sideCompareEl.textContent = '비교 노선 ' + compareNo + '번: ' + openText(openCountOf(compareNo));
     const c = openCountOf(routeNo);
     sideCountsEl.hidden = !c;
     sideUnknownEl.hidden = !!c;
@@ -298,7 +325,11 @@
   function updateSide() {
     const no = focusedRoute();
     renderSideOpen(no);
-    if (no) refreshOpenCount(no);
+    if (no) {
+      refreshOpenCount(no);
+      const cmp = comparedRoute();
+      if (cmp) refreshOpenCount(cmp);
+    }
   }
 
   // 노선을 클릭했을 때 그 노선의 최신 신고 수를 받아 와서 갱신 (같은 노선은 OPEN_REFRESH_MS 안에는 다시 받지 않음)
@@ -315,10 +346,10 @@
       return;
     }
     renderOpenBadges();
-    if (sideRoute === routeNo) renderSideOpen(routeNo);   // 그사이 다른 노선으로 바뀌었으면 건드리지 않음
+    if (sideRoute === routeNo || (sideRoute && comparedRoute() === routeNo)) renderSideOpen(sideRoute);   // 그사이 다른 노선으로 바뀌었으면 건드리지 않음
   }
 
-  // ---------- 호버 툴팁 (선에 마우스를 올리면 버스번호, 방향, 혼잡도를 보여 줌) ----------
+  // ---------- 호버 툴팁 (선에 마우스를 올리면 버스번호, 방향, 미완료 신고를 보여 줌) ----------
   // 툴팁은 지도 좌표가 아니라 마우스의 화면 좌표를 직접 따라감 (확대/이동 후에도 어긋나지 않음)
   let tooltipEl = null;           // 툴팁 요소 (지도 영역 안에 둠)
   let mouseX = 0, mouseY = 0;     // 지도 영역 안에서의 마우스 위치
@@ -346,13 +377,13 @@
 
   // stopText 가 있으면(정류장에 마우스를 올린 경우) 정류장 이름 줄을 함께 보여 줌
   function showTooltip(route, dir, stopText) {
-    const grade = gradeOf(route, dir.brtId);
     tooltipEl.textContent = '';
 
     const head = document.createElement('div');
     head.className = 'tt-head';
     const dot = document.createElement('span');
-    dot.className = 'dot grade-' + grade;
+    dot.className = 'dot';
+    dot.style.background = colorOf(route);
     head.appendChild(dot);
     head.appendChild(document.createTextNode(route.routeNo + '번'));
     tooltipEl.appendChild(head);
@@ -368,24 +399,13 @@
     direction.className = 'tt-line';
     direction.textContent = '방향: ' + dir.label;
 
-    const level = document.createElement('div');
-    level.className = 'tt-line';
-    level.textContent = '혼잡도: ' + GRADE_LABEL[grade];
-
-    // 신고 관리의 미처리(접수 + 처리중) 합계, 접수와 처리중을 나눈 값은 노선을 클릭하면 예측 영역에 보임
+    // 신고 관리의 미완료(접수 + 처리중) 합계, 접수와 처리중을 나눈 값은 노선을 클릭하면 오른쪽 패널에 보임
     const open = document.createElement('div');
     open.className = 'tt-line tt-open';
-    open.textContent = '미처리 신고: ' + openTotalText(route.routeNo);
-
-    // 예측 수치가 연결되면 이 줄에 예상 승차 인원 등을 넣을 자리
-    const forecast = document.createElement('div');
-    forecast.className = 'tt-line tt-muted';
-    forecast.textContent = '혼잡 순위 ' + route.rank + '위 (임시 데이터)';
+    open.textContent = '미완료 신고: ' + openTotalText(route.routeNo);
 
     tooltipEl.appendChild(direction);
-    tooltipEl.appendChild(level);
     tooltipEl.appendChild(open);
-    tooltipEl.appendChild(forecast);
 
     // 지금 그려진 선이 도로 기준인지 정류장을 이은 직선인지 (도로 선을 못 받은 노선을 알아볼 수 있게)
     const shape = document.createElement('div');
@@ -486,7 +506,7 @@
     visibleRouteNos().forEach(function (no) {
       const route = findRoute(no);
       shownDirs(no).forEach(function (dir) {
-        const color = GRADE_COLOR[gradeOf(route, dir.brtId)] || '#888';
+        const color = colorOf(route);
         const last = dir.stops.length - 1;
         const plan = planArrows(dir, proj);        // 진행 방향 V 를 놓을 자리 (기점 점 안, 나머지는 선 위)
         dir.stops.forEach(function (stop, i) {
@@ -707,7 +727,7 @@
     dirs.forEach(function (dir) {
       const line = new kakao.maps.Polyline({
         path: dir.path,
-        strokeColor: GRADE_COLOR[gradeOf(route, dir.brtId)] || '#888',
+        strokeColor: colorOf(route),
         strokeWeight: LINE_WEIGHT,
         strokeOpacity: LINE_OPACITY,
         zIndex: 1
@@ -1045,20 +1065,13 @@
   }
 
   function visibleRouteNos() {
-    if (mode === 'all') return Object.keys(layers);
+    if (mode === 'all') return defaultRoutes.filter(function (no) { return layers[no]; });
     return Array.from(selected).filter(function (no) { return layers[no]; });
   }
 
-  // 노선 하나에서 지금 선택된 방향 값: 방향ID 또는 'all'
-  function currentChoice(routeNo) {
-    return dirChoice[routeNo] || (dirMode === 'both' ? 'all' : layers[routeNo].rep.brtId);
-  }
-
-  // 지도에 그릴 방향들
+  // 지도에 그릴 방향: 노선마다 대표 1방향 (신고와 예측은 노선 전체 기준이라 방향을 고르지 않음)
   function shownDirs(routeNo) {
-    const layer = layers[routeNo];
-    const choice = currentChoice(routeNo);
-    return choice === 'all' ? layer.dirs : layer.dirs.filter(function (d) { return d.brtId === choice; });
+    return [layers[routeNo].rep];
   }
 
   function fitToVisible() {
@@ -1120,148 +1133,37 @@
         });
       });
     });
-    // 목록의 버튼: 직접 선택해서 표시 중인 노선만 강조 (전체 보기 상태에서는 강조 없음)
+    // 목록의 버튼: 선택한 노선과 비교 노선만 강조 (처음 화면에서는 강조 없음)
+    // 왼쪽 체크 칸: 선택한 노선이 있을 때만 보임(자리는 늘 차지해서 목록이 밀리지 않음). 선택한 노선과 비교 노선은 노선 색으로 체크,
+    // 선택한 노선은 눌러도 바뀌지 않음
+    const mainNo = mode === 'select' ? focusRoute : null;
+    const cmpNo = comparedRoute();
     Object.keys(buttons).forEach(function (no) {
-      buttons[no].classList.toggle('is-active', mode === 'select' && selected.has(no));
+      buttons[no].classList.toggle('is-active', no === mainNo);
+      buttons[no].classList.toggle('is-compare', no === cmpNo);
+      const box = compareBoxes[no];
+      box.label.classList.toggle('is-off', !mainNo);
+      box.label.classList.toggle('is-main', no === mainNo);
+      box.label.title = no === mainNo ? '선택한 노선' : '비교 노선으로 선택';
+      box.input.checked = no === mainNo || no === cmpNo;
+      box.input.tabIndex = no === mainNo ? -1 : 0;
     });
     applyFilter();                                // 검색 중에도 선택한 노선은 목록에 남겨 둠
     applyOffsets();                               // 겹치는 선은 옆으로 벌림 (정류장과 방향 V 가 벌어진 선을 따라가도록 먼저 함)
     refreshStops();
-    renderDirControls();
+    updateFocusViews();
     ensureRoads();                               // 보이는 방향의 도로 선을 받아 오면 선과 방향 V 가 도로 모양으로 바뀜
-  }
-
-  // ---------- 혼잡도 예측 차트 (예측 영역) ----------
-  // /admin/api/routes/{노선번호}/forecast: 시간대별 평소 평균 혼잡도(%) 곡선 + 접속 시각 1시간 뒤의 예측값 (지금은 임시 값)
-  // 평소 대비 비율이 10% 이상 벗어나면(높든 낮든) 점과 문구를 강조
-  const ALERT_UP_COLOR = '#E53935';
-  const ALERT_DOWN_COLOR = '#43A047';
-  const ALERT_TEXT = '평소와 크게 다릅니다. 관리자가 확인해야 할 사항이 있을 수 있습니다.';
-  // 시험용: 주소에 ?hour=22 처럼 붙이면 접속 시각을 그 시(0~23)로 보고 예측 (운행 시간 밖을 확인할 때)
-  const testHour = /^\d{1,2}$/.test(new URLSearchParams(location.search).get('hour') || '')
-    ? new URLSearchParams(location.search).get('hour') : null;
-  let forecastChart = null;
-  let forecastReqNo = 0;          // 응답이 늦게 와도 지금 노선의 것만 그리도록 요청마다 번호를 매김
-
-  function clearForecastChart() {
-    if (forecastChart) { forecastChart.destroy(); forecastChart = null; }
-  }
-
-  // 차트 바닥에 깔리는 것: 혼잡 등급 띠(서버 기준과 같음) + 지금 시각의 세로선
-  const forecastGuides = {
-    id: 'forecastGuides',
-    beforeDatasetsDraw: function (chart) {
-      const f = chart.options.plugins.forecastGuides.forecast;
-      const ctx = chart.ctx, a = chart.chartArea, y = chart.scales.y, x = chart.scales.x;
-      const band = function (from, to, color) {
-        const top = y.getPixelForValue(to), bottom = y.getPixelForValue(from);
-        ctx.fillStyle = color;
-        ctx.fillRect(a.left, top, a.right - a.left, bottom - top);
-      };
-      ctx.save();
-      band(f.gradeHighMin, 100, 'rgba(229, 57, 53, 0.08)');
-      band(f.gradeMidMin, f.gradeHighMin, 'rgba(249, 168, 37, 0.08)');
-      band(0, f.gradeMidMin, 'rgba(67, 160, 71, 0.08)');
-      const idx = f.hours.indexOf(f.nowHour);
-      if (idx !== -1) {                           // 지금이 운행 시간대일 때만
-        const px = x.getPixelForValue(idx);
-        ctx.strokeStyle = '#999';
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#666';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('지금', px, a.top - 4);
-      }
-      ctx.restore();
-    }
-  };
-
-  function renderForecast(f) {
-    forecastSummaryEl.textContent = '';
-    if (f.status === 'OUTSIDE_HOURS') {
-      forecastSummaryEl.appendChild(document.createTextNode(f.message + ' (평소 평균 곡선만 표시합니다)'));
-    } else {
-      const up = f.deviationPct > 0;
-      const line = document.createElement('span');
-      line.textContent = f.targetHour + '시(1시간 뒤) 예상 혼잡도 ' + f.forecast + '% · 평소 ' + f.baselineAtTarget
-        + '%보다 ' + Math.abs(f.deviationPct) + '% ' + (f.deviationPct === 0 ? '같음' : (up ? '높음 ▲' : '낮음 ▼')) + ' ';
-      const muted = document.createElement('span');
-      muted.className = 'fs-muted';
-      muted.textContent = f.temp ? '(임시 데이터)' : '';
-      forecastSummaryEl.appendChild(line);
-      forecastSummaryEl.appendChild(muted);
-      if (f.alert) {
-        const alertEl = document.createElement('span');
-        alertEl.className = 'fs-alert ' + (up ? 'is-up' : 'is-down');
-        alertEl.textContent = '⚠ ' + ALERT_TEXT;
-        forecastSummaryEl.appendChild(alertEl);
-      }
-    }
-
-    clearForecastChart();
-    if (typeof Chart === 'undefined') {           // 차트 라이브러리를 못 받았으면 위의 글만 보여 줌
-      forecastSummaryEl.appendChild(document.createElement('br'));
-      forecastSummaryEl.appendChild(document.createTextNode('(차트를 불러오지 못했습니다)'));
-      return;
-    }
-    const targetIdx = f.status === 'OK' ? f.hours.indexOf(f.targetHour) : -1;
-    const predicted = f.hours.map(function (h, i) { return i === targetIdx ? f.forecast : null; });
-    const pointColor = f.alert ? (f.deviationPct > 0 ? ALERT_UP_COLOR : ALERT_DOWN_COLOR) : '#333';
-    forecastChart = new Chart(forecastCanvasEl, {
-      type: 'line',
-      data: {
-        labels: f.hours.map(function (h) { return h + '시'; }),
-        datasets: [
-          { label: '평소 평균', data: f.baseline, borderColor: '#777', backgroundColor: '#777',
-            borderWidth: 2, pointRadius: 2, tension: 0.3 },
-          { label: '1시간 뒤 예측', data: predicted, showLine: false, borderColor: '#fff', borderWidth: 2,
-            backgroundColor: pointColor, pointRadius: f.alert ? 11 : 8, pointHoverRadius: f.alert ? 12 : 9 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        layout: { padding: { top: 14 } },
-        scales: {
-          y: { min: 0, max: 100, ticks: { callback: function (v) { return v + '%'; } } },
-          x: { ticks: { maxRotation: 0, autoSkip: true } }
-        },
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 12 } },
-          tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + c.parsed.y + '%'; } } },
-          forecastGuides: { forecast: f }
-        }
-      },
-      plugins: [forecastGuides]
-    });
-  }
-
-  async function loadForecast(routeNo) {
-    const req = ++forecastReqNo;
-    forecastSummaryEl.textContent = '예측을 불러오는 중...';
-    clearForecastChart();
-    try {
-      const res = await fetch(ROUTE_API + '/' + encodeURIComponent(routeNo) + '/forecast'
-        + (testHour !== null ? '?hour=' + testHour : ''));
-      if (!res.ok) throw new Error('forecast ' + res.status);
-      const f = await res.json();
-      if (req !== forecastReqNo) return;          // 그사이 다른 노선으로 바뀌었으면 버림
-      renderForecast(f);
-    } catch (e) {
-      if (req !== forecastReqNo) return;
-      forecastSummaryEl.textContent = '예측을 불러오지 못했습니다. 잠시 후 다시 시도하세요.';
-    }
   }
 
   // ---------- 일별 이용자 수 예측 (예측 영역 아래) ----------
   // /admin/api/routes/{노선번호}/ridership: 예측 서버(ai_service)가 만든 오늘부터 14일의 하루 이용자 수(명)
   // status 가 OK 가 아니면(서버 꺼짐, 모델이 모르는 노선, 예측 가능 기간 밖) 차트 대신 message 를 보여 줌
+  // 두 노선을 비교할 때는 같은 차트에 같은 눈금으로 그림. 규모 차이가 크면 안내하고, 노선마다 자기 최대값 기준으로 볼 수도 있음
+  const GAP_RATIO = 3;            // 두 노선의 하루 평균 이용자 수가 이 배수 이상 차이 나면 안내
   let ridershipChart = null;
-  let ridershipReqNo = 0;         // 응답이 늦게 와도 지금 노선의 것만 그리도록 요청마다 번호를 매김
-  let ridershipState = 'idle';    // idle(아직 안 받음) / loading / ok / failed (failed 일 때만 같은 노선을 다시 눌러 재시도)
+  const ridershipReqNo = { main: 0, compare: 0 };       // 응답이 늦게 와도 지금 노선의 것만 그리도록 요청마다 번호를 매김
+  const ridershipData = { main: null, compare: null };  // 받은 결과 (아직 못 받았으면 null)
+  let ridershipState = 'idle';    // idle(아직 안 받음) / loading / ok / failed (선택한 노선이 failed 일 때만 같은 노선을 다시 눌러 재시도)
 
   function clearRidershipChart() {
     if (ridershipChart) { ridershipChart.destroy(); ridershipChart = null; }
@@ -1272,21 +1174,63 @@
     clearRidershipChart();
     ridershipChartBoxEl.hidden = true;
     ridershipNoticeEl.textContent = '';
+    ridershipGapEl.hidden = true;
+    ridershipNormBoxEl.hidden = true;
     ridershipSummaryEl.textContent = text;
     ridershipSummaryEl.classList.add('is-error');
   }
 
-  function renderRidership(r) {
-    if (r.status !== 'OK' || !r.days.length) {
-      showRidershipMessage(r.message || '이용자 수 예측을 표시할 수 없습니다.');
+  function usable(r) { return !!r && r.status === 'OK' && r.days.length > 0; }
+
+  function dayAverage(r) {
+    return r.days.reduce(function (sum, d) { return sum + d.predicted; }, 0) / r.days.length;
+  }
+
+  // 받아 둔 선택 노선(과 비교 노선)의 결과로 요약, 안내, 차트를 그림
+  function drawRidership() {
+    const main = ridershipData.main;
+    const mainNo = focusedRoute();
+    if (!main || !mainNo) return;                 // 선택 노선의 결과를 기다리는 중 (불러오는 중 문구가 이미 떠 있음)
+    if (!usable(main)) {
+      showRidershipMessage(main.message || '이용자 수 예측을 표시할 수 없습니다.');
       return;
     }
     ridershipState = 'ok';
     ridershipSummaryEl.classList.remove('is-error');
-    const total = r.days.reduce(function (sum, d) { return sum + d.predicted; }, 0);
-    ridershipSummaryEl.textContent = r.days[0].date + ' ~ ' + r.days[r.days.length - 1].date
-      + ' 하루 평균 약 ' + Math.round(total / r.days.length).toLocaleString() + '명';
-    ridershipNoticeEl.textContent = r.notice + ' (모델 학습 ' + r.trainedEnd + '까지)';
+
+    const compareNo = comparedRoute();
+    const cmp = compareNo ? ridershipData.compare : null;
+    const sets = [{ no: mainNo, r: main }];
+    const range = main.days[0].date + ' ~ ' + main.days[main.days.length - 1].date;
+    const avgText = function (r) { return '약 ' + Math.round(dayAverage(r)).toLocaleString() + '명'; };
+    let summary = range + ' 하루 평균 ' + avgText(main);
+    if (compareNo) {
+      summary = range + ' 하루 평균 · ' + mainNo + '번 ' + avgText(main);
+      if (!cmp) {
+        summary += ' · ' + compareNo + '번 불러오는 중...';
+      } else if (!usable(cmp)) {
+        summary += ' · ' + compareNo + '번은 표시할 수 없습니다 (' + (cmp.message || '예측 없음') + ')';
+      } else {
+        summary += ' · ' + compareNo + '번 ' + avgText(cmp);
+        sets.push({ no: compareNo, r: cmp });
+      }
+    }
+    ridershipSummaryEl.textContent = summary;
+    ridershipNoticeEl.textContent = main.notice + ' (모델 학습 ' + main.trainedEnd + '까지)';
+
+    // 두 노선을 같은 차트에 그릴 수 있을 때만: 규모 차이 안내와 최대값 기준 선택
+    const both = sets.length > 1;
+    ridershipNormBoxEl.hidden = !both;
+    ridershipGapEl.hidden = true;
+    if (both) {
+      const hi = Math.max(dayAverage(sets[0].r), dayAverage(sets[1].r));
+      const lo = Math.min(dayAverage(sets[0].r), dayAverage(sets[1].r));
+      if (lo > 0 && hi / lo >= GAP_RATIO) {
+        ridershipGapEl.hidden = false;
+        ridershipGapEl.textContent = '두 노선의 하루 평균 이용자 수가 약 ' + (hi / lo).toFixed(1)
+          + '배 차이 납니다. 같은 눈금이라 작은 노선의 변화가 잘 보이지 않을 수 있으니, 아래 "자기 최대값 기준"으로 모양을 비교해 보세요.';
+      }
+    }
 
     clearRidershipChart();
     if (typeof Chart === 'undefined') {
@@ -1294,182 +1238,145 @@
       ridershipSummaryEl.appendChild(document.createTextNode(' (차트를 불러오지 못했습니다)'));
       return;
     }
+    const norm = both && ridershipNormEl.checked;
+    const datasets = sets.map(function (x) {
+      const byDate = {};
+      x.r.days.forEach(function (d) { byDate[d.date] = d.predicted; });
+      const raw = main.days.map(function (d) { return byDate[d.date] === undefined ? null : byDate[d.date]; });
+      const max = Math.max.apply(null, raw.filter(function (v) { return v !== null; }));
+      return {
+        label: x.no + '번',
+        data: norm ? raw.map(function (v) { return v === null ? null : Math.round(v / max * 1000) / 10; }) : raw,
+        raw: raw,
+        backgroundColor: colorOf(findRoute(x.no))
+      };
+    });
     ridershipChartBoxEl.hidden = false;
     ridershipChart = new Chart(ridershipCanvasEl, {
       type: 'bar',
       data: {
-        labels: r.days.map(function (d) { return d.date.slice(5) + '(' + d.dayOfWeek + ')'; }),
-        datasets: [{ label: '예상 이용자 수', data: r.days.map(function (d) { return d.predicted; }),
-          backgroundColor: '#243b8f' }]
+        labels: main.days.map(function (d) { return d.date.slice(5) + '(' + d.dayOfWeek + ')'; }),
+        datasets: datasets
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return v.toLocaleString(); } } },
+        scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return norm ? v + '%' : v.toLocaleString(); } } },
                   x: { ticks: { maxRotation: 60, autoSkip: false, font: { size: 10 } } } },
         plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: function (c) { return c.parsed.y.toLocaleString() + '명'; } } }
+          legend: { display: both, position: 'bottom', labels: { boxWidth: 12 } },
+          tooltip: { callbacks: { label: function (c) {
+            const v = c.dataset.raw[c.dataIndex];
+            const text = v === null ? '-' : v.toLocaleString() + '명';
+            return c.dataset.label + ': ' + text + (norm && v !== null ? ' (최대의 ' + c.parsed.y + '%)' : '');
+          } } }
         }
       }
     });
   }
 
-  async function loadRidership(routeNo) {
-    const req = ++ridershipReqNo;
-    ridershipState = 'loading';
-    clearRidershipChart();
-    ridershipChartBoxEl.hidden = true;
-    ridershipNoticeEl.textContent = '';
-    ridershipSummaryEl.classList.remove('is-error');
-    ridershipSummaryEl.textContent = '이용자 수 예측을 불러오는 중...';
+  // slot: 'main'(선택한 노선) / 'compare'(비교 노선)
+  async function loadRidership(routeNo, slot) {
+    const req = ++ridershipReqNo[slot];
+    ridershipData[slot] = null;
+    if (slot === 'main') {
+      ridershipState = 'loading';
+      clearRidershipChart();
+      ridershipChartBoxEl.hidden = true;
+      ridershipNoticeEl.textContent = '';
+      ridershipGapEl.hidden = true;
+      ridershipNormBoxEl.hidden = true;
+      ridershipSummaryEl.classList.remove('is-error');
+      ridershipSummaryEl.textContent = '이용자 수 예측을 불러오는 중...';
+    }
     try {
       const res = await fetch(ROUTE_API + '/' + encodeURIComponent(routeNo) + '/ridership');
       if (!res.ok) throw new Error('ridership ' + res.status);
       const r = await res.json();
-      if (req !== ridershipReqNo) return;         // 그사이 다른 노선으로 바뀌었으면 버림
-      renderRidership(r);
+      if (req !== ridershipReqNo[slot]) return;   // 그사이 다른 노선으로 바뀌었으면 버림
+      ridershipData[slot] = r;
     } catch (e) {
-      if (req !== ridershipReqNo) return;
-      showRidershipMessage('이용자 수 예측을 불러오지 못했습니다. 잠시 후 다시 시도하세요.');
+      if (req !== ridershipReqNo[slot]) return;
+      ridershipData[slot] = { status: 'ERROR', message: '이용자 수 예측을 불러오지 못했습니다. 잠시 후 다시 시도하세요.', days: [] };
     }
+    drawRidership();
   }
 
-  // ---------- 방향 컨트롤: 노선 목록 위의 토글(전체 기본값) / 방금 누른 노선 항목 안의 방향 칩 ----------
-  function renderDirControls() {
-    dirOneBtn.classList.toggle('is-on', dirMode === 'one');
-    dirBothBtn.classList.toggle('is-on', dirMode === 'both');
-    renderRouteDetails();
-    updateFocusViews();
-  }
-
-  // 마지막으로 누른 노선을 따라가는 두 곳: 예측 영역(혼잡도 차트)과 오른쪽 패널(미처리 신고 수, AI)
-  // 노선을 누르는 모든 경로(목록, 지도의 선, 검색)에서 이 함수로 같이 바꿔서 서로 다른 노선을 보여 주지 않게 함
+  // 선택한 노선(과 비교 노선)을 따라가는 두 곳: 예측 영역(이용자 수 예측)과 오른쪽 패널(미완료 신고 수, AI)
+  // 노선을 고르는 모든 경로(목록, 지도의 선, 검색, 비교 체크)에서 render() 가 이 함수를 불러서 서로 다른 노선을 보여 주지 않게 함
   function updateFocusViews() {
     const focus = focusedRoute();
+    const compareNo = comparedRoute();
     forecastRouteEl.hidden = !focus;
     forecastEmptyEl.hidden = !!focus;
-    updateSide();                     // 오른쪽 패널: 마지막으로 누른 노선의 미처리 신고 수 (전체 보기에서는 안내 문구만)
-    if (!focus) { forecastReqNo++; clearForecastChart(); ridershipReqNo++; clearRidershipChart(); ridershipState = 'idle'; if (window.HourlyRidership) window.HourlyRidership.clear(); forecastShown = null; return; }
+    updateSide();                     // 오른쪽 패널: 선택한 노선의 미완료 신고 수 (처음 화면에서는 안내 문구만)
+    if (!focus) {
+      ridershipReqNo.main++; ridershipReqNo.compare++;
+      ridershipData.main = null; ridershipData.compare = null;
+      clearRidershipChart(); ridershipState = 'idle';
+      if (window.HourlyRidership) window.HourlyRidership.clear();
+      forecastShown = null; compareShown = null;
+      return;
+    }
 
-    const route = findRoute(focus);
-    forecastTitleEl.textContent = '';
-    const dot = document.createElement('span');
-    dot.className = 'dot grade-' + route.grade;
-    forecastTitleEl.appendChild(dot);
-    forecastTitleEl.appendChild(document.createTextNode(
-      route.routeNo + '번 · ' + route.gradeLabel + ' · ' + route.label));
-    if (forecastShown !== focus) {                // 노선이 바뀔 때만 다시 받음 (방향 칩을 눌러 다시 그릴 때는 그대로 둠)
+    const titleOf = function (el, prefix, route) {
+      el.textContent = '';
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = colorOf(route);
+      el.appendChild(dot);
+      el.appendChild(document.createTextNode(prefix + route.routeNo + '번 · ' + route.label));
+    };
+    titleOf(forecastTitleEl, '', findRoute(focus));
+    forecastCompareTitleEl.hidden = !compareNo;
+    if (compareNo) titleOf(forecastCompareTitleEl, '비교: ', findRoute(compareNo));
+
+    if (forecastShown !== focus) {                // 노선이 바뀔 때만 다시 받음
       forecastShown = focus;
-      loadForecast(focus);
-      loadRidership(focus);
-      if (window.HourlyRidership) window.HourlyRidership.load(focus);   // 시간대별 예상 승차 인원 (hourly_ridership.js, 못 불러와도 다른 영역은 그대로)
+      loadRidership(focus, 'main');
+      if (window.HourlyRidership) window.HourlyRidership.load(focus);   // 시간대별 예상 승차 인원 (선택한 노선만, hourly_ridership.js, 못 불러와도 다른 영역은 그대로)
     } else if (ridershipState === 'failed') {
-      loadRidership(focus);                       // 예측 서버 오류 등으로 실패한 뒤 같은 노선을 다시 누르면 다시 시도
+      loadRidership(focus, 'main');               // 예측 서버 오류 등으로 실패한 뒤 같은 노선을 다시 누르면 다시 시도
+    }
+    if (compareShown !== compareNo) {             // 비교 노선이 생기거나 바뀌거나 없어졌을 때
+      compareShown = compareNo;
+      if (compareNo) {
+        loadRidership(compareNo, 'compare');
+      } else {
+        ridershipReqNo.compare++;
+        ridershipData.compare = null;
+        drawRidership();
+      }
     }
     if (window.HourlyRidership) window.HourlyRidership.retryIfFailed(focus);  // 시간대별 쪽도 실패한 뒤 같은 노선을 다시 누르면 다시 시도
   }
 
-  // 노선 목록의 항목 아래:
-  //  - 지도에 표시 중인 노선은 지금 보고 있는 방향을 작은 한 줄로 보여 줌 (누르면 방향 선택이 펼쳐짐)
-  //  - 방금 누른 노선 하나만 방향 칩을 펼쳐 보여 줌 (나머지는 접힘)
-  function renderRouteDetails() {
-    Object.keys(details).forEach(function (no) {
-      const box = details[no];
-      const line = dirLines[no];
-      const shown = mode === 'select' && selected.has(no);
-      const open = shown && openRoute === no;
-
-      box.hidden = !open;
-      box.textContent = '';
-      buttons[no].classList.toggle('is-open', open);
-      buttons[no].setAttribute('aria-expanded', open ? 'true' : 'false');
-
-      line.hidden = !shown || open;
-      if (shown) {
-        const l = layers[no];
-        const choice = currentChoice(no);
-        const chosen = l.dirs.find(function (d) { return d.brtId === choice; });
-        line.textContent = '방향: ' + (chosen ? chosen.label : (l.dirs.length > 2 ? '전체' : '양방향')) + ' ▾';
-      }
-      if (!open) return;
-
-      const layer = layers[no];
-      const choice = currentChoice(no);
-      const chips = document.createElement('div');
-      chips.className = 'dir-chips';
-      const caption = document.createElement('span');
-      caption.className = 'chips-caption';
-      caption.textContent = '방향';
-      chips.appendChild(caption);
-      layer.dirs.forEach(function (d) { chips.appendChild(makeChip(no, d.brtId, d.label, choice)); });
-      chips.appendChild(makeChip(no, 'all', layer.dirs.length > 2 ? '전체' : '양방향', choice));
-
-      box.appendChild(chips);
-    });
-  }
-
-  function makeChip(routeNo, value, text, choice) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip' + (value === choice ? ' is-on' : '');
-    chip.textContent = text;
-    chip.addEventListener('click', function () {
-      dirChoice[routeNo] = value;
-      openRoute = null;                           // 방향을 고르면 칩은 자동으로 접힘 (결과는 지도의 선과 화살표로 확인)
-      render();
-    });
-    return chip;
-  }
-
-  // 지도에서 이 노선만 뺌 (마지막 노선이 빠지면 전체 보기, 화면 위치와 확대 수준은 그대로)
-  function removeRoute(routeNo) {
-    selected.delete(routeNo);
-    if (selected.size === 0) mode = 'all';
-    if (openRoute === routeNo) openRoute = null;
-    if (focusRoute === routeNo) focusRoute = null;
-    render();
-  }
-
-  function setDirMode(next) {
-    if (!map) return;
-    dirMode = next;
-    dirChoice = {};                               // 전체 토글을 누르면 노선별로 고른 방향은 초기화
-    render();
-  }
-
   // ---------- 동작 ----------
+  // 처음 화면: 미완료 신고가 많은 상위 노선만 표시, 선택과 비교는 모두 해제
   function showAll() {
     mode = 'all';
     selected = new Set();
-    dirChoice = {};
-    openRoute = null;
     focusRoute = null;
+    compareRoute = null;
     render();
     fitToVisible();
     hideMessage();
   }
 
   // 노선을 눌렀을 때(목록, 지도의 선, 검색 후 엔터 모두 같음):
-  //  - 전체 보기 상태에서 처음 누르면 그 노선만 표시
-  //  - 이어서 다른 노선을 누르면(검색해서 고른 경우 포함) 표시 중인 노선에 쌓임
-  //  - 새로 표시한 노선은 목록 항목 안에 방향 칩이 펼쳐짐 (한 번에 한 노선만)
-  //  - 목록에서 이미 표시 중인 노선을 다시 누르면 지도에서 빠짐 (마지막 노선이 빠지면 전체 보기)
-  //  - addOnly(지도의 선 클릭, 검색 후 엔터): 이미 표시 중이면 빼지 않고 방향 칩만 펼침 (실수로 빠지는 것을 막음)
+  //  - 그 노선만 표시하고 비교 노선은 해제 (선택 노선을 바꾸면 비교도 새로 고름)
+  //  - 이미 선택한 노선을 목록에서 다시 누르면 처음 화면으로 돌아감
+  //  - addOnly(지도의 선 클릭, 검색 후 엔터): 이미 선택한 노선이면 돌아가지 않고 그 노선을 찾아가서 깜빡임 (실수로 빠지는 것을 막음)
   async function selectRoute(routeNo, addOnly) {
     if (!map) { showMessage(SDK_MESSAGE, 'error'); return; }
     const route = findRoute(routeNo);
     if (!route) return;
 
-    if (mode === 'select' && selected.has(routeNo)) {
-      if (!addOnly) { removeRoute(routeNo); return; }
-      openRoute = routeNo;
-      focusRoute = routeNo;                       // 이미 표시 중인 노선을 다시 고르면 예측 영역과 오른쪽 패널도 그 노선으로
-      updateFocusViews();
-      renderRouteDetails();
+    if (mode === 'select' && focusRoute === routeNo) {
+      if (!addOnly) { showAll(); return; }
       items[routeNo].scrollIntoView({ block: 'nearest' });
-      panToStartIfHidden(routeNo);                // 이미 표시 중인 노선을 다시 고르면(검색 엔터, 지도의 선) 찾아가서 보여 줌
+      panToStartIfHidden(routeNo);
       flashRoute(routeNo);
       return;
     }
@@ -1477,14 +1384,10 @@
     const ok = await loadRoute(route);            // 처음에 못 불러왔던 노선이면 다시 시도
     if (!ok) return;                              // 실패하면 지금 화면은 그대로 두고 안내만 표시
 
-    if (mode === 'all') {                         // 처음 누름: 그 노선만 표시
-      mode = 'select';
-      selected = new Set([routeNo]);
-    } else {                                      // 이어서 누름: 표시 중인 노선에 추가
-      selected.add(routeNo);
-    }
-    openRoute = routeNo;
+    mode = 'select';
+    selected = new Set([routeNo]);
     focusRoute = routeNo;
+    compareRoute = null;
     render();
     panToStartIfHidden(routeNo);                  // 확대 수준은 유지 (자동 확대하지 않음)
     flashRoute(routeNo);
@@ -1492,61 +1395,105 @@
     items[routeNo].scrollIntoView({ block: 'nearest' });
   }
 
+  // 비교 노선 체크: 선택한 노선 + 이 노선, 두 개만 표시 (다른 노선을 체크하면 비교 노선이 바뀜)
+  async function setCompare(routeNo) {
+    if (!map || mode !== 'select' || !focusRoute || routeNo === focusRoute) return;
+    const route = findRoute(routeNo);
+    if (!route) return;
+    const ok = await loadRoute(route);
+    if (!ok) { compareBoxes[routeNo].input.checked = false; return; }
+    if (mode !== 'select' || !focusRoute || routeNo === focusRoute) return;   // 그사이 선택이 바뀌었으면 버림
+    compareRoute = routeNo;
+    selected = new Set([focusRoute, routeNo]);
+    render();
+    panToStartIfHidden(routeNo);
+    flashRoute(routeNo);
+    hideMessage();
+  }
+
+  function clearCompare() {
+    if (!compareRoute) return;
+    compareRoute = null;
+    selected = new Set(focusRoute ? [focusRoute] : []);
+    render();
+  }
+
   // ---------- 목록 그리기 ----------
+  // 미완료 신고가 있는 노선을 우선순위 순서로 위에, 없는 노선은 접어 둔 목록에 노선번호 순으로.
+  // 우선순위를 못 받았으면 접지 않고 노선번호 순 (routes 의 순서)
   function renderList() {
     listEl.textContent = '';
-    routes.forEach(function (route) {
-      const li = document.createElement('li');
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'route-btn';
+    restListEl.textContent = '';
+    restNos.clear();
+    let top = routes;
+    let rest = [];
+    if (priorityOrder !== null && openAllLoaded) {
+      top = priorityOrder.map(findRoute).filter(Boolean);
+      rest = routes.filter(function (r) { return top.indexOf(r) === -1; });
+    }
+    defaultRoutes = (top.length > 0 ? top : routes).slice(0, DEFAULT_COUNT).map(function (r) { return r.routeNo; });
 
-      const dot = document.createElement('span');
-      dot.className = 'dot grade-' + route.grade;
-      const title = document.createTextNode(route.rank + '. ' + route.routeNo + '번 ');
-      const small = document.createElement('small');
-      small.textContent = route.gradeLabel + ' · ' + route.label;
-
-      const badge = document.createElement('span');
-      badge.className = 'open-badge';
-      badge.hidden = true;                       // 신고 수를 받으면 renderOpenBadges 가 채움
-      badges[route.routeNo] = badge;
-
-      btn.appendChild(dot);
-      btn.appendChild(title);
-      btn.appendChild(badge);
-      btn.appendChild(small);
-      btn.addEventListener('click', function () { selectRoute(route.routeNo); });
-
-      // 지도에 표시 중인 노선 아래에 작게 보이는 한 줄: 지금 보고 있는 방향 (누르면 방향 선택이 펼쳐짐)
-      const dirLine = document.createElement('button');
-      dirLine.type = 'button';
-      dirLine.className = 'route-dir-line';
-      dirLine.hidden = true;
-      dirLine.addEventListener('click', function () {
-        openRoute = openRoute === route.routeNo ? null : route.routeNo;
-        renderRouteDetails();
-      });
-
-      // 방금 누른 노선일 때만 펼쳐지는 방향 선택 영역 (JS 가 채움)
-      const box = document.createElement('div');
-      box.className = 'route-detail';
-      box.hidden = true;
-
-      li.appendChild(btn);
-      li.appendChild(dirLine);
-      li.appendChild(box);
-      listEl.appendChild(li);
-      buttons[route.routeNo] = btn;
-      items[route.routeNo] = li;
-      dirLines[route.routeNo] = dirLine;
-      details[route.routeNo] = box;
+    top.forEach(function (route) { listEl.appendChild(makeListItem(route)); });
+    rest.forEach(function (route) {
+      restNos.add(route.routeNo);
+      restListEl.appendChild(makeListItem(route));
     });
     applyFilter();
   }
 
+  function makeListItem(route) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'route-btn';
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = colorOf(route);
+    const title = document.createTextNode(route.routeNo + '번 ');
+    const small = document.createElement('small');
+    small.textContent = route.label;
+    small.title = route.label;                 // 넘쳐서 잘려도 마우스를 올리면 전체 이름이 보임
+
+    const badge = document.createElement('span');
+    badge.className = 'open-badge';
+    badge.hidden = true;                       // 신고 수를 받으면 renderOpenBadges 가 채움
+    badges[route.routeNo] = badge;
+
+    btn.appendChild(dot);
+    btn.appendChild(title);
+    btn.appendChild(badge);
+    btn.appendChild(small);
+    btn.addEventListener('click', function () { selectRoute(route.routeNo); });
+
+    // 비교 체크: 노선 왼쪽 칸, 체크하면 그 노선 색 (render 가 보이고 숨김, 선택 상태를 맞춤)
+    const label = document.createElement('label');
+    label.className = 'compare-chk is-off';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.style.accentColor = colorOf(route);
+    input.setAttribute('aria-label', route.routeNo + '번을 비교 노선으로 선택');
+    input.addEventListener('change', function () {
+      if (input.checked) setCompare(route.routeNo); else clearCompare();
+    });
+    // 체크 칸이 버튼 위에 겹쳐 있어서, 선택한 노선의 체크 칸을 눌러도 체크가 풀리거나 노선 선택이 바뀌지 않게 막음
+    label.addEventListener('click', function (e) {
+      if (label.classList.contains('is-main')) e.preventDefault();
+    });
+    label.appendChild(input);
+
+    li.className = 'route-item';
+    li.appendChild(label);
+    li.appendChild(btn);
+    buttons[route.routeNo] = btn;
+    items[route.routeNo] = li;
+    compareBoxes[route.routeNo] = { label: label, input: input };
+    return li;
+  }
+
   // ---------- 노선 검색 (목록만 걸러 보여 줌, 지도에는 영향 없음) ----------
   // 노선번호나 노선 이름(종점)에 검색어가 들어 있으면 보여 줌. "134", "134번", "꽃바위" 모두 가능.
+  // 검색 중에는 접어 둔 "미완료 신고 없는 노선"도 함께 검색하고 펼쳐 보임
   function matchedRoutes() {
     const q = searchEl.value.trim().toLowerCase().replace(/번$/, '');
     if (!q) return routes;
@@ -1561,6 +1508,15 @@
       const pinned = mode === 'select' && selected.has(r.routeNo);   // 지도에 표시 중인 노선은 검색과 상관없이 보임
       items[r.routeNo].hidden = !matched.has(r.routeNo) && !pinned;
     });
+
+    const searching = searchEl.value.trim() !== '';
+    const restPinned = Array.from(selected).some(function (no) { return restNos.has(no); });
+    const restShown = restNos.size > 0 && (restOpen || searching || restPinned);
+    restToggleEl.hidden = restNos.size === 0;
+    restListEl.hidden = !restShown;
+    restToggleEl.setAttribute('aria-expanded', restShown ? 'true' : 'false');
+    restToggleEl.textContent = '미완료 신고 없는 노선 ' + restNos.size + '개 ' + (restShown ? '▴' : '▾');
+
     countEl.textContent = matched.size === routes.length
       ? '노선 ' + routes.length + '개' : '검색 결과 ' + matched.size + '개 / 전체 ' + routes.length + '개';
     emptyEl.hidden = matched.size > 0;
@@ -1577,20 +1533,31 @@
       showMessage('노선 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요.', 'error');
       return;
     }
-    renderList();
 
-    // 모든 노선의 선과 노선별 미처리 신고 수를 한꺼번에 받음 (신고 수를 못 받아도 지도는 그대로 뜸)
-    const [results] = await Promise.all([Promise.all(routes.map(loadRoute)), loadOpenCounts()]);
+    // 노선별 미완료 신고 수와 우선순위를 먼저 받아서 목록을 나눔 (못 받아도 지도는 그대로 뜸)
+    await Promise.all([loadOpenCounts(), loadPriority()]);
+    renderList();
     renderOpenBadges();
+
+    // 노선의 선을 한꺼번에 받음
+    const results = await Promise.all(routes.map(loadRoute));
     showAll();
     const failed = routes.filter(function (r, i) { return !results[i]; });
     if (failed.length > 0) {
       showMessage(failed.map(function (r) { return r.routeNo + '번'; }).join(', ')
         + ' 노선은 지도에 표시할 수 없습니다 (없는 노선이거나 데이터가 없습니다).', 'error');
+    } else if (priorityOrder !== null && openAllLoaded && routes.every(function (r) { return restNos.has(r.routeNo); })) {
+      showMessage('미완료 신고가 있는 노선이 없어 목록의 앞 ' + DEFAULT_COUNT + '개를 보여 줍니다.', 'info');
     }
+
+    // 대시보드 등에서 /admin/congestion?route=134 로 들어오면 그 노선을 선택한 채로 시작
+    const want = new URLSearchParams(location.search).get('route');
+    if (want && findRoute(want)) selectRoute(want, true);
   }
 
   showAllBtn.addEventListener('click', function () { if (map) showAll(); });
+  restToggleEl.addEventListener('click', function () { restOpen = !restOpen; applyFilter(); });
+  ridershipNormEl.addEventListener('change', drawRidership);
   searchEl.addEventListener('input', applyFilter);
   searchEl.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {                      // 엔터: 검색 결과의 첫 노선을 선택
@@ -1602,8 +1569,6 @@
       applyFilter();
     }
   });
-  dirOneBtn.addEventListener('click', function () { setDirMode('one'); });
-  dirBothBtn.addEventListener('click', function () { setDirMode('both'); });
 
   // ---------- 지도 만들기 ----------
   // SDK 가 불러와지지 않은 경우: 키가 없거나, 도메인 등록이 안 됐거나, 카카오맵 사용 설정이 꺼져 있거나, 네트워크 문제

@@ -12,31 +12,19 @@
     <!-- 왼쪽: 노선 목록 (4단계에서 작성) -->
     <aside class="dash-list">
       <h3>노선 목록</h3>
-      <p class="list-note">임시 데이터 (혼잡도는 가짜)</p>
 
-      <!-- 혼잡 등급 색 안내 -->
-      <ul class="legend">
-        <li><span class="dot grade-HIGH"></span>혼잡</li>
-        <li><span class="dot grade-MID"></span>보통</li>
-        <li><span class="dot grade-LOW"></span>여유</li>
-      </ul>
-
-      <button type="button" id="showAllBtn" class="show-all-btn">전체 노선 보기</button>
-
-      <!-- 방향 표시 (지도 전체의 기본값): 노선마다 대표 1방향만 / 모든 방향 -->
-      <div id="dirToggle" class="dir-toggle" role="group" aria-label="방향 표시">
-        <button type="button" id="dirOneBtn" class="dir-btn">대표 1방향</button>
-        <button type="button" id="dirBothBtn" class="dir-btn">양방향</button>
-      </div>
+      <button type="button" id="showAllBtn" class="show-all-btn">상위 5개 노선 보기</button>
 
       <!-- 노선 찾기: 노선번호 또는 종점 이름으로 목록을 걸러 보여 줌 (지도에는 영향 없음) -->
       <input type="search" id="routeSearch" class="route-search" placeholder="노선번호·종점 이름 검색"
         autocomplete="off" aria-label="노선 검색">
       <p id="routeCount" class="list-note"></p>
-      <p class="list-note">노선을 누르면 지도에 표시되고 방향을 고를 수 있습니다. 이어서 누르거나 검색해서 고르면 함께 쌓이고, 표시 중인 노선을 다시 누르면 지도에서 빠집니다.</p>
+      <p class="list-note">처음에는 미완료 신고가 많은 상위 5개 노선을 보여 줍니다. 노선을 누르면 그 노선만 표시되고(대표 1방향), 다른 노선의 "비교"를 체크하면 두 노선을 비교합니다. 선택한 노선을 다시 누르면 처음 화면으로 돌아갑니다.</p>
 
-      <!-- 노선 목록: 서버(/admin/api/routes)에서 받아 JS 가 채움 -->
+      <!-- 노선 목록: 서버(/admin/api/routes, /admin/api/routes/priority)에서 받아 JS 가 채움. 미완료 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 접어 둠 -->
       <ul id="routeList" class="route-btns"></ul>
+      <button type="button" id="restToggle" class="rest-toggle" aria-expanded="false" hidden></button>
+      <ul id="routeRestList" class="route-btns rest-list" hidden></ul>
       <p id="routeEmpty" class="list-note" hidden>검색 결과가 없습니다.</p>
     </aside>
 
@@ -47,42 +35,44 @@
         <p id="mapMessage" class="map-message" hidden></p>
       </section>
 
-      <!-- 지도에서 노선을 클릭하면 혼잡 예측 차트가 표시될 자리 (5단계에서 작성) -->
+      <!-- 지도에서 노선을 클릭하면 그 노선의 이용자 수 예측이 표시될 자리 -->
       <section class="dash-forecast">
         <h3>예측 데이터</h3>
         <!-- 노선 하나를 선택했을 때: 노선 정보 (JS 가 채움) -->
         <div id="forecastRoute" class="forecast-route" hidden>
           <p id="forecastTitle" class="forecast-title"></p>
-          <!-- 접속 시각 1시간 뒤 예측 한 줄 요약 (평소와 10% 이상 다르면 강조) -->
-          <p id="forecastSummary" class="forecast-summary"></p>
-          <!-- 시간대별 평소 평균 혼잡도 곡선 + 1시간 뒤 예측 점 (Chart.js) -->
-          <div class="forecast-chart"><canvas id="forecastChart"></canvas></div>
+          <p id="forecastCompareTitle" class="forecast-title" hidden></p>
 
           <!-- 일별 이용자 수 예측: 예측 서버(ai_service)의 결과, 오늘부터 14일 (Chart.js) -->
           <div class="ridership-box">
             <p class="ridership-title">일별 이용자 수 예측 (오늘부터 14일)</p>
             <p id="ridershipSummary" class="ridership-summary"></p>
+            <!-- 두 노선을 비교할 때만: 이용자 규모 차이가 클 때의 안내와, 노선마다 자기 최대값 기준으로 보는 선택 -->
+            <p id="ridershipGap" class="ridership-notice is-warn" hidden></p>
+            <label id="ridershipNormBox" class="ridership-norm" hidden>
+              <input type="checkbox" id="ridershipNorm"> 노선마다 자기 최대값 기준으로 보기
+            </label>
             <div id="ridershipChartBox" class="ridership-chart"><canvas id="ridershipChart"></canvas></div>
             <p id="ridershipNotice" class="ridership-notice"></p>
           </div>
 
           <!-- 시간대별 예상 승차 인원: 예측 서버의 일별 예측 x 시각 비율, 오늘부터 7일 중 하루 선택 (hourly_ridership.js 가 채움) -->
           <div id="hourlyBox" class="ridership-box">
-            <p class="ridership-title">시간대별 예상 승차 인원 (오늘부터 7일)</p>
+            <p class="ridership-title">시간대별 예상 승차 인원 (오늘부터 7일, 선택한 노선)</p>
             <div id="hourlyDates" class="hourly-dates" role="group" aria-label="날짜 선택"></div>
             <p id="hourlySummary" class="ridership-summary" aria-live="polite"></p>
             <div id="hourlyChartBox" class="ridership-chart" hidden><canvas id="hourlyChart"></canvas></div>
             <p id="hourlyNotice" class="ridership-notice"></p>
           </div>
         </div>
-        <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 혼잡 예측이 표시됩니다.</p>
+        <p id="forecastEmpty" class="forecast-empty">지도에서 노선을 클릭하면 이용자 수 예측이 표시됩니다.</p>
       </section>
     </div>
 
-    <!-- 오른쪽 패널: 노선을 클릭하면 그 노선의 미처리 신고 수 (이 아래에 AI 답변이 들어올 자리) -->
+    <!-- 오른쪽 패널: 노선을 클릭하면 그 노선의 미완료 신고 수 (이 아래에 AI 답변이 들어올 자리) -->
     <aside class="dash-side">
       <h3>신고 현황</h3>
-      <p id="sideEmpty" class="side-empty">지도에서 노선을 클릭하면 그 노선의 미처리 신고가 표시됩니다.</p>
+      <p id="sideEmpty" class="side-empty">지도에서 노선을 클릭하면 그 노선의 미완료 신고가 표시됩니다.</p>
       <div id="sideRoute" class="side-route" hidden>
         <p id="sideTitle" class="side-title"></p>
         <p class="side-note">신고 관리의 접수 + 처리중 (완료는 제외)</p>
@@ -96,11 +86,12 @@
             <span id="sideProcessing" class="side-count-num">-</span>
           </div>
         </div>
+        <p id="sideCompare" class="side-note" hidden></p>
         <p id="sideUnknown" class="side-note" hidden>신고 수를 불러오지 못했습니다.</p>
 
-        <!-- AI 분석: 이 노선의 미처리 신고 + 1시간 뒤 혼잡도 예측을 보고 답함 (버튼을 눌렀을 때만 호출) -->
+        <!-- AI 분석: 이 노선의 미완료 신고 + 이용자 수 예측을 보고 답함 (버튼을 눌렀을 때만 호출) -->
         <button type="button" id="sideAiBtn" class="side-ai-btn">AI 분석</button>
-        <p class="side-note">미처리 신고와 1시간 뒤 혼잡도 예측을 바탕으로 분석합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
+        <p class="side-note">미완료 신고와 이용자 수 예측을 바탕으로 분석합니다. 비교 노선을 체크하면 두 노선의 차이를 설명합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
         <p id="sideAiResult" class="side-ai-answer" hidden></p>
 
         <!-- 이 노선에 대해 직접 질문하기: 같은 신고와 예측 데이터를 보고 답함 -->
