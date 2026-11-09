@@ -19,10 +19,25 @@ import java.util.Map;
 @RequestMapping("/admin/api/ai")
 public class AdminAiController {
 
+    private static final String AI_TIME_KEY = "adminAiAt";          // 마지막 관리자 AI 호출 시각 (세션)
+    // 호출 사이 최소 간격: 시민용 AI(5초)와 Gemini 무료 한도(분당 15회)를 같이 쓰므로 한 세션이 분당 12회를 넘지 못하게 함
+    private static final long AI_COOLDOWN_MILLIS = 5000L;
+
     private final AiService aiService;
 
     public AdminAiController(AiService aiService) {
         this.aiService = aiService;
+    }
+
+    // 관리자 확인 다음에 호출: 이 세션이 너무 빨리 다시 불렀으면 true (연타하면 시민용 AI 와 나눠 쓰는 무료 한도가 소진됨)
+    private boolean tooFast(HttpSession session) {
+        long now = System.currentTimeMillis();
+        Long last = (Long) session.getAttribute(AI_TIME_KEY);
+        if (last != null && now - last < AI_COOLDOWN_MILLIS) {
+            return true;
+        }
+        session.setAttribute(AI_TIME_KEY, now);
+        return false;
     }
 
     // 현재 데이터를 요약한 인사이트
@@ -30,6 +45,9 @@ public class AdminAiController {
     public ResponseEntity<Map<String, String>> insight(HttpSession session) {
         if (AdminUtil.checkAdmin(session) != null) {
             return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
+        }
+        if (tooFast(session)) {
+            return fail(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요.");
         }
         try {
             return ResponseEntity.ok(Map.of("answer", aiService.getInsight()));
@@ -43,6 +61,9 @@ public class AdminAiController {
     public ResponseEntity<Map<String, String>> ask(@RequestBody Map<String, String> body, HttpSession session) {
         if (AdminUtil.checkAdmin(session) != null) {
             return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
+        }
+        if (tooFast(session)) {
+            return fail(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요.");
         }
         try {
             return ResponseEntity.ok(Map.of("answer", aiService.ask(body.get("question"))));
@@ -59,6 +80,9 @@ public class AdminAiController {
     public ResponseEntity<Map<String, String>> route(@RequestBody Map<String, Object> body, HttpSession session) {
         if (AdminUtil.checkAdmin(session) != null) {
             return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
+        }
+        if (tooFast(session)) {
+            return fail(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요.");
         }
         Object routeNo = body.get("routeNo");
         Object compare = body.get("compareRouteNo");

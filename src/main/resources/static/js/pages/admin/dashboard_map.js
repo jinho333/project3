@@ -146,6 +146,8 @@
       showMessage(routeNo + '번 노선은 지도에 표시할 수 없습니다 (없는 노선이거나 데이터가 없습니다).', 'error');
     } else if (status === 400) {
       showMessage('잘못된 노선번호입니다.', 'error');
+    } else if (status === 403) {
+      showMessage('관리자로 로그인해야 지도를 볼 수 있습니다. 로그인 후 다시 시도하세요.', 'error');
     } else {
       showMessage('노선을 불러오지 못했습니다. 잠시 후 다시 시도하세요.', 'error');
     }
@@ -797,7 +799,7 @@
         + '/road?brtId=' + encodeURIComponent(dir.brtId));
       if (!res.ok) {
         dir.roadState = 'fail';
-        if (res.status === 503) roadDisabled = true;
+        if (res.status === 503 || res.status === 403) roadDisabled = true;   // 키·연결 문제나 로그인이 풀린 경우는 더 요청하지 않음
         return;
       }
       const body = await res.json();
@@ -1527,10 +1529,11 @@
     showMessage('노선을 불러오는 중...', 'info');
     try {
       const res = await fetch(ROUTE_API);
-      if (!res.ok) throw new Error('list ' + res.status);
+      if (!res.ok) throw new Error(String(res.status));
       routes = (await res.json()).routes;
     } catch (e) {
-      showMessage('노선 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요.', 'error');
+      showMessage(e.message === '403' ? '관리자로 로그인해야 지도를 볼 수 있습니다. 로그인 후 다시 시도하세요.'
+        : '노선 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요.', 'error');
       return;
     }
 
