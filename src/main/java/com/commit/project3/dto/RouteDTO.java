@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class RouteDTO {
-    private String routeNo;     // 노선번호 (예: 3600)
-    private String routeName;   // 노선 이름 (예: 서울-수원)
+    private String routeNo;     // 노선번호 (예: 134)
+    private String routeName;   // 노선 이름 (예: 율리공영차고지 ↔ 꽃바위)
 }
