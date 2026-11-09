@@ -4,7 +4,7 @@ const reportMsg = document.querySelector('#reportMsg');
 
 // 정규식 (서버의 ReportService와 같은 규칙)
 const phoneRegex = /^01[016789]\d{7,8}$/;               // 숫자만, 01x로 시작 10~11자리
-const routeRegex = /^[A-Za-z0-9가-힣\-]{1,20}$/;        // 노선번호 (예: 3600, M5443, 3600-1)
+const routeRegex = /^[A-Za-z0-9가-힣\-]{1,20}$/;        // 노선번호 (예: 134)
 
 // 첨부 가능한 확장자
 const imageExts = ['jpg', 'bmp', 'gif', 'png'];
@@ -181,7 +181,7 @@ submitBtn.addEventListener('click', () => {
     return;
   }
   if (!routeRegex.test(routeNo)) {
-    reportMsg.textContent = '노선번호를 올바르게 입력해주세요. (예: 3600)';
+    reportMsg.textContent = '노선번호를 올바르게 입력해주세요. (예: 134)';
     return;
   }
   if (contentValue === '') {

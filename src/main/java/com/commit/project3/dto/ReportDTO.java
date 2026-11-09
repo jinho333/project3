@@ -12,7 +12,7 @@ public class ReportDTO {
     private String reporterName;    // 신고자 이름
     private String reporterPhone;   // 신고자 휴대전화번호
     private int typeNo;             // 신고 유형 번호
-    private String routeNo;         // 노선 번호 (예: 3600)
+    private String routeNo;         // 노선 번호 (예: 134)
     private String content;         // 신고 내용
     private String status;          // 처리 상태 (RECEIVED / PROCESSING / DONE)
     private LocalDateTime regDate;  // 접수일
