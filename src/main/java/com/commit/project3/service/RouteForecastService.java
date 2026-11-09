@@ -8,9 +8,6 @@ import java.util.OptionalDouble;
 
 import org.springframework.stereotype.Service;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
-
 // 노선 하나의 혼잡도 예측: 운행 시간대별 "평소 평균 혼잡도"(%) 곡선과, 접속 시각 1시간 뒤의 예측값
 // 지금은 임시 값(temp = true)을 만들어 주고, 예측 모델이 준비되면 임시 값을 만드는 부분(tempBaseline, tempForecast)만 모델 결과로 바꾸면 됨
 // 평소 평균과 예측값의 차이는 평소 값 대비 비율(%)로 보고, 10% 이상 벗어나면 alert (높든 낮든 평소와 크게 다른 상황)
@@ -30,8 +27,6 @@ public class RouteForecastService {
     public static final double GRADE_HIGH_MIN = 80;
     public static final double GRADE_MID_MIN = 50;
 
-    private static final String LIST_PATH = "static/data/route-list.json";
-
     // 예측 결과: status 가 OK 이면 targetHour 이하 값이 채워지고, OUTSIDE_HOURS 이면 평소 곡선만 있음
     // deviationPct: (예측 - 평소) / 평소 × 100, 양수면 평소보다 혼잡, 음수면 평소보다 한산
     // direction: UP / DOWN / SAME,  grade: HIGH / MID / LOW (예측값 기준)
@@ -42,7 +37,6 @@ public class RouteForecastService {
                            double gradeHighMin, double gradeMidMin) {}
 
     private final RouteListService routeListService;
-    private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     public RouteForecastService(RouteListService routeListService) {
         this.routeListService = routeListService;
@@ -124,14 +118,8 @@ public class RouteForecastService {
         return Math.max(1, Math.min(100, Math.round(base * factor * 10) / 10.0));
     }
 
-    // 노선 목록(임시 혼잡 등급)에서 이 노선의 등급을 찾음, 목록에 없으면 null
+    // 지도 노선의 혼잡 등급(오늘 예상 이용자 수로 만든 등급)에서 이 노선의 등급을 찾음, 목록에 없거나 예측값이 없으면 null
     private String findListGrade(String routeNo) {
-        JsonNode root = jsonMapper.readTree(routeListService.findRouteListJson());
-        for (JsonNode r : root.path("routes")) {
-            if (routeNo.equals(r.path("routeNo").asString(""))) {
-                return r.path("grade").asString("MID");
-            }
-        }
-        return null;
+        return routeListService.findGrade(routeNo).orElse(null);
     }
 }

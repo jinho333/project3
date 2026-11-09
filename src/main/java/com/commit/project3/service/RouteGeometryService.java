@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 // 노선번호로 노선 선(GeoJSON)을 찾아주는 서비스
@@ -22,6 +26,24 @@ public class RouteGeometryService {
 
     public boolean isValidRouteNo(String routeNo) {
         return routeNo != null && ROUTE_NO_PATTERN.matcher(routeNo).matches();
+    }
+
+    // 노선 선 파일이 있는 노선번호 목록 (지도에 그릴 수 있는 노선), 번호순
+    public List<String> findRouteNos() {
+        List<String> routeNos = new ArrayList<>();
+        try {
+            for (Resource resource : new PathMatchingResourcePatternResolver().getResources("classpath:" + BASE_PATH + "*.geojson")) {
+                String file = resource.getFilename();
+                String routeNo = file == null ? "" : file.substring(0, file.length() - ".geojson".length());
+                if (isValidRouteNo(routeNo)) {
+                    routeNos.add(routeNo);
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("노선 데이터 목록을 읽지 못했습니다.", e);
+        }
+        routeNos.sort(null);
+        return routeNos;
     }
 
     // 노선이 있으면 GeoJSON 문자열, 없으면 비어 있는 Optional
