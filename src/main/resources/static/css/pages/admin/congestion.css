@@ -114,6 +114,7 @@
 /* 시간대별 예상 승차 인원: 날짜 버튼 줄 */
 .hourly-dates { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .hourly-date { height: 28px; padding: 0 10px; font-size: var(--fs-sub); border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.hourly-force { height: 24px; margin-left: 4px; }   /* 비교 안내 줄 끝의 "겹쳐서 보기" 버튼 */
 .hourly-date[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
 /* 선에 마우스를 올렸을 때 뜨는 툴팁 */
 .route-tooltip {

@@ -1335,12 +1335,13 @@
     if (forecastShown !== focus) {                // 노선이 바뀔 때만 다시 받음
       forecastShown = focus;
       loadRidership(focus, 'main');
-      if (window.HourlyRidership) window.HourlyRidership.load(focus);   // 시간대별 예상 승차 인원 (선택한 노선만, hourly_ridership.js, 못 불러와도 다른 영역은 그대로)
+      if (window.HourlyRidership) window.HourlyRidership.load(focus, colorOf(findRoute(focus)));   // 시간대별 예상 승차 인원 (hourly_ridership.js, 못 불러와도 다른 영역은 그대로)
     } else if (ridershipState === 'failed') {
       loadRidership(focus, 'main');               // 예측 서버 오류 등으로 실패한 뒤 같은 노선을 다시 누르면 다시 시도
     }
     if (compareShown !== compareNo) {             // 비교 노선이 생기거나 바뀌거나 없어졌을 때
       compareShown = compareNo;
+      if (window.HourlyRidership) window.HourlyRidership.setCompare(compareNo, compareNo ? colorOf(findRoute(compareNo)) : null);   // 시간대별 쪽도 비교 노선을 같이 봄
       if (compareNo) {
         loadRidership(compareNo, 'compare');
       } else {

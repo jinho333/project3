@@ -58,9 +58,11 @@
 
           <!-- 시간대별 예상 승차 인원: 예측 서버의 일별 예측 x 시각 비율, 오늘부터 7일 중 하루 선택 (hourly_ridership.js 가 채움) -->
           <div id="hourlyBox" class="ridership-box">
-            <p class="ridership-title">시간대별 예상 승차 인원 (오늘부터 7일, 선택한 노선)</p>
+            <p class="ridership-title">시간대별 예상 승차 인원 (오늘부터 7일)</p>
             <div id="hourlyDates" class="hourly-dates" role="group" aria-label="날짜 선택"></div>
             <p id="hourlySummary" class="ridership-summary" aria-live="polite"></p>
+            <!-- 두 노선을 비교할 때만: 피크 시간 비교 한 줄 (피크가 다르면 아래 차트에 두 노선을 겹쳐 그림) -->
+            <p id="hourlyCompare" class="ridership-notice" hidden></p>
             <div id="hourlyChartBox" class="ridership-chart" hidden><canvas id="hourlyChart"></canvas></div>
             <p id="hourlyNotice" class="ridership-notice"></p>
           </div>
