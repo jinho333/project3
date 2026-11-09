@@ -64,7 +64,9 @@
   const DEFAULT_COUNT = 5;        // 처음 화면에 보여 주는 상위 노선 수
   const OPEN_REFRESH_MS = 5000;   // 같은 노선을 다시 클릭해도 이 시간(ms) 안에는 신고 수를 다시 받지 않음
   // 노선마다 다른 선 색 (노선 목록 순서대로 돌려 씀). 흰 테두리가 깔려서 서로 구분되고, 지도의 도로 색과 겹치지 않게 진한 색으로 고름
-  const ROUTE_COLORS = ['#2563EB', '#DC2626', '#059669', '#7C3AED', '#EA580C', '#0891B2', '#DB2777', '#65A30D', '#475569', '#B45309'];
+  // 노선이 팔레트보다 많아져 같은 색이 겹치거나 비슷한 색(빨강과 분홍 등)이 함께 비교될 때는 비교 노선의 색만 자동으로 바꿈 (refreshRouteColors)
+  const ROUTE_COLORS = ['#2563EB', '#DC2626', '#059669', '#7C3AED', '#EA580C', '#0891B2', '#DB2777', '#65A30D', '#475569', '#B45309', '#CA8A04', '#0F766E'];
+  const SIMILAR_COLOR_DISTANCE = 50;   // 두 색의 차이(Lab 거리)가 이 값보다 작으면 비슷한 색으로 봄 (같은 색은 0, 빨강과 분홍 47, 파랑과 보라 34)
   const LINE_WEIGHT = 5;          // 선 굵기
   const LINE_WEIGHT_HOVER = 8;    // 마우스를 올린 선의 굵기
   const LINE_OPACITY = 0.85;      // 보통 선 투명도
@@ -156,9 +158,62 @@
   }
 
   // ---------- 노선 색 ----------
-  // 노선 하나의 색: 선, 정류장 방향 표시, 목록의 점, 툴팁의 점이 모두 같은 색
-  function colorOf(route) {
+  // 노선 하나의 색: 선, 정류장 방향 표시, 목록의 점과 체크, 툴팁의 점, 차트 막대가 모두 같은 색
+  // 비교 중인 두 노선의 색이 같거나 비슷하면 비교 노선만 colorOverride 의 색을 씀
+  const colorOverride = {};       // 노선번호 -> 비교 때문에 바꾼 색
+  const appliedColor = {};        // 노선번호 -> 지금 목록과 지도에 적용되어 있는 색 (바뀐 노선만 다시 칠하려고)
+
+  function baseColorOf(route) {
     return ROUTE_COLORS[routes.indexOf(route) % ROUTE_COLORS.length];
+  }
+
+  function colorOf(route) {
+    return colorOverride[route.routeNo] || baseColorOf(route);
+  }
+
+  // 두 색이 눈으로 얼마나 다른지 (CIE Lab 거리, 클수록 다름)
+  function hexToLab(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const lin = function (c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const r = lin((n >> 16) & 255), g = lin((n >> 8) & 255), b = lin(n & 255);
+    const f = function (t) { return t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116; };
+    const x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+    const y = r * 0.2126 + g * 0.7152 + b * 0.0722;
+    const z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+    return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+  }
+  function colorDistance(a, b) {
+    const A = hexToLab(a), B = hexToLab(b);
+    return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+  }
+
+  // 선택한 노선과 비교 노선의 색이 같거나 비슷하면, 비교 노선을 팔레트에서 선택 노선과 가장 다른 색으로 바꿈
+  function refreshRouteColors() {
+    Object.keys(colorOverride).forEach(function (no) { delete colorOverride[no]; });
+    const mainNo = focusedRoute(), cmpNo = comparedRoute();
+    if (mainNo && cmpNo) {
+      const mainColor = colorOf(findRoute(mainNo));
+      const cmpColor = baseColorOf(findRoute(cmpNo));
+      if (colorDistance(mainColor, cmpColor) < SIMILAR_COLOR_DISTANCE) {
+        let best = cmpColor, bestDistance = -1;
+        ROUTE_COLORS.forEach(function (c) {
+          const d = colorDistance(mainColor, c);
+          if (d > bestDistance) { bestDistance = d; best = c; }
+        });
+        colorOverride[cmpNo] = best;
+      }
+    }
+    // 색이 바뀐 노선만 목록의 점, 체크, 지도의 선을 다시 칠함
+    routes.forEach(function (route) {
+      const no = route.routeNo, color = colorOf(route);
+      if (appliedColor[no] === color) return;
+      appliedColor[no] = color;
+      if (buttons[no] && buttons[no].firstChild) buttons[no].firstChild.style.background = color;
+      if (compareBoxes[no]) compareBoxes[no].input.style.accentColor = color;
+      if (layers[no]) {
+        layers[no].dirs.forEach(function (d) { d.lines.forEach(function (line) { line.setOptions({ strokeColor: color }); }); });
+      }
+    });
   }
 
   // ---------- 미완료 신고 수 (신고 관리의 접수 + 처리중, 완료는 제외) ----------
@@ -1124,6 +1179,7 @@
   function render() {
     hideTooltip();                                // 선이 바뀌면 남아 있을 수 있는 호버 표시를 정리
     clearHover();
+    refreshRouteColors();                         // 비교 노선의 색이 선택 노선과 겹치면 다른 색으로 (아래 선, 정류장, 차트가 이 색을 씀)
     const visible = new Set(visibleRouteNos());
     Object.keys(layers).forEach(function (no) {
       const shown = visible.has(no) ? new Set(shownDirs(no)) : new Set();

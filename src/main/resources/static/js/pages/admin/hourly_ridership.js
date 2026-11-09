@@ -3,14 +3,16 @@
 // 기존 dashboard_map.js 를 거의 건드리지 않으려고 따로 둠: dashboard_map.js 는 노선이 바뀔 때 window.HourlyRidership.load(노선, 색),
 // 비교 노선이 생기거나 바뀌거나 없어지면 setCompare(노선 또는 null, 색), 선택이 풀리면 clear() 만 부름
 // status 가 OK 가 아니면(서버 꺼짐, 모델이 모르는 노선, 예측 가능 기간 밖) 차트 대신 message 를 보여 줌
-// 비교 노선이 있으면 두 노선의 피크 시간대(가장 붐비는 연속 2시간)를 비교해서,
-//  - 피크 시작이 PEAK_GAP_HOURS 시간 이상 다르면: 두 노선을 한 차트에 겹쳐 그림 (노선마다 자기 최대 시간대를 100%로 맞춰 모양만 비교)
-//  - 비슷하면: 그림은 선택한 노선 하나만 그리고 "비슷합니다" 안내만 보여 줌 ("겹쳐서 보기" 버튼으로 겹쳐 볼 수 있음)
+// 비교 노선이 있으면 두 노선을 한 차트에 겹쳐 그림 (노선마다 자기 최대 시간대를 100%로 맞춰 모양만 비교).
+// 모양이 비슷하다는 것도 비교 결과라서 비슷해도 그림은 그리고, 차트 위 한 줄로 피크 시간과 두 모양이 겹치는 비율을 알려 줌.
+// 문구는 겹치는 비율(전체 모양)을 기준으로 정함: 실제 자료는 노선 대부분이 80~95% 겹치고, 피크 시간대는 비슷한 높이의 두 봉우리 중 어느 쪽이 근소하게 높은지로 바뀌기 때문
+//  - 겹침이 SIMILAR_OVERLAP_PCT 이상이면 "모양이 비슷합니다" (피크 시간대가 달라도 전체 모양은 비슷하다고 알림), 그보다 낮으면 "모양에 차이가 있습니다"
 (function () {
   const DAYS = 7;                    // 오늘부터 7일 (서버 규칙과 같음: 그 밖의 날짜는 400)
   const FIRST_HOUR = 5;              // 첫차 시각 근처인 5시부터 그림: 0~4시는 비중이 매우 작아 막대로 그리지 않음(서버 응답과 하루 합계에는 그대로 들어 있음)
   const SMALL_ROUTE_DAILY = 400;    // 하루 예측 승차 인원이 이보다 적으면 소규모 노선 안내 (평일 노선×날짜의 하위 3분의 1 경계, 2026-11 자료 기준)
-  const PEAK_GAP_HOURS = 3;          // 두 노선의 피크 시작이 이 시간 이상 다르면 "피크가 다르다"고 보고 겹쳐 그림 (시간대별 예측 오차가 약 13~16%라 1~2시간 차이는 의미 있는 차이로 보지 않음)
+  const PEAK_GAP_HOURS = 3;          // 두 노선의 피크 시작이 이 시간 이상 다르면 "피크 시간대가 다르다"고 안내 (시간대별 예측 오차가 약 13~16%라 1~2시간 차이는 의미 있는 차이로 보지 않음)
+  const SIMILAR_OVERLAP_PCT = 85;    // 두 모양이 이 비율(%) 이상 겹치면 비슷하다고 안내 (큰 노선끼리 겹침은 76~96%, 중앙 약 90%)
   const MAIN_COLOR = '#5b8def';
   const PEAK_COLOR = '#e07a1f';
   const COMPARE_COLOR = '#e07a1f';
@@ -35,8 +37,6 @@
   let compareNo = null;              // 비교 노선 (없으면 null)
   let mainColor = MAIN_COLOR;
   let compareColor = COMPARE_COLOR;
-  let forceOverlay = false;          // "겹쳐서 보기"를 눌렀는지 (날짜, 노선, 비교 노선이 바뀌면 다시 꺼짐)
-  let last = null;                   // 마지막으로 받은 { main, cmp } (겹쳐서 보기를 눌렀을 때 다시 그리는 용도)
   let dateIdx = 0;
   const cache = new Map();           // '노선|날짜' -> 응답 (정상 응답만, 화면 안에서만)
 
@@ -63,7 +63,7 @@
       b.textContent = d.label;
       b.setAttribute('aria-pressed', i === dateIdx ? 'true' : 'false');
       // 다른 날짜를 누르면 그 날짜를 불러옴. 실패한 상태면 같은 날짜를 다시 눌러도 재시도
-      b.addEventListener('click', function () { if (routeNo && (i !== dateIdx || state === 'failed')) { dateIdx = i; forceOverlay = false; syncButtons(); request(); } });
+      b.addEventListener('click', function () { if (routeNo && (i !== dateIdx || state === 'failed')) { dateIdx = i; syncButtons(); request(); } });
       datesEl.appendChild(b);
     });
   }
@@ -167,7 +167,17 @@
     });
   }
 
-  // 비교 안내 한 줄과 (필요하면) 겹쳐서 보기 버튼. 겹쳐 그릴지 여부를 돌려줌
+  // 두 모양이 겹치는 비율(0~100): 노선마다 시간대 비중(합 100%)을 만들어, 시간대마다 둘 중 작은 쪽을 더함. 완전히 같으면 100, 전혀 다르면 0 에 가까움
+  function overlapPercent(shownA, shownB) {
+    const sumA = shownA.reduce(function (t, h) { return t + h.predicted; }, 0);
+    const sumB = shownB.reduce(function (t, h) { return t + h.predicted; }, 0);
+    if (sumA <= 0 || sumB <= 0) return null;
+    let overlap = 0;
+    shownA.forEach(function (h, i) { overlap += Math.min(h.predicted / sumA, shownB[i].predicted / sumB); });
+    return Math.round(overlap * 100);
+  }
+
+  // 비교 안내 한 줄. 두 노선을 겹쳐 그릴 수 있으면 true
   function renderCompare(main, cmp) {
     clearCompareLine();
     if (!compareNo) return false;
@@ -178,32 +188,27 @@
       return false;
     }
     const a = peakStart(main.hours), b = peakStart(cmp.hours);
-    const differ = Math.abs(a - b) >= PEAK_GAP_HOURS;
-    const overlay = differ || forceOverlay;
+    const shownA = main.hours.filter(function (h) { return h.hour >= FIRST_HOUR; });
+    const shownB = cmp.hours.filter(function (h) { return h.hour >= FIRST_HOUR; });
+    const pct = overlapPercent(shownA, shownB);
+    const peaksDiffer = Math.abs(a - b) >= PEAK_GAP_HOURS;
+    const similar = pct !== null && pct >= SIMILAR_OVERLAP_PCT;
+    const pctText = pct === null ? '' : '(두 모양이 약 ' + pct + '% 겹칩니다)';
     let text = '비교: ' + routeNo + '번 피크 ' + peakText(a) + ', ' + compareNo + '번 피크 ' + peakText(b) + '. ';
-    if (differ) {
-      text += '피크 시간이 다릅니다. 각 노선의 가장 붐비는 시간대를 100%로 맞춰 모양만 비교한 그림입니다.';
-    } else if (forceOverlay) {
-      text += '두 노선의 시간대 모양이 비슷하지만 겹쳐 그렸습니다(각 노선의 가장 붐비는 시간대를 100%로 맞춤).';
+    if (similar && peaksDiffer) {
+      text += '피크 시간대는 다르지만 전체 모양은 비슷합니다' + pctText + '. 예측 오차를 감안하면 의미 있는 차이로 보기 어렵습니다.';
+    } else if (similar) {
+      text += '두 노선의 시간대 모양이 비슷합니다' + pctText + '. 예측 오차를 감안하면 의미 있는 차이로 보기 어렵습니다.';
     } else {
-      text += '두 노선의 시간대 모양이 비슷해서 비교 그림은 생략했습니다.';
+      text += '두 노선의 시간대 모양에 차이가 있습니다' + pctText + '.';
     }
+    text += ' 각 노선의 가장 붐비는 시간대를 100%로 맞춰 모양만 비교한 그림입니다.';
     if (cmp.provisional || cmp.limited) text += ' ' + compareNo + '번은 시간대 자료가 적어 근거가 약합니다.';
     compareEl.appendChild(document.createTextNode(text));
-    if (!overlay) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hourly-date hourly-force';
-      btn.textContent = '겹쳐서 보기';
-      btn.addEventListener('click', function () { forceOverlay = true; if (last) render(last.main, last.cmp); });
-      compareEl.appendChild(document.createTextNode(' '));
-      compareEl.appendChild(btn);
-    }
-    return overlay;
+    return true;
   }
 
   function render(main, cmp) {
-    last = { main: main, cmp: cmp };
     if (!usable(main)) {
       showMessage((main && main.message) || '시간대별 예측을 표시할 수 없습니다.');
       return;
@@ -276,16 +281,15 @@
 
   window.HourlyRidership = {
     // 노선이 바뀌면 오늘부터 다시 (비교 노선은 풀림: dashboard_map.js 가 필요하면 setCompare 를 이어서 부름)
-    load: function (no, color) { routeNo = no; compareNo = null; mainColor = color || MAIN_COLOR; dateIdx = 0; forceOverlay = false; buildButtons(); request(); },
+    load: function (no, color) { routeNo = no; compareNo = null; mainColor = color || MAIN_COLOR; dateIdx = 0; buildButtons(); request(); },
     // 비교 노선이 생기거나 바뀌거나 없어졌을 때 (null 이면 비교 해제)
     setCompare: function (no, color) {
       if ((no || null) === compareNo) return;
       compareNo = no || null;
       compareColor = color || COMPARE_COLOR;
-      forceOverlay = false;
       if (routeNo) request();
     },
     retryIfFailed: function (no) { if (state === 'failed' && routeNo === no) request(); },
-    clear: function () { reqNo++; clearChart(); clearCompareLine(); state = 'idle'; routeNo = null; compareNo = null; last = null; }
+    clear: function () { reqNo++; clearChart(); clearCompareLine(); state = 'idle'; routeNo = null; compareNo = null; }
   };
 })();
