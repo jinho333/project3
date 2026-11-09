@@ -288,6 +288,11 @@
     <foreach collection="routeNoList" item="no" separator=",">(#{no}, #{routeName})</foreach>
   </insert>
 
+  <update id="updateRouteNameIfUnnamed">
+    UPDATE BUS_ROUTE SET ROUTE_NAME = #{routeName}
+    WHERE ROUTE_NO = #{routeNo} AND ROUTE_NAME = #{unnamed}
+  </update>
+
   <delete id="deleteRoute">
     DELETE FROM BUS_ROUTE WHERE ROUTE_NO = #{routeNo}
   </delete>
