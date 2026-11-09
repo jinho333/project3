@@ -53,7 +53,7 @@ public class AdminAiController {
         }
     }
 
-    // 지도에서 노선을 골랐을 때: 그 노선의 미처리 신고 + 이용자 수 예측을 본 분석 (노선번호만 받음)
+    // 지도에서 노선을 골랐을 때: 그 노선의 미완료 신고 + 이용자 수 예측을 본 분석 (노선번호만 받음)
     // compareRouteNo 를 같이 보내면 두 노선을 비교해서 답하고, question 을 같이 보내면 같은 데이터를 보고 그 질문에 답함
     @PostMapping("/route")
     public ResponseEntity<Map<String, String>> route(@RequestBody Map<String, Object> body, HttpSession session) {

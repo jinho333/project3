@@ -36,14 +36,14 @@ public class AiService {
         - 개인정보(이름, 전화번호)는 다루지 않으며, 물어도 답하지 않습니다.
         """;
 
-    // 노선 분석: 노선 하나(미처리 신고 + 이용자 수 예측) 또는 두 노선(선택 노선 + 비교 노선)을 보고 답함
+    // 노선 분석: 노선 하나(미완료 신고 + 이용자 수 예측) 또는 두 노선(선택 노선 + 비교 노선)을 보고 답함
     // 숫자 문장은 서버가 정해진 문장으로 쓰고, AI 는 신고 내용의 공통점·차이, 예측의 의미, 해볼 조치만 씀
     // (숫자와 고정 문구가 틀리거나 빠지지 않고, AI 호출이 실패해도 사실 줄은 그대로 보여 줄 수 있음)
-    private static final int ROUTE_SAMPLE_LIMIT = 15;             // 노선 하나일 때 미처리 신고 내용 샘플 개수 (오래된 순)
+    private static final int ROUTE_SAMPLE_LIMIT = 15;             // 노선 하나일 때 미완료 신고 내용 샘플 개수 (오래된 순)
     private static final int COMPARE_SAMPLE_LIMIT = 8;            // 두 노선일 때 노선마다 샘플 개수
     private static final long ROUTE_CACHE_MILLIS = 10 * 60 * 1000L;
     private static final String ROUTE_NO_REGEX = "^[0-9A-Za-z가-힣]{1,10}$";
-    private static final int FEW_REPORTS = 5;                     // 미처리 신고가 이보다 적으면 우연일 수 있다고 덧붙임
+    private static final int FEW_REPORTS = 5;                     // 미완료 신고가 이보다 적으면 우연일 수 있다고 덧붙임
     private static final int AVG_DAYS = 7;                        // 평균을 내는 날 수 (오늘부터)
     private static final double BIG_GAP_RATIO = 3.0;              // 두 노선 이용자 수가 이 배수 이상 차이 나면 비교 주의 안내
     private static final String AI_FAIL_MARK = "AI 분석을 불러오지 못했습니다.";
@@ -59,7 +59,7 @@ public class AiService {
         당신은 버스 불편 신고 접수 사이트의 관리자를 돕는 데이터 분석 비서입니다.
         아래 [데이터]만 근거로 한국어로 정확히 세 줄만 쓰세요. 줄은 번호(2. 3. 4.)로 시작하고 제목은 쓰지 마세요.
         2. 가장 많은 신고 유형과 신고 내용의 공통점을 한두 문장으로. 유형이 비슷한 건수이거나 공통점이 뚜렷하지 않으면 "뚜렷한 공통점은 보이지 않습니다"라고 쓰세요.
-        3. [이미 작성된 문장]의 이용자 수 예측이 미처리 신고의 처리 순서에 주는 의미를 한 문장으로. 데이터의 "이용이 가장 많은 날까지"가 3일 이내이면 이용이 몰리기 전에 먼저 확인하라는 쪽으로, 그보다 멀면 오래된 신고부터 차례로 처리해도 된다는 쪽으로 쓰세요. 이 지시문의 표현을 그대로 옮기지 말고 숫자도 반복하지 마세요. 예측이 없으면 "-"만 쓰세요.
+        3. [이미 작성된 문장]의 이용자 수 예측이 미완료 신고의 처리 순서에 주는 의미를 한 문장으로. 데이터의 "이용이 가장 많은 날까지"가 3일 이내이면 이용이 몰리기 전에 먼저 확인하라는 쪽으로, 그보다 멀면 오래된 신고부터 차례로 처리해도 된다는 쪽으로 쓰세요. 이 지시문의 표현을 그대로 옮기지 말고 숫자도 반복하지 마세요. 예측이 없으면 "-"만 쓰세요.
         4. 위 내용에서만 이끌어낸 조치를 한두 문장으로.
         규칙:
         - 1번 줄(현황)과 3번의 숫자 문장은 서버가 따로 쓰니 쓰지 마세요.
@@ -76,14 +76,14 @@ public class AiService {
         4. 오래된 접수 건부터 확인하고, 무정차 신고는 운수사에 사실 확인을 요청해 보세요.
         """;
 
-    // 두 노선 비교: 서버가 1번(미처리 신고 비교), 2번(예상 이용자 비교)을 쓰고 AI 는 3번, 4번만 씀
+    // 두 노선 비교: 서버가 1번(미완료 신고 비교), 2번(예상 이용자 비교)을 쓰고 AI 는 3번, 4번만 씀
     private static final String COMPARE_SYSTEM_PROMPT = """
         당신은 버스 불편 신고 접수 사이트의 관리자를 돕는 데이터 분석 비서입니다.
         아래 [데이터]만 근거로 한국어로 정확히 두 줄만 쓰세요. 줄은 번호(3. 4.)로 시작하고 제목은 쓰지 마세요.
         3. 두 노선의 신고 유형과 신고 내용에서 보이는 차이를 한두 문장으로. 비슷하면 "뚜렷한 차이는 보이지 않습니다"라고 쓰세요.
-        4. 두 노선 중 어느 쪽을 먼저 확인하면 좋을지 한두 문장으로. 근거는 데이터에 있는 미처리 건수, 가장 오래된 신고 일수, 예상 이용자 수뿐입니다. 어느 한쪽의 미처리 신고가 5건 미만이면 우연일 수 있다고 덧붙이세요.
+        4. 두 노선 중 어느 쪽을 먼저 확인하면 좋을지 한두 문장으로. 근거는 데이터에 있는 미완료 건수, 가장 오래된 신고 일수, 예상 이용자 수뿐입니다. 어느 한쪽의 미완료 신고가 5건 미만이면 우연일 수 있다고 덧붙이세요.
         규칙:
-        - 1번 줄(미처리 신고 비교)과 2번 줄(예상 이용자 비교)은 서버가 따로 쓰니 쓰지 마세요.
+        - 1번 줄(미완료 신고 비교)과 2번 줄(예상 이용자 비교)은 서버가 따로 쓰니 쓰지 마세요.
         - 데이터에 있는 사실과 그에 바로 이어지는 내용만 쓰세요. 데이터에 없는 영향(업무량, 민원, 사고 등)이나 원인(날씨, 행사 등)은 쓰지 마세요.
         - 숫자는 데이터에 있는 값만 쓰고 직접 계산하지 마세요.
         - 예상 이용자 수는 노선 전체(양방향 합계)의 하루 이용자 수입니다. 특정 구간, 정류장, 시간대를 언급하지 마세요.
@@ -93,7 +93,7 @@ public class AiService {
         - 개인정보(이름, 전화번호)는 다루지 않습니다.
         예시 (숫자와 내용은 예시일 뿐이니 그대로 쓰지 마세요):
         3. 선택한 노선은 무정차 신고가, 비교 노선은 배차 간격 신고가 많습니다.
-        4. 선택한 노선이 미처리 건수가 많고 오래된 신고도 있으니 먼저 확인하는 것이 좋습니다.
+        4. 선택한 노선이 미완료 건수가 많고 오래된 신고도 있으니 먼저 확인하는 것이 좋습니다.
         """;
 
     // 지도에서 고른 노선(한두 개)에 대한 관리자의 질문: 같은 데이터를 보고 자유롭게 답함
@@ -293,7 +293,7 @@ public class AiService {
         String line3 = firstNonBlank(ai.get(3), failure != null
             ? AI_FAIL_MARK + " " + failure : "두 노선의 차이를 요약하지 못했습니다.");
         String line4 = firstNonBlank(ai.get(4), "AI 답변이 없어 제안할 수 없습니다.");
-        return "1. 미처리 신고: " + fact1 + "\n2. 예상 이용자: " + fact2
+        return "1. 미완료 신고: " + fact1 + "\n2. 예상 이용자: " + fact2
             + "\n3. 두 노선의 차이: " + line3 + "\n4. 먼저 볼 노선: " + line4;
     }
 
@@ -315,13 +315,13 @@ public class AiService {
 
     // ---- 서버가 직접 쓰는 사실 문장 ----
 
-    // 노선 하나의 1번 줄: 미처리 건수와 가장 오래된 신고
+    // 노선 하나의 1번 줄: 미완료 건수와 가장 오래된 신고
     private String factOpen(RouteFacts f) {
         int total = f.total();
         if (total == 0) {
-            return "미처리 신고가 없습니다.";
+            return "미완료 신고가 없습니다.";
         }
-        StringBuilder sb = new StringBuilder("미처리 ").append(total).append("건(접수 ").append(f.open().getReceivedCnt())
+        StringBuilder sb = new StringBuilder("미완료 ").append(total).append("건(접수 ").append(f.open().getReceivedCnt())
             .append("건, 처리중 ").append(f.open().getProcessingCnt()).append("건)");
         if (f.oldestDays() != null) {
             sb.append(f.oldestDays() == 0 ? ", 가장 오래된 신고는 오늘 접수되었습니다." : ", 가장 오래된 신고는 " + f.oldestDays() + "일째입니다.");
@@ -449,17 +449,17 @@ public class AiService {
 
     private void appendRouteData(StringBuilder sb, RouteFacts f, int sampleLimit) {
         String routeNo = f.routeNo();
-        sb.append("미처리 신고(접수 + 처리중): ").append(f.total()).append("건 (접수 ").append(f.open().getReceivedCnt())
+        sb.append("미완료 신고(접수 + 처리중): ").append(f.total()).append("건 (접수 ").append(f.open().getReceivedCnt())
           .append("건, 처리중 ").append(f.open().getProcessingCnt()).append("건)\n");
         if (f.oldestDays() != null) {
-            sb.append("가장 오래된 미처리 신고: ").append(f.oldestDays() == 0 ? "오늘 접수" : f.oldestDays() + "일째").append("\n");
+            sb.append("가장 오래된 미완료 신고: ").append(f.oldestDays() == 0 ? "오늘 접수" : f.oldestDays() + "일째").append("\n");
         }
         sb.append("신고 항목에 정류장은 저장되지 않음 (신고 내용 글에만 이름이 적혀 있을 수 있음)\n");
 
-        sb.append("\n미처리 신고 유형별 건수:\n");
+        sb.append("\n미완료 신고 유형별 건수:\n");
         appendStat(sb, adminService.getOpenTypeStat(routeNo), "건");
 
-        sb.append("\n미처리 신고 목록 (오래된 순, 최대 ").append(sampleLimit).append("건, 유형 / 상태 / 접수일 / 내용):\n");
+        sb.append("\n미완료 신고 목록 (오래된 순, 최대 ").append(sampleLimit).append("건, 유형 / 상태 / 접수일 / 내용):\n");
         List<ReportDTO> samples = adminService.getOpenReportText(routeNo, sampleLimit);
         if (samples.isEmpty()) {
             sb.append("- 없음\n");

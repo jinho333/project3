@@ -15,7 +15,7 @@
    "rank": 3,
    "grade": "HIGH",
    "gradeLabel": "혼잡",
-   "label": "덕하공영차고지(기점) ↔ 꽃바위(종점)",
+   "label": "덕하공영차고지 ↔ 꽃바위",
    "directions": 2
   },
   {
@@ -39,7 +39,7 @@
    "rank": 1,
    "grade": "HIGH",
    "gradeLabel": "혼잡",
-   "label": "율리공영차고지 ↔ 꽃바위(종점)",
+   "label": "율리공영차고지 ↔ 꽃바위",
    "directions": 2
   },
   {
@@ -47,7 +47,7 @@
    "rank": 10,
    "grade": "LOW",
    "gradeLabel": "여유",
-   "label": "농소공영차고지 ↔ 꽃바위(종점)",
+   "label": "농소공영차고지 ↔ 꽃바위",
    "directions": 3
   },
   {
@@ -55,7 +55,7 @@
    "rank": 6,
    "grade": "MID",
    "gradeLabel": "보통",
-   "label": "덕하공영차고지(기점) ↔ 농소공영차고지",
+   "label": "덕하공영차고지 ↔ 농소공영차고지",
    "directions": 2
   },
   {
@@ -71,7 +71,7 @@
    "rank": 9,
    "grade": "LOW",
    "gradeLabel": "여유",
-   "label": "명촌차고지(기점) ↔ 꽃바위(종점)",
+   "label": "명촌차고지 ↔ 꽃바위",
    "directions": 2
   },
   {
@@ -79,7 +79,7 @@
    "rank": 8,
    "grade": "LOW",
    "gradeLabel": "여유",
-   "label": "울산과학기술원(기점) ↔ 명촌차고지(종점)",
+   "label": "울산과학기술원 ↔ 명촌차고지",
    "directions": 2
   }
  ]

@@ -19,9 +19,9 @@
       <input type="search" id="routeSearch" class="route-search" placeholder="노선번호·종점 이름 검색"
         autocomplete="off" aria-label="노선 검색">
       <p id="routeCount" class="list-note"></p>
-      <p class="list-note">처음에는 미처리 신고가 많은 상위 5개 노선을 보여 줍니다. 노선을 누르면 그 노선만 표시되고(대표 1방향), 다른 노선의 "비교"를 체크하면 두 노선을 비교합니다. 선택한 노선을 다시 누르면 처음 화면으로 돌아갑니다.</p>
+      <p class="list-note">처음에는 미완료 신고가 많은 상위 5개 노선을 보여 줍니다. 노선을 누르면 그 노선만 표시되고(대표 1방향), 다른 노선의 "비교"를 체크하면 두 노선을 비교합니다. 선택한 노선을 다시 누르면 처음 화면으로 돌아갑니다.</p>
 
-      <!-- 노선 목록: 서버(/admin/api/routes, /admin/api/routes/priority)에서 받아 JS 가 채움. 미처리 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 접어 둠 -->
+      <!-- 노선 목록: 서버(/admin/api/routes, /admin/api/routes/priority)에서 받아 JS 가 채움. 미완료 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 접어 둠 -->
       <ul id="routeList" class="route-btns"></ul>
       <button type="button" id="restToggle" class="rest-toggle" aria-expanded="false" hidden></button>
       <ul id="routeRestList" class="route-btns rest-list" hidden></ul>
@@ -69,10 +69,10 @@
       </section>
     </div>
 
-    <!-- 오른쪽 패널: 노선을 클릭하면 그 노선의 미처리 신고 수 (이 아래에 AI 답변이 들어올 자리) -->
+    <!-- 오른쪽 패널: 노선을 클릭하면 그 노선의 미완료 신고 수 (이 아래에 AI 답변이 들어올 자리) -->
     <aside class="dash-side">
       <h3>신고 현황</h3>
-      <p id="sideEmpty" class="side-empty">지도에서 노선을 클릭하면 그 노선의 미처리 신고가 표시됩니다.</p>
+      <p id="sideEmpty" class="side-empty">지도에서 노선을 클릭하면 그 노선의 미완료 신고가 표시됩니다.</p>
       <div id="sideRoute" class="side-route" hidden>
         <p id="sideTitle" class="side-title"></p>
         <p class="side-note">신고 관리의 접수 + 처리중 (완료는 제외)</p>
@@ -89,9 +89,9 @@
         <p id="sideCompare" class="side-note" hidden></p>
         <p id="sideUnknown" class="side-note" hidden>신고 수를 불러오지 못했습니다.</p>
 
-        <!-- AI 분석: 이 노선의 미처리 신고 + 이용자 수 예측을 보고 답함 (버튼을 눌렀을 때만 호출) -->
+        <!-- AI 분석: 이 노선의 미완료 신고 + 이용자 수 예측을 보고 답함 (버튼을 눌렀을 때만 호출) -->
         <button type="button" id="sideAiBtn" class="side-ai-btn">AI 분석</button>
-        <p class="side-note">미처리 신고와 이용자 수 예측을 바탕으로 분석합니다. 비교 노선을 체크하면 두 노선의 차이를 설명합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
+        <p class="side-note">미완료 신고와 이용자 수 예측을 바탕으로 분석합니다. 비교 노선을 체크하면 두 노선의 차이를 설명합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</p>
         <p id="sideAiResult" class="side-ai-answer" hidden></p>
 
         <!-- 이 노선에 대해 직접 질문하기: 같은 신고와 예측 데이터를 보고 답함 -->

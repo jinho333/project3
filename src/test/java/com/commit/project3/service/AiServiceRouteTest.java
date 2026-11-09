@@ -69,7 +69,7 @@ class AiServiceRouteTest {
         String answer = service.analyzeRoute("134", null);
 
         // 오늘부터 7일 값: 1000, 1010, ... 1060 -> 평균 1030
-        assertTrue(answer.contains("1. 현황: 미처리 5건(접수 3건, 처리중 2건), 가장 오래된 신고는 14일째입니다."), answer);
+        assertTrue(answer.contains("1. 현황: 미완료 5건(접수 3건, 처리중 2건), 가장 오래된 신고는 14일째입니다."), answer);
         assertTrue(answer.contains("하루 평균 예상 이용자는 약 1,030명"), answer);
         assertTrue(answer.contains("가장 많은 날은") && answer.contains("1,130명"), answer);
         assertTrue(answer.contains("2. 주된 불편: 무정차 신고가 많습니다."), answer);
@@ -78,7 +78,7 @@ class AiServiceRouteTest {
     }
 
     @Test
-    void 두_노선은_서버가_미처리_신고와_이용자를_비교하고_AI는_3_4번만_쓴다() {
+    void 두_노선은_서버가_미완료_신고와_이용자를_비교하고_AI는_3_4번만_쓴다() {
         route("134", 5, 3, 14, 1000);     // 7일 평균 1030
         route("114", 2, 0, 3, 100);       // 7일 평균 130, 약 7.9배
         when(gemini.generate(anyString(), anyString()))
@@ -86,7 +86,7 @@ class AiServiceRouteTest {
 
         String answer = service.analyzeRoute("134", "114");
 
-        assertTrue(answer.contains("1. 미처리 신고: 134번 8건(가장 오래된 신고 14일째), 114번 2건(가장 오래된 신고 3일째)."), answer);
+        assertTrue(answer.contains("1. 미완료 신고: 134번 8건(가장 오래된 신고 14일째), 114번 2건(가장 오래된 신고 3일째)."), answer);
         assertTrue(answer.contains("건수가 적은 노선은 우연일 수 있습니다."), answer);
         assertTrue(answer.contains("134번 약 1,030명, 114번 약 130명"), answer);
         assertTrue(answer.contains("134번이 약 7.9배입니다."), answer);
@@ -129,7 +129,7 @@ class AiServiceRouteTest {
 
         String answer = service.analyzeRoute("999", null);
 
-        assertTrue(answer.contains("1. 현황: 미처리 신고가 없습니다."), answer);
+        assertTrue(answer.contains("1. 현황: 미완료 신고가 없습니다."), answer);
         assertTrue(answer.contains("3. 예측과 연결: 999번 노선은 예측 모델이 학습하지 않은 노선입니다."), answer);
         assertTrue(!answer.contains("3. 예측과 연결: 999번 노선은 예측 모델이 학습하지 않은 노선입니다. -"), answer);
     }
@@ -143,7 +143,7 @@ class AiServiceRouteTest {
         service.analyzeRoute("134", null);
 
         assertTrue(first.contains("AI 분석을 불러오지 못했습니다. 한도를 넘었습니다."), first);
-        assertTrue(first.contains("1. 현황: 미처리 5건"), first);
+        assertTrue(first.contains("1. 현황: 미완료 5건"), first);
         verify(gemini, times(2)).generate(anyString(), anyString());
     }
 

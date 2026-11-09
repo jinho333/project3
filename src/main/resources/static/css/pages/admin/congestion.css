@@ -35,7 +35,7 @@
   flex-direction: column;
 }
 
-/* 오른쪽 패널: 선택한 노선의 미처리 신고 수 (AI 답변이 들어올 자리) */
+/* 오른쪽 패널: 선택한 노선의 미완료 신고 수 (AI 답변이 들어올 자리) */
 .dash-side {
   width: var(--dash-right-gap);
   flex: none;
@@ -68,7 +68,7 @@
 .side-ask input { box-sizing: border-box; width: 100%; font-size: var(--fs-body); }
 .side-ask .side-ai-btn { margin-top: 8px; }
 .side-ai-answer[hidden] { display: none; }
-.side-count-num.is-zero { color: var(--ink-3); }   /* 미처리 신고가 없을 때 */
+.side-count-num.is-zero { color: var(--ink-3); }   /* 미완료 신고가 없을 때 */
 
 /* 지도 60 : 예측 데이터 40 */
 .dash-map {
@@ -134,7 +134,7 @@
 .route-tooltip .tt-head { font-weight: 700; margin-bottom: 4px; }
 .route-tooltip .tt-line { color: var(--ink); }
 .route-tooltip .tt-muted { color: var(--ink-3); font-size: var(--fs-sub); margin-top: 2px; }
-.route-tooltip .tt-open { font-weight: 700; color: var(--bad); }   /* 미처리 신고 합계 */
+.route-tooltip .tt-open { font-weight: 700; color: var(--bad); }   /* 미완료 신고 합계 */
 
 /* 정류장 사이가 넓을 때 선 가운데에 넣는 진행 방향 V (마우스 동작은 아래 선이 받음) */
 .seg-arrow { width: 12px; height: 12px; pointer-events: none; }
@@ -228,7 +228,7 @@
   cursor: pointer;
 }
 .route-btn:hover { background: var(--bg); }
-/* 노선 버튼 오른쪽 위: 미처리(접수 + 처리중) 신고 합계 */
+/* 노선 버튼 오른쪽 위: 미완료(접수 + 처리중) 신고 합계 */
 .open-badge {
   position: absolute;
   top: 8px;
@@ -242,7 +242,7 @@
 }
 .open-badge[hidden] { display: none; }
 .open-badge.is-zero { background: var(--bg); color: var(--ink-3); font-weight: 400; }
-.route-btn small { display: block; margin-top: 2px; color: var(--ink-2); font-size: var(--fs-sub); }
+.route-btn small { display: block; margin-top: 2px; color: var(--ink-2); font-size: var(--fs-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 한 줄 고정, 넘치면 … */
 .route-btn.is-active { border-color: var(--primary); background: var(--primary-weak); font-weight: 700; }  /* 지도에 표시 중인 노선(선택한 노선) */
 .route-btn.is-hover { border-color: var(--primary); background: var(--bg); }                              /* 지도에서 마우스를 올린 노선 */
 .route-btn.is-missing { color: var(--ink-3); border-style: dashed; }                                      /* 데이터를 불러오지 못한 노선 */
@@ -258,7 +258,7 @@
 .compare-chk input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
 .route-btn.is-compare { border-color: var(--primary); border-style: dashed; background: var(--primary-weak); }   /* 비교 노선 */
 
-/* 미처리 신고가 없는 노선을 접어 두는 버튼과 목록 */
+/* 미완료 신고가 없는 노선을 접어 두는 버튼과 목록 */
 .rest-toggle {
   width: 100%;
   margin-top: 12px;

@@ -1,14 +1,14 @@
 // 관리자 대시보드 지도
 // 동작 규칙(임시):
-//  1) 처음에는 미처리 신고가 많은 상위 5개 노선을 노선마다 다른 색으로 표시 (색은 노선 목록의 점과 같음)
-//     (미처리 신고가 있는 노선이 하나도 없으면 목록의 앞 5개)
+//  1) 처음에는 미완료 신고가 많은 상위 5개 노선을 노선마다 다른 색으로 표시 (색은 노선 목록의 점과 같음)
+//     (미완료 신고가 있는 노선이 하나도 없으면 목록의 앞 5개)
 //  2) 노선 하나를 클릭하면 그 노선만 표시 (목록, 지도의 선, 검색 후 엔터 모두 같음). 선택한 노선을 다시 누르면 처음 화면으로 돌아감
 //  3) 노선을 선택하면 다른 노선 항목에 "비교" 체크가 나타남. 하나를 체크하면 선택 노선 + 비교 노선 두 개만 표시 (최대 2개)
 //  4) "상위 5개 노선 보기" 버튼으로 처음 상태로 돌아감
 //  5) 방향: 노선마다 대표 1방향만 그림 (신고와 예측은 노선번호 단위라 양방향 합계)
-//     목록은 미처리 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 "미처리 없는 노선 N개"로 접어 둠 (검색하면 모두 검색됨)
-//  6) 선에 마우스를 올리면 툴팁(버스번호, 방향, 미처리 신고 합계)이 뜨고 그 방향의 선 외에는(같은 노선의 반대 방향 포함) 흐려짐.
-//     미처리 신고 = 신고 관리의 접수 + 처리중. 마지막으로 누른 노선 하나의 접수와 처리중을 오른쪽 패널에 나눠서 보여 줌
+//     목록은 미완료 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 "미완료 신고 없는 노선 N개"로 접어 둠 (검색하면 모두 검색됨)
+//  6) 선에 마우스를 올리면 툴팁(버스번호, 방향, 미완료 신고 합계)이 뜨고 그 방향의 선 외에는(같은 노선의 반대 방향 포함) 흐려짐.
+//     미완료 신고 = 신고 관리의 접수 + 처리중. 마지막으로 누른 노선 하나의 접수와 처리중을 오른쪽 패널에 나눠서 보여 줌
 //     (노선 목록의 배지와 호버 툴팁은 모든 노선의 합계)
 //  7) 정류장: 전체 보기에서는 표시 안 함 / 노선을 선택하면 기점·종점 표시 /
 //     조금 확대(DIRECTION_ZOOM_LEVEL 이하)하면 선 위에 일정 간격으로 진행 방향 V 만 표시 /
@@ -22,7 +22,7 @@
 //     선마다 아래에 흰 테두리를 깔아서, 같은 색 선이 나란히 있어도 서로 구분됨
 // 노선 목록은 /admin/api/routes, 노선 선은 /admin/api/routes/{노선번호}/geometry,
 // 도로 선은 /admin/api/routes/{노선번호}/road?brtId= 에서 받음,
-// 미처리 신고 수는 /admin/api/routes/report-counts (전체), /admin/api/routes/{노선번호}/report-counts (한 노선) 에서 받음
+// 미완료 신고 수는 /admin/api/routes/report-counts (전체), /admin/api/routes/{노선번호}/report-counts (한 노선) 에서 받음
 (function () {
   const mapEl = document.querySelector('#map');
   const messageEl = document.querySelector('#mapMessage');
@@ -45,7 +45,7 @@
   const ridershipGapEl = document.querySelector('#ridershipGap');
   const ridershipNormBoxEl = document.querySelector('#ridershipNormBox');
   const ridershipNormEl = document.querySelector('#ridershipNorm');
-  // 오른쪽 패널: 노선 하나를 선택하면 그 노선의 미처리 신고 수 (접수 / 처리중)
+  // 오른쪽 패널: 노선 하나를 선택하면 그 노선의 미완료 신고 수 (접수 / 처리중)
   const sideEmptyEl = document.querySelector('#sideEmpty');
   const sideRouteEl = document.querySelector('#sideRoute');
   const sideTitleEl = document.querySelector('#sideTitle');
@@ -111,18 +111,18 @@
   // 노선번호 -> { dirs: [{ brtId, label, isLoop, lines: [Polyline...] }], rep: 대표 방향, bounds } (불러온 노선만)
   const layers = {};
   const buttons = {};             // 노선번호 -> 목록의 버튼
-  const badges = {};              // 노선번호 -> 목록 버튼 오른쪽 위의 "미처리 N건" 배지
+  const badges = {};              // 노선번호 -> 목록 버튼 오른쪽 위의 "미완료 N건" 배지
   const items = {};               // 노선번호 -> 목록의 항목(li), 검색으로 걸러낼 때 숨김/표시
   const compareBoxes = {};        // 노선번호 -> 목록 항목 아래의 "비교" 체크 { label, input }
   let mode = 'all';               // 'all': 처음 화면(상위 노선) / 'select': 선택한 노선(과 비교 노선)만
   let selected = new Set();       // select 모드에서 지도에 표시 중인 노선번호 (선택 노선 + 비교 노선, 최대 2개)
   let compareRoute = null;        // 비교 노선번호 (없으면 null)
-  let priorityOrder = null;       // 미처리 신고가 있는 노선번호의 우선순위 순서 (서버에서 못 받았으면 null)
+  let priorityOrder = null;       // 미완료 신고가 있는 노선번호의 우선순위 순서 (서버에서 못 받았으면 null)
   let defaultRoutes = [];         // 처음 화면에 보여 줄 노선번호
-  const restNos = new Set();      // 목록에서 접어 둔 "미처리 없는 노선"
+  const restNos = new Set();      // 목록에서 접어 둔 "미완료 신고 없는 노선"
   let restOpen = false;           // 접어 둔 노선을 펼쳤는지
   let stopMarkers = [];           // 지도에 올라가 있는 정류장 표시 [{ routeNo, overlay, el }]
-  // 노선번호 -> 미처리(접수 + 처리중) 신고 수 { received, processing, total }
+  // 노선번호 -> 미완료(접수 + 처리중) 신고 수 { received, processing, total }
   // 처음에 전체를 한 번 받아 두고(호버 툴팁이 바로 뜨게), 노선을 클릭하면 그 노선만 최신 값으로 갱신
   const openCounts = {};
   let openAllLoaded = false;      // 전체 신고 수를 받았는지 (받았는데 없는 노선이면 0건)
@@ -161,7 +161,7 @@
     return ROUTE_COLORS[routes.indexOf(route) % ROUTE_COLORS.length];
   }
 
-  // ---------- 미처리 신고 수 (신고 관리의 접수 + 처리중, 완료는 제외) ----------
+  // ---------- 미완료 신고 수 (신고 관리의 접수 + 처리중, 완료는 제외) ----------
   // 모르면 null (아직 못 받았거나 받지 못함), 신고가 없는 노선은 0건
   function openCountOf(routeNo) {
     if (openCounts[routeNo]) return openCounts[routeNo];
@@ -188,7 +188,7 @@
     }
   }
 
-  // 미처리 신고가 있는 노선의 우선순위 순서 (임시 기준은 서버가 정함). 못 받으면 목록을 접지 않고 노선번호 순으로 보여 줌
+  // 미완료 신고가 있는 노선의 우선순위 순서 (임시 기준은 서버가 정함). 못 받으면 목록을 접지 않고 노선번호 순으로 보여 줌
   async function loadPriority() {
     try {
       const res = await fetch(ROUTE_API + '/priority');
@@ -199,20 +199,20 @@
     }
   }
 
-  // 노선 목록의 배지: 미처리 신고 합계를 한눈에 (모르면 배지를 숨김)
+  // 노선 목록의 배지: 미완료 신고 합계를 한눈에 (모르면 배지를 숨김)
   function renderOpenBadges() {
     Object.keys(badges).forEach(function (no) {
       const c = openCountOf(no);
       const badge = badges[no];
       badge.hidden = !c;
       if (!c) return;
-      badge.textContent = c.total === 0 ? '미처리 없음' : '미처리 ' + c.total + '건';
+      badge.textContent = c.total === 0 ? '미완료 없음' : '미완료 ' + c.total + '건';
       badge.classList.toggle('is-zero', c.total === 0);
     });
   }
 
   // ---------- AI 분석 / 질문 (오른쪽 패널, 버튼을 눌렀을 때만 호출) ----------
-  // 서버에는 노선번호(와 질문)만 보냄: 서버가 그 노선의 미처리 신고와 이용자 수 예측을 직접 모아서 AI 에 물어봄
+  // 서버에는 노선번호(와 질문)만 보냄: 서버가 그 노선의 미완료 신고와 이용자 수 예측을 직접 모아서 AI 에 물어봄
   // 분석(네 줄)과 질문은 서로 답변 칸이 따로라서, 질문을 해도 분석 결과가 지워지지 않음
   const aiSlots = [
     { btn: sideAiBtn, result: sideAiResultEl, idle: 'AI 분석', wait: '분석 중...', n: 0 },
@@ -296,7 +296,7 @@
     return c ? '접수 ' + c.received + '건 · 처리중 ' + c.processing + '건' : '신고 수를 불러오지 못했습니다';
   }
 
-  // 오른쪽 패널: 그 노선의 미처리 신고 수 (접수와 처리중을 나눠서), 비교 노선이 있으면 한 줄 더, 노선이 없으면 안내 문구만
+  // 오른쪽 패널: 그 노선의 미완료 신고 수 (접수와 처리중을 나눠서), 비교 노선이 있으면 한 줄 더, 노선이 없으면 안내 문구만
   function renderSideOpen(routeNo) {
     const compareNo = routeNo ? comparedRoute() : null;
     const key = routeNo ? routeNo + '|' + (compareNo || '') : '';
@@ -349,7 +349,7 @@
     if (sideRoute === routeNo || (sideRoute && comparedRoute() === routeNo)) renderSideOpen(sideRoute);   // 그사이 다른 노선으로 바뀌었으면 건드리지 않음
   }
 
-  // ---------- 호버 툴팁 (선에 마우스를 올리면 버스번호, 방향, 미처리 신고를 보여 줌) ----------
+  // ---------- 호버 툴팁 (선에 마우스를 올리면 버스번호, 방향, 미완료 신고를 보여 줌) ----------
   // 툴팁은 지도 좌표가 아니라 마우스의 화면 좌표를 직접 따라감 (확대/이동 후에도 어긋나지 않음)
   let tooltipEl = null;           // 툴팁 요소 (지도 영역 안에 둠)
   let mouseX = 0, mouseY = 0;     // 지도 영역 안에서의 마우스 위치
@@ -399,10 +399,10 @@
     direction.className = 'tt-line';
     direction.textContent = '방향: ' + dir.label;
 
-    // 신고 관리의 미처리(접수 + 처리중) 합계, 접수와 처리중을 나눈 값은 노선을 클릭하면 오른쪽 패널에 보임
+    // 신고 관리의 미완료(접수 + 처리중) 합계, 접수와 처리중을 나눈 값은 노선을 클릭하면 오른쪽 패널에 보임
     const open = document.createElement('div');
     open.className = 'tt-line tt-open';
-    open.textContent = '미처리 신고: ' + openTotalText(route.routeNo);
+    open.textContent = '미완료 신고: ' + openTotalText(route.routeNo);
 
     tooltipEl.appendChild(direction);
     tooltipEl.appendChild(open);
@@ -1303,14 +1303,14 @@
     drawRidership();
   }
 
-  // 선택한 노선(과 비교 노선)을 따라가는 두 곳: 예측 영역(이용자 수 예측)과 오른쪽 패널(미처리 신고 수, AI)
+  // 선택한 노선(과 비교 노선)을 따라가는 두 곳: 예측 영역(이용자 수 예측)과 오른쪽 패널(미완료 신고 수, AI)
   // 노선을 고르는 모든 경로(목록, 지도의 선, 검색, 비교 체크)에서 render() 가 이 함수를 불러서 서로 다른 노선을 보여 주지 않게 함
   function updateFocusViews() {
     const focus = focusedRoute();
     const compareNo = comparedRoute();
     forecastRouteEl.hidden = !focus;
     forecastEmptyEl.hidden = !!focus;
-    updateSide();                     // 오른쪽 패널: 선택한 노선의 미처리 신고 수 (처음 화면에서는 안내 문구만)
+    updateSide();                     // 오른쪽 패널: 선택한 노선의 미완료 신고 수 (처음 화면에서는 안내 문구만)
     if (!focus) {
       ridershipReqNo.main++; ridershipReqNo.compare++;
       ridershipData.main = null; ridershipData.compare = null;
@@ -1353,7 +1353,7 @@
   }
 
   // ---------- 동작 ----------
-  // 처음 화면: 미처리 신고가 많은 상위 노선만 표시, 선택과 비교는 모두 해제
+  // 처음 화면: 미완료 신고가 많은 상위 노선만 표시, 선택과 비교는 모두 해제
   function showAll() {
     mode = 'all';
     selected = new Set();
@@ -1419,7 +1419,7 @@
   }
 
   // ---------- 목록 그리기 ----------
-  // 미처리 신고가 있는 노선을 우선순위 순서로 위에, 없는 노선은 접어 둔 목록에 노선번호 순으로.
+  // 미완료 신고가 있는 노선을 우선순위 순서로 위에, 없는 노선은 접어 둔 목록에 노선번호 순으로.
   // 우선순위를 못 받았으면 접지 않고 노선번호 순 (routes 의 순서)
   function renderList() {
     listEl.textContent = '';
@@ -1453,6 +1453,7 @@
     const title = document.createTextNode(route.routeNo + '번 ');
     const small = document.createElement('small');
     small.textContent = route.label;
+    small.title = route.label;                 // 넘쳐서 잘려도 마우스를 올리면 전체 이름이 보임
 
     const badge = document.createElement('span');
     badge.className = 'open-badge';
@@ -1492,7 +1493,7 @@
 
   // ---------- 노선 검색 (목록만 걸러 보여 줌, 지도에는 영향 없음) ----------
   // 노선번호나 노선 이름(종점)에 검색어가 들어 있으면 보여 줌. "134", "134번", "꽃바위" 모두 가능.
-  // 검색 중에는 접어 둔 "미처리 없는 노선"도 함께 검색하고 펼쳐 보임
+  // 검색 중에는 접어 둔 "미완료 신고 없는 노선"도 함께 검색하고 펼쳐 보임
   function matchedRoutes() {
     const q = searchEl.value.trim().toLowerCase().replace(/번$/, '');
     if (!q) return routes;
@@ -1514,7 +1515,7 @@
     restToggleEl.hidden = restNos.size === 0;
     restListEl.hidden = !restShown;
     restToggleEl.setAttribute('aria-expanded', restShown ? 'true' : 'false');
-    restToggleEl.textContent = '미처리 없는 노선 ' + restNos.size + '개 ' + (restShown ? '▴' : '▾');
+    restToggleEl.textContent = '미완료 신고 없는 노선 ' + restNos.size + '개 ' + (restShown ? '▴' : '▾');
 
     countEl.textContent = matched.size === routes.length
       ? '노선 ' + routes.length + '개' : '검색 결과 ' + matched.size + '개 / 전체 ' + routes.length + '개';
@@ -1533,7 +1534,7 @@
       return;
     }
 
-    // 노선별 미처리 신고 수와 우선순위를 먼저 받아서 목록을 나눔 (못 받아도 지도는 그대로 뜸)
+    // 노선별 미완료 신고 수와 우선순위를 먼저 받아서 목록을 나눔 (못 받아도 지도는 그대로 뜸)
     await Promise.all([loadOpenCounts(), loadPriority()]);
     renderList();
     renderOpenBadges();
@@ -1546,7 +1547,7 @@
       showMessage(failed.map(function (r) { return r.routeNo + '번'; }).join(', ')
         + ' 노선은 지도에 표시할 수 없습니다 (없는 노선이거나 데이터가 없습니다).', 'error');
     } else if (priorityOrder !== null && openAllLoaded && routes.every(function (r) { return restNos.has(r.routeNo); })) {
-      showMessage('미처리 신고가 있는 노선이 없어 목록의 앞 ' + DEFAULT_COUNT + '개를 보여 줍니다.', 'info');
+      showMessage('미완료 신고가 있는 노선이 없어 목록의 앞 ' + DEFAULT_COUNT + '개를 보여 줍니다.', 'info');
     }
 
     // 대시보드 등에서 /admin/congestion?route=134 로 들어오면 그 노선을 선택한 채로 시작
