@@ -229,7 +229,7 @@ public class AdminService {
     // 노선번호·이름 형식 검사
     private String checkRoute(RouteDTO routeDTO) {
         if (routeDTO.getRouteNo() == null || !routeDTO.getRouteNo().matches(ROUTE_REGEX)) {
-            return "노선번호는 영문, 숫자, 한글, - 로 20자 이내로 입력해주세요. (예: 3600)";
+            return "노선번호는 영문, 숫자, 한글, - 로 20자 이내로 입력해주세요. (예: 134)";
         }
         if (routeDTO.getRouteName() == null || routeDTO.getRouteName().isEmpty()
                 || routeDTO.getRouteName().length() > MAX_ROUTE_NAME_LENGTH) {

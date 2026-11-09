@@ -23,7 +23,7 @@
    "rank": 7,
    "grade": "MID",
    "gradeLabel": "보통",
-   "label": "꽃바위(기점) ↔ 꽃바위(종점)",
+   "label": "꽃바위 순환",
    "directions": 3
   },
   {
@@ -31,7 +31,7 @@
    "rank": 5,
    "grade": "MID",
    "gradeLabel": "보통",
-   "label": "율리공영차고지 ↔ 율리공영차고지종점",
+   "label": "율리공영차고지 순환",
    "directions": 3
   },
   {
@@ -63,7 +63,7 @@
    "rank": 4,
    "grade": "MID",
    "gradeLabel": "보통",
-   "label": "율리공영차고지 ↔ 부영1단지하차",
+   "label": "율리공영차고지 ↔ 부영1단지",
    "directions": 3
   },
   {
@@ -72,6 +72,14 @@
    "grade": "LOW",
    "gradeLabel": "여유",
    "label": "명촌차고지 ↔ 꽃바위",
+   "directions": 2
+  },
+  {
+   "routeNo": "732",
+   "rank": 11,
+   "grade": "MID",
+   "gradeLabel": "보통",
+   "label": "명촌차고지 ↔ 달천회관앞",
    "directions": 2
   },
   {

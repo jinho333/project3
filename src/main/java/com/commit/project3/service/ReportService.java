@@ -22,7 +22,7 @@ public class ReportService {
 
     // 화면(JS)의 정규식과 같은 규칙
     private static final String PHONE_REGEX = "^01[016789]\\d{7,8}$";           // 숫자만, 01x로 시작 10~11자리
-    private static final String ROUTE_REGEX = "^[A-Za-z0-9가-힣\\-]{1,20}$";     // 노선번호 (예: 3600, M5443, 3600-1)
+    private static final String ROUTE_REGEX = "^[A-Za-z0-9가-힣\\-]{1,20}$";     // 노선번호 (예: 134)
 
     // 첨부 가능한 확장자 (점 포함)
     private static final List<String> IMAGE_EXT = List.of(".jpg", ".bmp", ".gif", ".png");
@@ -204,7 +204,7 @@ public class ReportService {
     // 노선번호 검사: 형식이 맞고 실제 있는 노선이어야 함. 문제가 없으면 null
     private String checkRoute(String routeNo) {
         if (routeNo == null || !routeNo.matches(ROUTE_REGEX)) {
-            return "노선번호를 올바르게 입력해주세요. (예: 3600)";
+            return "노선번호를 올바르게 입력해주세요. (예: 134)";
         }
         if (reportMapper.countRoute(routeNo) == 0) {
             return "존재하지 않는 노선입니다. 노선선택하기에서 골라주세요.";
