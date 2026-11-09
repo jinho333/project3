@@ -42,6 +42,8 @@
         <div id="forecastRoute" class="forecast-route" hidden>
           <p id="forecastTitle" class="forecast-title"></p>
           <p id="forecastCompareTitle" class="forecast-title" hidden></p>
+          <!-- 신고와 예측은 노선번호 단위(양방향 합계)이고 방향 구분이 없으므로, 지도에 한 방향만 그려도 수치는 노선 전체라는 점을 알림 -->
+          <p class="forecast-scope">수치는 노선 전체(양방향 합계) 기준이며, 지도에는 대표 방향 한 쪽만 표시합니다.</p>
 
           <!-- 일별 이용자 수 예측: 예측 서버(ai_service)의 결과, 오늘부터 14일 (Chart.js) -->
           <div class="ridership-box">

@@ -16,6 +16,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.mockito.ArgumentCaptor;
+
 import com.commit.project3.dto.RouteOpenCountDTO;
 
 // 노선 분석(노선 하나 / 두 노선 비교)에서 서버가 쓰는 숫자 문장과 AI 답변이 합쳐지는 모양을 확인
@@ -157,5 +159,105 @@ class AiServiceRouteTest {
 
         assertEquals(first, second);
         verify(gemini, times(1)).generate(anyString(), anyString());
+    }
+
+    // 날짜를 고정해서(2026-11-09 월요일부터) 요일에 따라 값이 달라지는 14일 예측을 만듦: 월~금 weekday, 토·일 weekend, overrides 의 날짜는 그 값
+    private RidershipForecastService.Ridership calendarForecast(String routeNo, int weekday, int weekend, java.util.Map<Integer, Integer> overrides) {
+        List<RidershipForecastService.Day> days = new ArrayList<>();
+        LocalDate start = LocalDate.of(2026, 11, 9);
+        for (int i = 0; i < 14; i++) {
+            LocalDate d = start.plusDays(i);
+            boolean weekend2 = d.getDayOfWeek().getValue() >= 6;
+            int value = overrides.containsKey(i) ? overrides.get(i) : (weekend2 ? weekend : weekday);
+            days.add(new RidershipForecastService.Day(d.toString(), "", value));
+        }
+        return new RidershipForecastService.Ridership(routeNo, "OK", null, days, "", "", "", "");
+    }
+
+    private void routeWith(String routeNo, RidershipForecastService.Ridership ridershipData) {
+        when(adminService.getOpenCount(routeNo)).thenReturn(open(3, 2));
+        when(adminService.getOpenOldestDays(routeNo)).thenReturn(5);
+        when(adminService.getOpenTypeStat(routeNo)).thenReturn(List.of());
+        when(adminService.getOpenReportText(routeNo, 15)).thenReturn(List.of());
+        when(ridership.find(routeNo)).thenReturn(ridershipData);
+    }
+
+    @Test
+    void 평일은_매일_같은_값이면_날짜_묶음으로_말하고_가장_많은_날이라고_하지_않는다() {
+        routeWith("134", calendarForecast("134", 9713, 8254, java.util.Map.of()));
+        when(gemini.generate(anyString(), anyString())).thenReturn("2. 가\n3. 나\n4. 다");
+
+        String answer = service.analyzeRoute("134", null);
+
+        assertTrue(answer.contains("오늘부터 7일 예상 이용자는 11/9(월)~11/13(금) 하루 약 9,713명, 11/14(토)~11/15(일) 하루 약 8,254명입니다."), answer);
+        assertTrue(answer.contains("값이 낮은 구간(11/14(토)~11/15(일))은 높은 구간보다 약 15% 적습니다."), answer);
+        assertTrue(!answer.contains("가장 많은 날"), answer);
+
+        // AI 에게 주는 데이터에도 "가장 많은 날까지" 가 없고 날짜 묶음이 들어 있음
+        ArgumentCaptor<String> userPrompt = ArgumentCaptor.forClass(String.class);
+        verify(gemini).generate(anyString(), userPrompt.capture());
+        assertTrue(userPrompt.getValue().contains("날짜 묶음(값이 같은 연속된 날): 11/9(월)~11/13(금) 하루 약 9,713명"), userPrompt.getValue());
+        assertTrue(!userPrompt.getValue().contains("가장 많은 날까지"), "이용이 가장 많은 날까지 는 더 이상 쓰지 않음");
+    }
+
+    @Test
+    void 평일_중_공휴일처럼_값이_다른_날이_있으면_그_날을_따로_말한다() {
+        // 11/10(화)만 8,200명 -> 월 / 화 / 수~금 / 토~일 네 묶음
+        routeWith("134", calendarForecast("134", 9713, 8254, java.util.Map.of(1, 8200)));
+        when(gemini.generate(anyString(), anyString())).thenReturn("2. 가\n3. 나\n4. 다");
+
+        String answer = service.analyzeRoute("134", null);
+
+        assertTrue(answer.contains("11/9(월) 하루 약 9,713명, 11/10(화) 하루 약 8,200명, 11/11(수)~11/13(금) 하루 약 9,713명, 11/14(토)~11/15(일) 하루 약 8,254명입니다."), answer);
+    }
+
+    @Test
+    void 지시문에_방향별_설명을_막는_규칙이_들어_있다() {
+        routeWith("134", calendarForecast("134", 9713, 8254, java.util.Map.of()));
+        routeWith("142", calendarForecast("142", 4200, 3500, java.util.Map.of()));
+        when(gemini.generate(anyString(), anyString())).thenReturn("2. 가\n3. 나\n4. 다");
+
+        service.analyzeRoute("134", null);               // 노선 하나
+        service.analyzeRoute("134", "142");              // 두 노선
+        service.askRoute("134", null, "어느 방향이 더 붐벼?");   // 질문
+
+        ArgumentCaptor<String> system = ArgumentCaptor.forClass(String.class);
+        verify(gemini, times(3)).generate(system.capture(), anyString());
+        for (String prompt : system.getAllValues()) {
+            assertTrue(prompt.contains("방향"), "지시문에 방향 관련 규칙이 있어야 함");
+            assertTrue(prompt.contains("양방향 합계") || prompt.contains("방향별 정보는 없습니다"), "노선 전체(양방향 합계) 기준이라고 알려야 함");
+        }
+        assertTrue(system.getAllValues().get(2).contains("데이터에 방향별 정보는 없습니다"), "질문 지시문: 방향별 질문에는 없다고 답하게 함");
+    }
+
+    @Test
+    void 두_노선_질문에는_서버가_계산한_비교가_데이터에_들어가고_혼잡_안내_규칙이_있다() {
+        routeWith("134", calendarForecast("134", 9713, 8254, java.util.Map.of()));
+        routeWith("142", calendarForecast("142", 4200, 3500, java.util.Map.of()));
+        when(gemini.generate(anyString(), anyString())).thenReturn("답변");
+
+        service.askRoute("134", "142", "어느 노선이 더 붐벼?");
+
+        ArgumentCaptor<String> system = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> user = ArgumentCaptor.forClass(String.class);
+        verify(gemini).generate(system.capture(), user.capture());
+        assertTrue(system.getValue().contains("혼잡도는 데이터에 없어 예상 이용자 수로 비교합니다"), "붐빔을 물으면 혼잡도가 없다고 먼저 밝히게 함");
+        assertTrue(system.getValue().contains("같은 말은 쓰지 마세요"), "안내 문구 반복 금지 규칙");
+        assertTrue(user.getValue().contains("서버가 계산한 비교"), user.getValue());
+        assertTrue(user.getValue().contains("- 예상 이용자: ") && user.getValue().contains("134번 약") && user.getValue().contains("142번 약")
+            && user.getValue().contains("134번이 약 2.3배입니다."), user.getValue());
+        assertTrue(user.getValue().contains("- 미완료 신고: 134번 5건(가장 오래된 신고 5일째), 142번 5건(가장 오래된 신고 5일째)."), user.getValue());
+    }
+
+    @Test
+    void 노선_하나_질문에는_서버_비교_문장이_없다() {
+        routeWith("134", calendarForecast("134", 9713, 8254, java.util.Map.of()));
+        when(gemini.generate(anyString(), anyString())).thenReturn("답변");
+
+        service.askRoute("134", null, "이용자는 어때?");
+
+        ArgumentCaptor<String> user = ArgumentCaptor.forClass(String.class);
+        verify(gemini).generate(anyString(), user.capture());
+        assertTrue(!user.getValue().contains("서버가 계산한 비교"), user.getValue());
     }
 }

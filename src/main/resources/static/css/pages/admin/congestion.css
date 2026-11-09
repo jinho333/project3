@@ -96,6 +96,7 @@
 .forecast-route { margin-top: 8px; }
 .forecast-route[hidden] { display: none; }
 .forecast-title { font-weight: 700; }
+.forecast-scope { margin-top: 4px; color: var(--ink-3); font-size: var(--fs-sub); }
 
 /* 일별 이용자 수 예측 (예측 서버 결과) */
 .ridership-box { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
