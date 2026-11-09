@@ -54,4 +54,10 @@ public interface AdminMapper {
     int updateRoute(RouteDTO routeDTO);
     int deleteRoute(String routeNo);
     int countReportByRoute(String routeNo);     // 이 노선으로 접수된 신고 수
+
+    int countRoute();                           // 등록된 노선 수
+
+    // 예측 서버가 예측할 수 있다고 알려 준 노선번호를 한꺼번에 등록: 없던 노선만 넣고 이미 있는 노선은 그대로 둠(이름을 덮어쓰지 않음)
+    // 이름은 아직 모르므로 routeName 하나를 모두에게 넣고, 나중에 노선 관리 화면에서 수정함
+    int insertRouteIgnoreList(@Param("routeNoList") List<String> routeNoList, @Param("routeName") String routeName);
 }

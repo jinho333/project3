@@ -23,6 +23,13 @@
     <button type="submit" class="btn-primary">등록</button>
   </form>
 
+  <!-- 예측 노선 동기화: 예측 서버가 예측할 수 있는 노선번호를 DB의 노선 표에 맞춤(없던 노선만 추가, 이름은 "이름 미등록"으로 들어감) -->
+  <form class="forecast-sync-form" method="post" action="/admin/route/forecast-sync">
+    <h3>예측 노선</h3>
+    <p>예측 서버가 예측할 수 있는 노선번호를 노선 목록에 맞춥니다. 없던 노선만 "이름 미등록"으로 추가하고, 이미 있는 노선은 바꾸지 않습니다. 이름은 아래 목록에서 수정하세요.</p>
+    <button type="submit">예측 노선 동기화</button>
+  </form>
+
   <!-- 목록 위 줄: 왼쪽은 전체 건수, 오른쪽은 그 목록을 거르는 검색 -->
   <div class="list-head">
     <p class="total-cnt" th:text="|전체 ${#lists.size(routeList)}건|"></p>

@@ -52,6 +52,14 @@ class HourlyResponse(BaseModel):
     notice: str
 
 
+class RoutesResponse(BaseModel):
+    """예측할 수 있는 노선(학습에 있던 노선) 목록. 웹(Spring)이 DB의 노선 표(BUS_ROUTE)와 맞출 때 쓴다."""
+    modelVersion: str
+    trainedEnd: str
+    count: int
+    routes: list[str]
+
+
 class PredictorHealth(BaseModel):
     name: str
     version: str
