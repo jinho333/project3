@@ -43,9 +43,14 @@ public class AdminApiController {
 
     // 지도에 보여 줄 노선 목록 (노선번호, 이름, 방향 수)
     // 지금은 임시 파일(route-list.json), 나중에 DB 의 노선 정보로 교체
+    // 200 / 403: 관리자가 아님
     @GetMapping(value = "/routes", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String routes() {
-        return routeListService.findRouteListJson();
+    public ResponseEntity<Object> routes(HttpSession session) {
+        if (AdminUtil.checkAdmin(session) != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
+        }
+        return ResponseEntity.ok(routeListService.findRouteListJson());
     }
 
     // 오류 응답 모양: { "code": "...", "message": "..." }
@@ -102,9 +107,13 @@ public class AdminApiController {
     }
 
     // 노선 선과 정류장 (GeoJSON)
-    // 200: 노선 있음 / 400: 노선번호 형식이 이상함 / 404: 없는 노선이거나 데이터가 없음
+    // 200: 노선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 없는 노선이거나 데이터가 없음
     @GetMapping(value = "/routes/{routeNo}/geometry", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> geometry(@PathVariable String routeNo) {
+    public ResponseEntity<Object> geometry(@PathVariable String routeNo, HttpSession session) {
+        if (AdminUtil.checkAdmin(session) != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
+        }
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
@@ -120,10 +129,14 @@ public class AdminApiController {
     public record RoadPath(int brtId, boolean partial, List<double[]> points) {}
 
     // 노선 한 방향의 도로 선 (카카오 대중교통 경로를 그때그때 조회, 저장하지 않음)
-    // 200: 도로 선 있음 / 400: 노선번호 형식이 이상함 / 404: 도로 선을 쓸 수 없음(화면은 정류장을 이은 직선으로 대체) / 503: 카카오 연결·키 문제
-    // 호출할 때마다 카카오 일 한도(1,000건)를 쓰므로 로그인 구현 후 관리자만 부를 수 있게 해야 함
+    // 200: 도로 선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 도로 선을 쓸 수 없음(화면은 정류장을 이은 직선으로 대체) / 503: 카카오 연결·키 문제
+    // 호출할 때마다 카카오 일 한도(1,000건)를 쓰므로 관리자만 부를 수 있게 막음 (관리자 확인을 가장 먼저 해서 비로그인 요청은 카카오까지 가지 못함)
     @GetMapping(value = "/routes/{routeNo}/road", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> road(@PathVariable String routeNo, @RequestParam int brtId) {
+    public ResponseEntity<Object> road(@PathVariable String routeNo, @RequestParam int brtId, HttpSession session) {
+        if (AdminUtil.checkAdmin(session) != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
+        }
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
