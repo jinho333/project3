@@ -41,8 +41,7 @@ public class AdminApiController {
         this.adminService = adminService;
     }
 
-    // 지도에 보여 줄 노선 목록 (노선번호, 이름, 방향 수)
-    // 지금은 임시 파일(route-list.json), 나중에 DB 의 노선 정보로 교체
+    // 지도에 보여 줄 노선 목록 (노선번호, 이름): 노선 선 파일이 있는 노선, 이름은 DB(BUS_ROUTE)에서 읽음
     // 200 / 403: 관리자가 아님
     @GetMapping(value = "/routes", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> routes(HttpSession session) {

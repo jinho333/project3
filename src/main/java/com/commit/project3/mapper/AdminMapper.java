@@ -53,5 +53,7 @@ public interface AdminMapper {
     int insertRoute(RouteDTO routeDTO);
     int updateRoute(RouteDTO routeDTO);
     int deleteRoute(String routeNo);
+    // 노선번호 목록에 해당하는 노선의 이름 (지도 노선 목록용, DB 에 없는 번호는 결과에 없음)
+    List<RouteDTO> selectRouteNames(@Param("routeNoList") List<String> routeNoList);
     int countReportByRoute(String routeNo);     // 이 노선으로 접수된 신고 수
 }

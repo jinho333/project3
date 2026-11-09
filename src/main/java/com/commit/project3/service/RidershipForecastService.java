@@ -62,11 +62,21 @@ public class RidershipForecastService {
 
     // from 부터 DAYS 일 (시험용으로 시작 날짜를 바꿔 부를 수 있음)
     public Ridership find(String routeNo, LocalDate from) {
+        return find(routeNo, from, DAYS);
+    }
+
+    // 하루치만 (지도 노선의 혼잡 등급용): 그날 하루의 예상 이용자 수는 결과의 days 첫 값
+    public Ridership findDay(String routeNo, LocalDate day) {
+        return find(routeNo, day, 1);
+    }
+
+    // from 부터 days 일
+    private Ridership find(String routeNo, LocalDate from, int days) {
         if (!baseUrlSet || apiKey.isEmpty()) {
             return Ridership.failed(routeNo, "UNAVAILABLE",
                 "예측 서버가 설정되지 않았습니다. application.yaml 의 py.base.url, py.api.key 를 확인하세요.");
         }
-        LocalDate to = from.plusDays(DAYS - 1);
+        LocalDate to = from.plusDays(days - 1);
         try {
             JsonNode body = client.get()
                 .uri(b -> b.path("/predict").queryParam("routeNo", routeNo)
