@@ -27,6 +27,7 @@ body.admin .logo { display: inline-flex; align-items: center; gap: 10px; font-si
 .logo-mark { width: 36px; height: 36px; flex-shrink: 0; color: var(--primary); }   /* 로고 색은 주색을 따라간다 */
 body.admin .header-menu { align-items: center; gap: 20px; color: var(--ink-2); font-size: var(--fs-body); }
 body.admin .header-menu a:hover { color: var(--primary); }
+body.admin .header-user { color: var(--ink); font-weight: 600; }   /* 로그인한 사람 이름: 누르는 링크가 아니라는 것을 굵기로 구분 */
 
 .admin-body { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-h)); }
 

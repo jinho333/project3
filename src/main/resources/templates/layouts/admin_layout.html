@@ -21,7 +21,7 @@
       <span>버스 불편 신고 관리자</span>
     </a>
     <nav class="header-menu">
-      <span th:text="|${session.loginInfo.memberName}님|"></span>
+      <span class="header-user" th:text="|${session.loginInfo.memberName}님|"></span>
       <a href="/">사용자 화면</a>
       <a href="/member/logout">로그아웃</a>
     </nav>
