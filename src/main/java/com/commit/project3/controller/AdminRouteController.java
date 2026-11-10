@@ -70,6 +70,16 @@ public class AdminRouteController {
         return result(ra, adminService.removeRoute(routeNo), "노선이 삭제되었습니다.");
     }
 
+    // 처리 결과를 한 번만 보여주는 안내 문구(flash)로 담고 목록으로 돌아감
+    private String result(RedirectAttributes ra, String errorMsg, String successMsg) {
+        if (errorMsg != null) {
+            ra.addFlashAttribute("errorMsg", errorMsg);
+        } else {
+            ra.addFlashAttribute("successMsg", successMsg);
+        }
+        return "redirect:/admin/route";
+    }
+
     // 예측 노선 동기화: 예측 서버가 예측할 수 있는 노선번호를 DB의 노선 표(BUS_ROUTE)에 맞춰 넣음(새 노선은 이름 미등록으로 들어가고 이름은 이 화면에서 고침)
     @PostMapping("/admin/route/forecast-sync")
     public String syncForecastRoute(HttpSession session, RedirectAttributes ra) {
@@ -90,15 +100,5 @@ public class AdminRouteController {
         }
         RouteNameImportService.Result importResult = routeNameImportService.importNames();
         return result(ra, importResult.ok() ? null : importResult.message(), importResult.message());
-    }
-
-    // 처리 결과를 한 번만 보여주는 안내 문구(flash)로 담고 목록으로 돌아감
-    private String result(RedirectAttributes ra, String errorMsg, String successMsg) {
-        if (errorMsg != null) {
-            ra.addFlashAttribute("errorMsg", errorMsg);
-        } else {
-            ra.addFlashAttribute("successMsg", successMsg);
-        }
-        return "redirect:/admin/route";
     }
 }
