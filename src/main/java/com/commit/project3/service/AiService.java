@@ -83,9 +83,12 @@ public class AiService {
         return geminiClient.generate(SYSTEM_PROMPT, buildPrompt(question));
     }
 
-    // 노선번호가 이상하면 IllegalArgumentException. 예측 서버를 못 쓰거나 모르는 노선이어도 예외 없이 예측만 빠진 채 돌려줌
+    // 노선번호가 이상하거나 노선 관리에 등록되지 않았으면 IllegalArgumentException. 예측 서버를 못 쓰거나 모르는 노선이어도 예외 없이 예측만 빠진 채 돌려줌
     private RouteFacts routeFacts(String routeNo) {
         checkRouteNo(routeNo);
+        if (!adminService.isRegisteredRoute(routeNo)) {
+            throw new IllegalArgumentException("등록되지 않은 노선입니다.");
+        }
         RidershipForecastService.Ridership ridership = ridershipForecastService.find(routeNo);
         return new RouteFacts(routeNo, adminService.getOpenCount(routeNo), adminService.getOpenOldestDays(routeNo),
             ridership, RouteFacts.statsOf(ridership));

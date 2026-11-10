@@ -7,13 +7,3 @@ document.querySelectorAll('.delete-btn').forEach(btn => {
     }
   });
 });
-
-// 새로고침: 예측 서버와 울산 BIS 를 차례로 부르느라 몇 초 걸릴 수 있어서, 누르면 버튼을 잠가 중복 요청을 막음
-const refreshForm = document.querySelector('#refreshForm');
-if (refreshForm) {
-  refreshForm.addEventListener('submit', () => {
-    const btn = refreshForm.querySelector('.refresh-btn');
-    btn.disabled = true;
-    btn.textContent = '새로고침 중...';
-  });
-}

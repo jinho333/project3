@@ -77,23 +77,31 @@ public class AdminApiController {
     }
 
     // 노선 하나의 미처리 신고 수 (노선을 클릭했을 때 최신 값으로 갱신하는 용도)
-    // 200 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님
+    // 200 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 노선 관리에 등록되지 않은 노선
     @GetMapping(value = "/routes/{routeNo}/report-counts", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> reportCount(@PathVariable String routeNo) {
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
         }
+        if (!adminService.isRegisteredRoute(routeNo)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError("ROUTE_NOT_FOUND", "등록되지 않은 노선입니다."));
+        }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(OpenCount.of(adminService.getOpenCount(routeNo)));
     }
 
     // 노선 선과 정류장 (GeoJSON)
-    // 200: 노선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 없는 노선이거나 데이터가 없음
+    // 200: 노선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 노선 관리에 등록되지 않았거나 데이터가 없음
     @GetMapping(value = "/routes/{routeNo}/geometry", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> geometry(@PathVariable String routeNo) {
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
+        }
+        if (!adminService.isRegisteredRoute(routeNo)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError("ROUTE_NOT_FOUND", "등록되지 않은 노선입니다."));
         }
         return routeGeometryService.findGeoJson(routeNo)
             .<ResponseEntity<Object>>map(geoJson -> ResponseEntity.ok(geoJson))
@@ -106,13 +114,17 @@ public class AdminApiController {
     public record RoadPath(int brtId, boolean partial, List<double[]> points) {}
 
     // 노선 한 방향의 도로 선 (카카오 대중교통 경로를 그때그때 조회, 저장하지 않음)
-    // 200: 도로 선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 도로 선을 쓸 수 없음(화면은 정류장을 이은 직선으로 대체) / 503: 카카오 연결·키 문제
+    // 200: 도로 선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 등록되지 않은 노선이거나 도로 선을 쓸 수 없음(화면은 정류장을 이은 직선으로 대체) / 503: 카카오 연결·키 문제
     // 호출할 때마다 카카오 일 한도(1,000건)를 쓰므로 관리자만 부를 수 있게 막음 (관리자 확인을 가장 먼저 해서 비로그인 요청은 카카오까지 가지 못함)
     @GetMapping(value = "/routes/{routeNo}/road", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> road(@PathVariable String routeNo, @RequestParam int brtId) {
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
+        }
+        if (!adminService.isRegisteredRoute(routeNo)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError("ROUTE_NOT_FOUND", "등록되지 않은 노선입니다."));
         }
         RoadRouteService.Result result = roadRouteService.findRoadPath(routeNo, brtId);
         if (result.isOk()) {

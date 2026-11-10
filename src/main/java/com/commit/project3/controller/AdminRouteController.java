@@ -3,8 +3,6 @@ package com.commit.project3.controller;
 import com.commit.project3.dto.PageDTO;
 import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.service.AdminService;
-import com.commit.project3.service.ForecastRouteSyncService;
-import com.commit.project3.service.RouteNameImportService;
 import com.commit.project3.util.NumberUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,14 +17,9 @@ public class AdminRouteController {
     private static final int PAGE_SIZE = 15;       // 한 페이지에 보여줄 노선 수
 
     private final AdminService adminService;
-    private final ForecastRouteSyncService forecastRouteSyncService;
-    private final RouteNameImportService routeNameImportService;
 
-    public AdminRouteController(AdminService adminService, ForecastRouteSyncService forecastRouteSyncService,
-                                RouteNameImportService routeNameImportService) {
+    public AdminRouteController(AdminService adminService) {
         this.adminService = adminService;
-        this.forecastRouteSyncService = forecastRouteSyncService;
-        this.routeNameImportService = routeNameImportService;
     }
 
     // 노선 관리 화면: 노선 목록(검색 + 페이징) + 등록 폼
@@ -88,18 +81,5 @@ public class AdminRouteController {
             ra.addFlashAttribute("successMsg", successMsg);
         }
         return "redirect:/admin/route";
-    }
-
-    // 노선 새로고침: 예측 서버의 노선번호를 노선 표(BUS_ROUTE)에 맞춘 뒤(없던 노선만 "이름 미등록"으로 추가),
-    // 울산 BIS 의 이름으로 "이름 미등록" 노선의 이름을 채움. 이미 있는 노선과 이름은 바꾸지 않음
-    // 한쪽이 실패해도(예측 서버 꺼짐, 인증키 없음 등) 다른 쪽은 그대로 하고, 안내 문구에 둘의 결과를 함께 보여 줌
-    @PostMapping("/admin/route/refresh")
-    public String refresh(@RequestParam(defaultValue = "1") String page, @RequestParam(defaultValue = "") String keyword,
-                          RedirectAttributes ra) {
-        keepPosition(ra, page, keyword);
-        ForecastRouteSyncService.Result syncResult = forecastRouteSyncService.sync();          // 번호를 먼저 맞춰야 새 노선도 이름을 받음
-        RouteNameImportService.Result nameResult = routeNameImportService.importNames();
-        String message = "노선 번호: " + syncResult.message() + " / 노선 이름: " + nameResult.message();
-        return result(ra, syncResult.ok() && nameResult.ok() ? null : message, message);
     }
 }

@@ -9,17 +9,7 @@
 
 <th:block layout:fragment="content">
   <div class="page-narrow">
-  <!-- 제목 옆 새로고침: 예측 서버의 노선번호와 울산 BIS 의 노선 이름을 가져와 노선 목록을 최신으로 맞춤 -->
-  <div class="page-head">
-    <h2 class="admin-title">노선 관리</h2>
-    <form id="refreshForm" method="post" action="/admin/route/refresh">
-      <input type="hidden" name="page" th:value="${pageDTO.page}">
-      <input type="hidden" name="keyword" th:value="${keyword}">
-      <button type="submit" class="refresh-btn"
-        title="예측 서버의 노선번호와 울산 BIS의 노선 이름을 가져와 목록을 최신으로 맞춥니다. 없던 노선만 추가하고 이름이 없는 노선만 채우며, 이미 있는 노선과 이름은 바꾸지 않습니다.">
-        <span aria-hidden="true">↻</span> 새로고침</button>
-    </form>
-  </div>
+  <h2 class="admin-title">노선 관리</h2>
 
   <!-- 등록·수정·삭제 결과는 redirect 후 한 번만 보임 (flash) -->
   <p class="info-msg" th:if="${successMsg != null}" th:text="${successMsg}"></p>

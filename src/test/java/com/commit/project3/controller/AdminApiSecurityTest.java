@@ -57,6 +57,7 @@ class AdminApiSecurityTest {
     @Test
     void 노선_선은_이상한_노선번호면_400이다() {
         when(geometry.isValidRouteNo("134")).thenReturn(true);
+        when(admin.isRegisteredRoute("134")).thenReturn(true);
         when(geometry.findGeoJson("134")).thenReturn(Optional.of("{\"type\":\"FeatureCollection\"}"));
 
         assertEquals(HttpStatus.OK, api.geometry("134").getStatusCode());
@@ -69,6 +70,19 @@ class AdminApiSecurityTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, api.road("../x", 1).getStatusCode());
         verify(road, never()).findRoadPath(anyString(), anyInt());
+    }
+
+    @Test
+    void 노선_관리에_없는_노선은_선과_도로_선과_신고_수를_주지_않는다() {
+        when(geometry.isValidRouteNo("999")).thenReturn(true);
+        when(admin.isRegisteredRoute("999")).thenReturn(false);
+
+        assertEquals(HttpStatus.NOT_FOUND, api.geometry("999").getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, api.road("999", 1).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, api.reportCount("999").getStatusCode());
+        verify(geometry, never()).findGeoJson(anyString());
+        verify(road, never()).findRoadPath(anyString(), anyInt());      // 카카오 일 한도를 쓰지 않음
+        verify(admin, never()).getOpenCount(anyString());
     }
 
     // ---- 관리자 AI 호출 간격 ----
