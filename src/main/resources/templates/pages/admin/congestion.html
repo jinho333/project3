@@ -11,6 +11,8 @@
   <div class="dash">
     <!-- 왼쪽: 노선 목록 (4단계에서 작성) -->
     <aside class="dash-list">
+     <!-- 스크롤되는 영역 (제목, 검색, 노선 목록). "맨 위로" 막대는 이 밖에 두어 늘 패널 맨 아래에 있음 -->
+     <div class="dash-list-scroll">
       <h3>노선 목록</h3>
 
       <button type="button" id="showAllBtn" class="show-all-btn">상위 5개 노선 보기</button>
@@ -19,13 +21,23 @@
       <input type="search" id="routeSearch" class="route-search" placeholder="노선번호·종점 이름 검색"
         autocomplete="off" aria-label="노선 검색">
       <p id="routeCount" class="list-note"></p>
-      <p class="list-note">처음에는 미완료 신고가 많은 상위 5개 노선을 보여 줍니다. 노선을 누르면 그 노선만 표시되고(대표 1방향), 다른 노선의 "비교"를 체크하면 두 노선을 비교합니다. 선택한 노선을 다시 누르면 처음 화면으로 돌아갑니다.</p>
+      <!-- 안내: 한 줄짜리 두 항목을 옅은 상자에 담아 줄 모양과 길이를 맞춤 -->
+      <ul class="list-help">
+        <li>신고 우선순위 높은 5곳부터 보여 줍니다</li>
+        <li>노선을 누르면 다른 노선과 비교합니다</li>
+      </ul>
 
-      <!-- 노선 목록: 서버(/admin/api/routes, /admin/api/routes/priority)에서 받아 JS 가 채움. 미완료 신고가 있는 노선이 우선순위 순서로 위에 오고, 없는 노선은 접어 둠 -->
+      <!-- 노선 목록: 서버(/admin/api/routes, /admin/api/routes/priority)에서 받아 JS 가 채움.
+           우선순위 상위 5개만 펼쳐 두고, 미완료 신고가 있는 나머지 노선(우선순위 순)과 미완료 신고가 없는 노선은 각각 접어 둠 -->
       <ul id="routeList" class="route-btns"></ul>
+      <button type="button" id="moreToggle" class="rest-toggle" aria-expanded="false" hidden></button>
+      <ul id="routeMoreList" class="route-btns rest-list" hidden></ul>
       <button type="button" id="restToggle" class="rest-toggle" aria-expanded="false" hidden></button>
       <ul id="routeRestList" class="route-btns rest-list" hidden></ul>
       <p id="routeEmpty" class="list-note" hidden>검색 결과가 없습니다.</p>
+     </div>
+     <!-- 목록을 아래로 내렸을 때만 나타나는 "맨 위로" 막대 (JS 가 보임/숨김) -->
+     <button type="button" id="listTopBtn" class="list-top-btn" aria-label="목록 맨 위로" hidden>↑ 맨 위로</button>
     </aside>
 
     <!-- 오른쪽: 위 지도, 아래 예측 데이터 (오른쪽 끝에 여백) -->

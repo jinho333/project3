@@ -31,8 +31,12 @@
   const searchEl = document.querySelector('#routeSearch');
   const countEl = document.querySelector('#routeCount');
   const emptyEl = document.querySelector('#routeEmpty');
+  const moreToggleEl = document.querySelector('#moreToggle');
+  const moreListEl = document.querySelector('#routeMoreList');
   const restToggleEl = document.querySelector('#restToggle');
   const restListEl = document.querySelector('#routeRestList');
+  const listTopBtn = document.querySelector('#listTopBtn');
+  const listScrollEl = document.querySelector('.dash-list-scroll');
   const forecastRouteEl = document.querySelector('#forecastRoute');
   const forecastTitleEl = document.querySelector('#forecastTitle');
   const forecastCompareTitleEl = document.querySelector('#forecastCompareTitle');
@@ -62,6 +66,7 @@
 
   const ROUTE_API = '/admin/api/routes';
   const DEFAULT_COUNT = 5;        // 처음 화면에 보여 주는 상위 노선 수
+  const LIST_VISIBLE = 5;         // 노선 목록에 펼쳐 두는 우선순위 상위 노선 수 (나머지는 접어 둠)
   const OPEN_REFRESH_MS = 5000;   // 같은 노선을 다시 클릭해도 이 시간(ms) 안에는 신고 수를 다시 받지 않음
   // 노선마다 다른 선 색 (노선 목록 순서대로 돌려 씀). 흰 테두리가 깔려서 서로 구분되고, 지도의 도로 색과 겹치지 않게 진한 색으로 고름
   // 노선이 팔레트보다 많아져 같은 색이 겹치거나 비슷한 색(빨강과 분홍 등)이 함께 비교될 때는 비교 노선의 색만 자동으로 바꿈 (refreshRouteColors)
@@ -121,6 +126,8 @@
   let compareRoute = null;        // 비교 노선번호 (없으면 null)
   let priorityOrder = null;       // 미완료 신고가 있는 노선번호의 우선순위 순서 (서버에서 못 받았으면 null)
   let defaultRoutes = [];         // 처음 화면에 보여 줄 노선번호
+  const moreNos = new Set();      // 목록에서 접어 둔 "미완료 신고가 있는 나머지 노선" (우선순위 상위 10개 밖)
+  let moreOpen = false;           // 그 노선들을 펼쳤는지
   const restNos = new Set();      // 목록에서 접어 둔 "미완료 신고 없는 노선"
   let restOpen = false;           // 접어 둔 노선을 펼쳤는지
   let stopMarkers = [];           // 지도에 올라가 있는 정류장 표시 [{ routeNo, overlay, el }]
@@ -1447,6 +1454,7 @@
     selected = new Set([routeNo]);
     focusRoute = routeNo;
     compareRoute = null;
+    openFoldOf(routeNo);                          // 접어 둔 노선을 고르면 한 번 펼쳐 보임 (그 뒤에 접는 건 사용자 마음)
     render();
     panToStartIfHidden(routeNo);                  // 확대 수준은 유지 (자동 확대하지 않음)
     flashRoute(routeNo);
@@ -1464,10 +1472,17 @@
     if (mode !== 'select' || !focusRoute || routeNo === focusRoute) return;   // 그사이 선택이 바뀌었으면 버림
     compareRoute = routeNo;
     selected = new Set([focusRoute, routeNo]);
+    openFoldOf(routeNo);
     render();
     panToStartIfHidden(routeNo);
     flashRoute(routeNo);
     hideMessage();
+  }
+
+  // 접어 둔 목록에 있는 노선을 고르면 그 목록을 펼침
+  function openFoldOf(routeNo) {
+    if (moreNos.has(routeNo)) moreOpen = true;
+    if (restNos.has(routeNo)) restOpen = true;
   }
 
   function clearCompare() {
@@ -1478,21 +1493,31 @@
   }
 
   // ---------- 목록 그리기 ----------
-  // 미완료 신고가 있는 노선을 우선순위 순서로 위에, 없는 노선은 접어 둔 목록에 노선번호 순으로.
-  // 우선순위를 못 받았으면 접지 않고 노선번호 순 (routes 의 순서)
+  // 세 덩어리로 나눔: ① 우선순위 상위 5개(펼침) ② 미완료 신고가 있는 나머지 노선(우선순위 순, 접음)
+  // ③ 미완료 신고가 없는 노선(노선번호 순, 접음). 우선순위를 못 받았으면 접지 않고 노선번호 순 (routes 의 순서)
   function renderList() {
     listEl.textContent = '';
+    moreListEl.textContent = '';
     restListEl.textContent = '';
+    moreNos.clear();
     restNos.clear();
     let top = routes;
+    let more = [];
     let rest = [];
+    let open = routes;                            // 미완료 신고가 있는 노선 전체 (처음 화면의 기본 노선을 정할 때 씀)
     if (priorityOrder !== null && openAllLoaded) {
-      top = priorityOrder.map(findRoute).filter(Boolean);
-      rest = routes.filter(function (r) { return top.indexOf(r) === -1; });
+      open = priorityOrder.map(findRoute).filter(Boolean);
+      top = open.slice(0, LIST_VISIBLE);
+      more = open.slice(LIST_VISIBLE);
+      rest = routes.filter(function (r) { return open.indexOf(r) === -1; });
     }
-    defaultRoutes = (top.length > 0 ? top : routes).slice(0, DEFAULT_COUNT).map(function (r) { return r.routeNo; });
+    defaultRoutes = (open.length > 0 ? open : routes).slice(0, DEFAULT_COUNT).map(function (r) { return r.routeNo; });
 
     top.forEach(function (route) { listEl.appendChild(makeListItem(route)); });
+    more.forEach(function (route) {
+      moreNos.add(route.routeNo);
+      moreListEl.appendChild(makeListItem(route));
+    });
     rest.forEach(function (route) {
       restNos.add(route.routeNo);
       restListEl.appendChild(makeListItem(route));
@@ -1552,7 +1577,7 @@
 
   // ---------- 노선 검색 (목록만 걸러 보여 줌, 지도에는 영향 없음) ----------
   // 노선번호나 노선 이름(종점)에 검색어가 들어 있으면 보여 줌. "134", "134번", "꽃바위" 모두 가능.
-  // 검색 중에는 접어 둔 "미완료 신고 없는 노선"도 함께 검색하고 펼쳐 보임
+  // 검색 중에는 접어 둔 두 목록(나머지 노선, 미완료 신고 없는 노선)도 함께 검색하고 펼쳐 보임
   function matchedRoutes() {
     const q = searchEl.value.trim().toLowerCase().replace(/번$/, '');
     if (!q) return routes;
@@ -1569,8 +1594,13 @@
     });
 
     const searching = searchEl.value.trim() !== '';
-    const restPinned = Array.from(selected).some(function (no) { return restNos.has(no); });
-    const restShown = restNos.size > 0 && (restOpen || searching || restPinned);
+    const moreShown = moreNos.size > 0 && (moreOpen || searching);
+    moreToggleEl.hidden = moreNos.size === 0;
+    moreListEl.hidden = !moreShown;
+    moreToggleEl.setAttribute('aria-expanded', moreShown ? 'true' : 'false');
+    moreToggleEl.textContent = '미완료 신고 나머지 노선 ' + moreNos.size + '개 ' + (moreShown ? '▴' : '▾');
+
+    const restShown = restNos.size > 0 && (restOpen || searching);
     restToggleEl.hidden = restNos.size === 0;
     restListEl.hidden = !restShown;
     restToggleEl.setAttribute('aria-expanded', restShown ? 'true' : 'false');
@@ -1599,10 +1629,12 @@
     renderList();
     renderOpenBadges();
 
-    // 노선의 선을 한꺼번에 받음
-    const results = await Promise.all(routes.map(loadRoute));
+    // 처음 화면에 보여 줄 노선(상위 5개)의 선만 받음. 나머지 노선은 선택하거나 비교로 체크할 때 그때 받음
+    // (노선이 수백 개여도 처음 화면이 느려지지 않게. 선택·비교는 selectRoute, setCompare 가 먼저 loadRoute 를 부름)
+    const initial = defaultRoutes.map(findRoute).filter(Boolean);
+    const results = await Promise.all(initial.map(loadRoute));
     showAll();
-    const failed = routes.filter(function (r, i) { return !results[i]; });
+    const failed = initial.filter(function (r, i) { return !results[i]; });
     if (failed.length > 0) {
       showMessage(failed.map(function (r) { return r.routeNo + '번'; }).join(', ')
         + ' 노선은 지도에 표시할 수 없습니다 (없는 노선이거나 데이터가 없습니다).', 'error');
@@ -1616,7 +1648,11 @@
   }
 
   showAllBtn.addEventListener('click', function () { if (map) showAll(); });
+  moreToggleEl.addEventListener('click', function () { moreOpen = !moreOpen; applyFilter(); });
   restToggleEl.addEventListener('click', function () { restOpen = !restOpen; applyFilter(); });
+  // 목록을 조금 내리면 "맨 위로" 버튼이 나타남. 누르면 목록 맨 위(검색창)로 올라감
+  listScrollEl.addEventListener('scroll', function () { listTopBtn.hidden = listScrollEl.scrollTop < 200; });
+  listTopBtn.addEventListener('click', function () { listScrollEl.scrollTo({ top: 0, behavior: 'smooth' }); });
   ridershipNormEl.addEventListener('change', drawRidership);
   searchEl.addEventListener('input', applyFilter);
   searchEl.addEventListener('keydown', function (e) {
