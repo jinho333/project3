@@ -262,12 +262,24 @@
   </select>
 
   <!-- 노선 관리 -->
+  <!-- 목록과 개수 조회에서 같이 쓰는 검색 조건 (노선번호 또는 이름) -->
+  <sql id="adminRouteWhere">
+    WHERE ROUTE_NO LIKE CONCAT('%', #{keyword}, '%')
+       OR ROUTE_NAME LIKE CONCAT('%', #{keyword}, '%')
+  </sql>
+
   <select id="selectAdminRouteList" resultMap="adminRoute">
     SELECT ROUTE_NO, ROUTE_NAME
     FROM BUS_ROUTE
-    WHERE ROUTE_NO LIKE CONCAT('%', #{keyword}, '%')
-       OR ROUTE_NAME LIKE CONCAT('%', #{keyword}, '%')
+    <include refid="adminRouteWhere"/>
     ORDER BY ROUTE_NO
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="selectAdminRouteCount" resultType="int">
+    SELECT COUNT(*)
+    FROM BUS_ROUTE
+    <include refid="adminRouteWhere"/>
   </select>
 
   <insert id="insertRoute">

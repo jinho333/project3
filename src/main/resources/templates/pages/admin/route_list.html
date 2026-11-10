@@ -25,7 +25,7 @@
 
   <!-- 목록 위 줄: 왼쪽은 전체 건수, 오른쪽은 그 목록을 거르는 검색 -->
   <div class="list-head">
-    <p class="total-cnt" th:text="|전체 ${#lists.size(routeList)}건|"></p>
+    <p class="total-cnt" th:text="|전체 ${pageDTO.totalCnt}건|"></p>
     <form class="route-search-form" method="get" action="/admin/route">
       <input type="text" name="keyword" placeholder="노선번호 또는 이름" th:value="${keyword}" aria-label="노선 검색">
       <button type="submit" class="btn-primary">검색</button>
@@ -49,11 +49,15 @@
           <div class="route-actions">
             <form class="edit-form" method="post" action="/admin/route/edit">
               <input type="hidden" name="routeNo" th:value="${route.routeNo}">
+              <input type="hidden" name="page" th:value="${pageDTO.page}">
+              <input type="hidden" name="keyword" th:value="${keyword}">
               <input type="text" name="routeName" class="name-input" maxlength="100" th:value="${route.routeName}">
               <button type="submit">이름 수정</button>
             </form>
             <form class="delete-form" method="post" action="/admin/route/delete">
               <input type="hidden" name="routeNo" th:value="${route.routeNo}">
+              <input type="hidden" name="page" th:value="${pageDTO.page}">
+              <input type="hidden" name="keyword" th:value="${keyword}">
               <button type="button" class="delete-btn btn-danger" th:data-route-no="${route.routeNo}">삭제</button>
             </form>
           </div>
@@ -64,6 +68,18 @@
       </tr>
     </tbody>
   </table>
+
+  <!-- 페이지 번호: 검색어를 유지한 채 page만 바꿈 -->
+  <div class="paging">
+    <a th:if="${pageDTO.prev}" th:href="@{/admin/route(page=${pageDTO.startPage - 1}, keyword=${keyword})}">이전</a>
+
+    <th:block th:each="p : ${#numbers.sequence(pageDTO.startPage, pageDTO.endPage)}">
+      <strong th:if="${p == pageDTO.page}" th:text="${p}"></strong>
+      <a th:unless="${p == pageDTO.page}" th:text="${p}" th:href="@{/admin/route(page=${p}, keyword=${keyword})}"></a>
+    </th:block>
+
+    <a th:if="${pageDTO.next}" th:href="@{/admin/route(page=${pageDTO.endPage + 1}, keyword=${keyword})}">다음</a>
+  </div>
   </div>
 </th:block>
 
