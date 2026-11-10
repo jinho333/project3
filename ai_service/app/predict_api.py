@@ -22,11 +22,12 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 
 from app import artifact
-from app.api_models import HealthResponse, HourlyResponse, PredictResponse, RoutesResponse
+from app.api_models import HealthResponse, HourlyResponse, PredictResponse
 from app.config import settings
 from app.features import calendar_features
 from app.hourly import HourlyHolder
 from app.localonly import local_only
+from app.api_models import RoutesResponse
 
 log = logging.getLogger("predict_api")
 
@@ -130,16 +131,6 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None, ho
                 "lastError": models.last_error,
                 "warnings": [f"예측 모델 {w}" for w in models.warnings] + ([expiry] if expiry else [])}
 
-    @app.get("/routes", dependencies=[Depends(require_key)], response_model=RoutesResponse)
-    def routes() -> dict:
-        """예측할 수 있는 노선번호 목록(모델이 학습한 노선, 번호순). 웹이 DB의 노선 표(BUS_ROUTE)와 맞출 때 쓴다."""
-        bundle = models.get()
-        if bundle is None:
-            raise HTTPException(503, "저장된 모델이 없습니다. python -m app.model ... --save-model 로 모델을 저장하세요.")
-        route_list = sorted(str(r) for r in bundle.routes)
-        return {"modelVersion": bundle.model_version, "trainedEnd": bundle.trained_end.isoformat(),
-                "count": len(route_list), "routes": route_list}
-
     @app.get("/predict", dependencies=[Depends(require_key)], response_model=PredictResponse)
     def predict(route_no: Annotated[str, Query(alias="routeNo", description="노선번호 (예: 106)")],
                 from_: Annotated[date, Query(alias="from", description="시작 날짜 YYYY-MM-DD")],
@@ -174,6 +165,16 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None, ho
                              "predicted": int(round(r.predicted))} for r in out.itertuples()],
             "notice": NOTICE,
         }
+
+    @app.get("/routes", dependencies=[Depends(require_key)], response_model=RoutesResponse)
+    def routes() -> dict:
+        """예측할 수 있는 노선번호 목록(모델이 학습한 노선, 번호순). 웹이 DB의 노선 표(BUS_ROUTE)와 맞출 때 쓴다."""
+        bundle = models.get()
+        if bundle is None:
+            raise HTTPException(503, "저장된 모델이 없습니다. python -m app.model ... --save-model 로 모델을 저장하세요.")
+        route_list = sorted(str(r) for r in bundle.routes)
+        return {"modelVersion": bundle.model_version, "trainedEnd": bundle.trained_end.isoformat(),
+                "count": len(route_list), "routes": route_list}
 
     @app.get("/predict/hourly", dependencies=[Depends(require_key)], response_model=HourlyResponse)
     def predict_hourly(route_no: Annotated[str, Query(alias="routeNo", description="노선번호 (예: 106)")],
