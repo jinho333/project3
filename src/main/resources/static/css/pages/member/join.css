@@ -1,8 +1,8 @@
 /* 회원가입: 가운데 흰 카드 */
-body.user .content { display: flex; justify-content: center; }
-.join-wrap { width: 480px; max-width: 100%; margin: 32px auto; padding: 32px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
-.join-wrap h2 { font-size: 32px; line-height: 40px; margin-bottom: 24px; }
-.form-row { display: flex; flex-direction: column; margin-bottom: 16px; gap: 8px; }
+body.user .content { display: flex; justify-content: center; padding: 16px 32px; }   /* 위아래 바깥 여백 32px -> 16px: 한 화면에 담으려고 */
+.join-wrap { width: 480px; max-width: 100%; margin: 16px auto; padding: 24px 32px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+.join-wrap h2 { font-size: 32px; line-height: 40px; margin-bottom: 16px; }
+.form-row { display: flex; flex-direction: column; margin-bottom: 10px; gap: 6px; }
 .form-row label { font-weight: 500; }
 .id-line { display: flex; gap: 8px; }
 .id-line input { flex: 1; min-width: 0; }
@@ -11,3 +11,8 @@ body.user .content { display: flex; justify-content: center; }
 .ok-msg { color: var(--ink); font-weight: 500; }
 .join-wrap > form > button[type="submit"] { width: 100%; height: 52px; background: var(--ink); color: #fff; }
 .join-wrap > form > button[type="submit"]:hover { background: var(--elevated); }
+/* 푸터는 메인과 같이 한 줄로 줄여서 높이를 아낌 */
+.site-footer { padding: 9px 32px; }
+.site-footer .footer-logo { margin-bottom: 0; font-size: 16px; }
+.site-footer p { display: none; }
+.site-footer-inner { align-items: center; }

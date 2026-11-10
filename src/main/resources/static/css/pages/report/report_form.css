@@ -6,22 +6,25 @@
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
-.report-title { font-size: 36px; line-height: 44px; margin-bottom: 32px; }
+.report-title { font-size: 40px; line-height: 48px; margin-bottom: 32px; }
+/* 입력칸·버튼·안내 글자를 한 단계씩 키움: 본문 16→18px, 작은 글씨 14→16px (칸 높이는 그대로라 글자만 커짐) */
+.report-wrap input[type="text"], .report-wrap textarea, .report-wrap button, .modal button, .modal input[type="text"] { font-size: 18px; }
+.report-wrap .error-msg { font-size: 16px; }
 .report-form { width: 100%; }
 
 /* 라벨(왼쪽) + 입력(오른쪽) 한 줄 */
 .form-row { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 24px; }
-.form-label { width: 130px; flex-shrink: 0; padding-top: 12px; font-weight: 500; }
+.form-label { width: 130px; flex-shrink: 0; padding-top: 11px; font-size: 18px; font-weight: 500; }
 .form-row > input[type="text"] { flex: 1; min-width: 200px; max-width: 480px; }
 .form-field { flex: 1; min-width: 0; }
 
 .select-btn { min-width: 160px; }
-.selected-text { align-self: center; font-weight: 500; }
+.selected-text { align-self: center; font-size: 18px; font-weight: 500; }
 .route-input { width: 220px; }
 
 .error-msg { text-align: center; min-height: 24px; margin-top: 16px; }
 
-.notice-list { margin-bottom: 12px; padding-left: 18px; font-size: 14px; color: var(--body); line-height: 1.7; }
+.notice-list { margin-bottom: 12px; padding-left: 18px; font-size: 16px; color: var(--body); line-height: 1.7; }
 
 /* 사진 3칸 */
 .photo-list { display: flex; flex-wrap: wrap; gap: 16px; }
@@ -40,18 +43,18 @@
 .photo-box:hover { opacity: 0.9; }
 /* 파일을 고르기 전의 빈칸: 카메라 그림 (고르면 has-file 이 붙어 미리보기·파일명으로 바뀜) */
 .photo-box:not(.has-file) { background-image: url(/img/photo_placeholder.png); }
-.photo-name { display: block; padding: 12px; word-break: break-all; font-size: 14px; }
-.photo-item input[type="text"] { width: 100%; height: 44px; font-size: 14px; }
+.photo-name { display: block; padding: 12px; word-break: break-all; font-size: 16px; }
+.photo-item input[type="text"] { width: 100%; height: 44px; font-size: 16px; }
 
 .form-row textarea { flex: 1; min-width: 0; height: 200px; }
 
-.char-count { margin: -12px 0 16px 146px; font-size: 14px; color: var(--body); }
+.char-count { margin: -12px 0 16px 146px; font-size: 16px; color: var(--body); }
 .bottom-notice { margin-left: 146px; }
-.cancel-link { display: inline-flex; align-items: center; height: 56px; margin-left: 12px; padding: 0 24px; border-radius: 999px; background: var(--soft); font-weight: 500; }
+.cancel-link { display: inline-flex; align-items: center; height: 56px; margin-left: 12px; padding: 0 24px; border-radius: 999px; background: var(--soft); font-size: 18px; font-weight: 500; }
 .cancel-link:hover { background: var(--pressed); }
 
 .submit-area { display: flex; justify-content: center; align-items: center; margin-top: 32px; }
-.submit-btn { width: 100%; max-width: 360px; height: 56px; border-radius: var(--radius-card); background: var(--ink); color: #fff; font-size: 18px; }
+.submit-btn { width: 100%; max-width: 360px; height: 56px; border-radius: var(--radius-card); background: var(--ink); color: #fff; font-size: 20px; }
 .submit-btn:hover { background: var(--elevated); }
 
 /* 유형·노선 선택 모달 */
@@ -79,33 +82,34 @@
   box-shadow: var(--shadow-card);
 }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.modal-head h3 { font-size: 24px; line-height: 32px; }
-.modal-close { height: 40px; padding: 0 16px; font-size: 14px; }
+.modal-head h3 { font-size: 26px; line-height: 34px; }
+.modal-close { height: 44px; padding: 0 18px; font-size: 16px; }
 .type-group { margin-bottom: 20px; }
-.type-group h4 { margin-bottom: 8px; color: var(--body); font-size: 14px; }
+.type-group h4 { margin-bottom: 8px; color: var(--body); font-size: 16px; }
 .type-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.type-btn { height: 44px; }
+.type-btn { height: 48px; }
 .type-btn:hover { background: var(--ink); color: #fff; }
 
 /* 노선선택 모달 (모달 틀은 위의 .modal 을 같이 씀) */
 .route-search { display: flex; gap: 8px; margin-bottom: 12px; }
 .route-search input { flex: 1; min-width: 0; }
 .route-list { display: flex; flex-direction: column; gap: 8px; }
-.route-item { height: 48px; justify-content: flex-start; padding: 0 16px; border-radius: var(--radius-input); text-align: left; }
+.route-item { height: 52px; justify-content: flex-start; padding: 0 16px; border-radius: var(--radius-input); text-align: left; }
 
 /* AI 도우미: 문장 자동완성 / 문장 다듬기 */
 .ai-help { margin: 0 0 16px 146px; }
-.ai-help-btn { height: 40px; padding: 0 18px; font-size: 14px; }
+.ai-help-btn { height: 44px; padding: 0 20px; font-size: 16px; }
 .ai-help-btn:hover { background: var(--ink); color: #fff; }
 .ai-help-btn:disabled:hover { background: var(--soft); color: var(--mute); }
-.ai-help-note { margin-left: 10px; color: var(--body); font-size: 14px; }
+.ai-help-note { margin-left: 10px; color: var(--body); font-size: 16px; }
 .ai-result { margin-top: 12px; padding: 20px; max-width: 700px; background: var(--softer); border-radius: var(--radius-card); }
-.ai-result-title { font-weight: 700; margin-bottom: 8px; }
+.ai-result-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.ai-result-text { font-size: 18px; }
 .ai-result-text { white-space: pre-wrap; line-height: 1.7; }
-.ai-result-tip { margin: 8px 0 16px; color: var(--body); font-size: 14px; }
-.ai-result button { height: 40px; font-size: 14px; margin-right: 6px; }
+.ai-result-tip { margin: 8px 0 16px; color: var(--body); font-size: 16px; }
+.ai-result button { height: 44px; font-size: 16px; margin-right: 6px; }
 .ai-result button#aiApplyBtn { background: var(--ink); color: #fff; }
-.ai-error { margin-top: 8px; color: #c0392b; font-size: 14px; }
+.ai-error { margin-top: 8px; color: #c0392b; font-size: 16px; }
 
 .suggest-list { margin-top: 12px; max-width: 700px; display: flex; flex-direction: column; gap: 8px; }
 .suggest-item {
