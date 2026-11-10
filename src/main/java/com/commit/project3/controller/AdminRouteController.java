@@ -2,6 +2,8 @@ package com.commit.project3.controller;
 
 import com.commit.project3.dto.RouteDTO;
 import com.commit.project3.service.AdminService;
+import com.commit.project3.service.ForecastRouteSyncService;
+import com.commit.project3.service.RouteNameImportService;
 import com.commit.project3.util.AdminUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
@@ -15,9 +17,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminRouteController {
 
     private final AdminService adminService;
+    private final ForecastRouteSyncService forecastRouteSyncService;
+    private final RouteNameImportService routeNameImportService;
 
-    public AdminRouteController(AdminService adminService) {
+    public AdminRouteController(AdminService adminService, ForecastRouteSyncService forecastRouteSyncService,
+                                RouteNameImportService routeNameImportService) {
         this.adminService = adminService;
+        this.forecastRouteSyncService = forecastRouteSyncService;
+        this.routeNameImportService = routeNameImportService;
     }
 
     // 노선 관리 화면: 노선 목록 + 등록 폼
@@ -61,6 +68,28 @@ public class AdminRouteController {
             return redirect;
         }
         return result(ra, adminService.removeRoute(routeNo), "노선이 삭제되었습니다.");
+    }
+
+    // 예측 노선 동기화: 예측 서버가 예측할 수 있는 노선번호를 DB의 노선 표(BUS_ROUTE)에 맞춰 넣음(새 노선은 이름 미등록으로 들어가고 이름은 이 화면에서 고침)
+    @PostMapping("/admin/route/forecast-sync")
+    public String syncForecastRoute(HttpSession session, RedirectAttributes ra) {
+        String redirect = AdminUtil.checkAdmin(session);
+        if (redirect != null) {
+            return redirect;
+        }
+        ForecastRouteSyncService.Result syncResult = forecastRouteSyncService.sync();
+        return result(ra, syncResult.ok() ? null : syncResult.message(), syncResult.message());
+    }
+
+    // 노선 이름 가져오기: 울산 BIS 의 노선 이름으로 "이름 미등록" 노선의 이름만 채움
+    @PostMapping("/admin/route/bis-names")
+    public String importBisNames(HttpSession session, RedirectAttributes ra) {
+        String redirect = AdminUtil.checkAdmin(session);
+        if (redirect != null) {
+            return redirect;
+        }
+        RouteNameImportService.Result importResult = routeNameImportService.importNames();
+        return result(ra, importResult.ok() ? null : importResult.message(), importResult.message());
     }
 
     // 처리 결과를 한 번만 보여주는 안내 문구(flash)로 담고 목록으로 돌아감

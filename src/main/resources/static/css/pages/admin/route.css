@@ -14,6 +14,12 @@
 .route-add-form .name-input { flex: 1; width: auto; min-width: 0; }   /* 이름 입력칸이 남는 폭을 쓴다 */
 .name-input { width: 300px; }
 
+/* 예측 노선 동기화: 등록 폼 아래의 한 줄 */
+.forecast-sync-form { display: flex; align-items: center; gap: 12px; margin-bottom: var(--gutter); padding: 16px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.forecast-sync-form h3 { white-space: nowrap; }
+.forecast-sync-form p { flex: 1; color: var(--ink-2); font-size: var(--fs-sub); }
+.forecast-sync-form button { white-space: nowrap; }
+
 /* 목록 위 줄 오른쪽의 검색 (왼쪽 전체 건수는 .list-head 공통 규칙) */
 .route-search-form { display: flex; align-items: center; gap: 8px; }
 .route-search-form input { width: 280px; }

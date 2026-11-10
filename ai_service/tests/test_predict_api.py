@@ -135,3 +135,14 @@ def test_non_local_clients_are_refused(bundle):
     app = predict_api.create_app(holder=predict_api.ModelHolder(MODEL_DIR, "ALL"), api_key=KEY)
     with TestClient(app, client=("8.8.8.8", 50000)) as c:
         assert c.get("/health").status_code in (403, 400)
+
+
+def test_routes_lists_trained_routes_and_needs_key(client, bundle):
+    assert client.get("/routes").status_code == 401
+    r = client.get("/routes", headers={"X-API-Key": KEY})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["count"] == len(body["routes"]) == len(bundle.routes)
+    assert body["routes"] == sorted(body["routes"])
+    assert len(set(body["routes"])) == len(body["routes"])           # 중복 없음
+    assert body["modelVersion"] == bundle.model_version

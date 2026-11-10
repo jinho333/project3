@@ -278,6 +278,21 @@
     UPDATE BUS_ROUTE SET ROUTE_NAME = #{routeName} WHERE ROUTE_NO = #{routeNo}
   </update>
 
+  <select id="countRoute" resultType="int">
+    SELECT COUNT(*) FROM BUS_ROUTE
+  </select>
+
+  <!-- 예측 서버의 노선 목록을 맞춰 넣음: 이미 있는 노선번호는 건너뜀(IGNORE) -->
+  <insert id="insertRouteIgnoreList">
+    INSERT IGNORE INTO BUS_ROUTE (ROUTE_NO, ROUTE_NAME) VALUES
+    <foreach collection="routeNoList" item="no" separator=",">(#{no}, #{routeName})</foreach>
+  </insert>
+
+  <update id="updateRouteNameIfUnnamed">
+    UPDATE BUS_ROUTE SET ROUTE_NAME = #{routeName}
+    WHERE ROUTE_NO = #{routeNo} AND ROUTE_NAME = #{unnamed}
+  </update>
+
   <delete id="deleteRoute">
     DELETE FROM BUS_ROUTE WHERE ROUTE_NO = #{routeNo}
   </delete>
