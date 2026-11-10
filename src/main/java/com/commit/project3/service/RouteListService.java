@@ -4,10 +4,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -23,8 +25,9 @@ import com.commit.project3.mapper.AdminMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 // 지도에 보여 줄 노선 목록(JSON)과, 신고 처리 우선순위가 쓰는 노선의 임시 혼잡 등급을 만들어 주는 서비스
-//  - 노선 목록: 지도에 그릴 수 있는 노선(노선 선 파일이 있는 노선)의 번호와, DB(BUS_ROUTE)에 있는 노선 이름. 노선번호순
-//    DB 에 이름이 없는 노선도 목록에는 나오고 이름은 "이름 미등록"으로 보임. DB 를 읽지 못해도 목록은 나옴
+//  - 노선 목록: DB(BUS_ROUTE)에 등록된 노선 중 지도에 그릴 수 있는 노선(노선 선 파일이 있는 노선)의 번호와 DB 이름. 노선번호순
+//    DB 에 없는 노선은 선 파일이 있어도 목록에 나오지 않고(DB 가 노선의 기준), 선 파일이 없는 DB 노선은 지도에 그릴 수 없어 빠짐.
+//    DB 를 읽지 못하면 목록이 비지 않도록 선 파일이 있는 노선을 이름 없이("이름 미등록") 보여 줌
 //  - 혼잡 등급: 목록의 노선들이 오늘 예상하는 이용자 수(예측 서버 /predict)를 1위 100%로 한 비율로 바꿔 혼잡 등급 경계(80%, 50%)에 댐
 //    예측 서버가 꺼져 있거나 값을 못 받은 노선은 등급이 없음("예측 없음")이고, 다른 화면이 멈추지 않게 예외를 던지지 않음
 //    요청마다 예측 서버를 부르지 않도록 결과를 잠깐(10분) 기억하고, 못 받았을 때는 짧게(30초) 기억해 다시 시도함
@@ -36,7 +39,7 @@ public class RouteListService {
 
     private static final long CACHE_MS = 10 * 60 * 1000L;
     private static final long FAILED_CACHE_MS = 30 * 1000L;
-    static final String UNNAMED = "이름 미등록";     // BUS_ROUTE 에 이름이 없는 노선
+    static final String UNNAMED = "이름 미등록";     // DB 를 읽지 못했거나 이름이 비어 있는 노선
 
     private final AdminMapper adminMapper;
     private final RouteGeometryService routeGeometryService;
@@ -66,20 +69,38 @@ public class RouteListService {
 
     // 지도 화면이 받는 JSON: { routes: [{ routeNo, label }] } (노선번호순)
     public String findRouteListJson() {
+        Map<String, String> routes = mapRoutes();
+        return toJson(new ArrayList<>(routes.keySet()), routes);
+    }
+
+    // 지도에 보여 줄 노선: DB(BUS_ROUTE)에 등록되어 있고 노선 선 파일도 있는 노선 (번호 -> DB 이름, 노선번호순)
+    // DB 를 읽지 못하면(DataAccessException) 선 파일이 있는 모든 노선을 이름 없이(null) 돌려줘 화면이 비지 않게 함
+    private Map<String, String> mapRoutes() {
         List<String> routeNos = new ArrayList<>(routeGeometryService.findRouteNos());
         routeNos.sort(RouteListService::compareRouteNo);
 
-        Map<String, String> names = new HashMap<>();
-        if (!routeNos.isEmpty()) {
-            try {
-                for (RouteDTO r : adminMapper.selectRouteNames(routeNos)) {
-                    names.put(r.getRouteNo(), r.getRouteName());
+        Map<String, String> routes = new LinkedHashMap<>();
+        if (routeNos.isEmpty()) {
+            return routes;
+        }
+        try {
+            Map<String, String> names = new HashMap<>();
+            for (RouteDTO r : adminMapper.selectRouteNames(routeNos)) {
+                names.put(r.getRouteNo(), r.getRouteName());
+            }
+            for (String routeNo : routeNos) {
+                if (names.containsKey(routeNo)) {
+                    routes.put(routeNo, names.get(routeNo));
                 }
-            } catch (DataAccessException e) {
-                log.warn("노선 이름을 DB 에서 읽지 못했습니다: {}", e.getClass().getSimpleName());
+            }
+        } catch (DataAccessException e) {
+            log.warn("노선 목록을 DB 에서 읽지 못해 선 파일이 있는 노선을 이름 없이 보여 줍니다: {}", e.getClass().getSimpleName());
+            routes.clear();
+            for (String routeNo : routeNos) {
+                routes.put(routeNo, null);
             }
         }
-        return toJson(routeNos, names);
+        return routes;
     }
 
     // 노선의 임시 혼잡 등급(HIGH / MID / LOW): 지도 노선이 아니거나 오늘 이용자 수를 못 받았으면 비어 있는 Optional (= 예측 없음)
@@ -99,18 +120,16 @@ public class RouteListService {
         return cachedGrades;
     }
 
-    // 지도에 그릴 수 있는 노선마다 오늘 하루 예상 이용자 수를 예측 서버에서 받음 (못 받은 노선은 빠짐)
+    // 지도에 그릴 수 있는 노선의 오늘 하루 예상 이용자 수를 예측 서버에서 한 번에 받음 (못 받은 노선은 빠짐)
+    // 노선마다 부르면 노선이 200개 가까이라 신고 관리·지도 목록을 처음 열 때 오래 걸려서, 하루치 전체를 주는 /predict/day 를 한 번만 부름
     private Map<String, Integer> collectRiders() {
+        Set<String> mapRouteNos = new HashSet<>(routeGeometryService.findRouteNos());
         Map<String, Integer> riders = new LinkedHashMap<>();
-        LocalDate day = today.get();
-        for (String routeNo : routeGeometryService.findRouteNos()) {
-            RidershipForecastService.Ridership r = ridershipForecastService.findDay(routeNo, day);
-            if ("OK".equals(r.status()) && !r.days().isEmpty()) {
-                riders.put(routeNo, r.days().get(0).predicted());
-            } else if ("UNAVAILABLE".equals(r.status())) {
-                break;       // 서버가 안 되면 나머지 노선은 부르지 않음 (노선마다 기다리지 않도록)
+        ridershipForecastService.findDayRiders(today.get()).forEach((routeNo, count) -> {
+            if (mapRouteNos.contains(routeNo)) {
+                riders.put(routeNo, count);
             }
-        }
+        });
         return riders;
     }
 

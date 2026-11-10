@@ -22,6 +22,8 @@ public class SearchDTO {
     private String routeNo;             // 노선번호 (비어 있으면 전체)
     private String sort = "new";        // 정렬: new(최신순) / old(오래된순) / priority(처리 우선순위순, 관리자 목록)
     private List<Integer> priorityNoList;   // priority 정렬일 때 처리할 순서대로 나열한 미처리 신고 번호 (서버가 채움)
+    private boolean urgent;             // true 면 긴급 신고(안전 유형, 14일 이상 방치)만 보기 (관리자 목록)
+    private List<Integer> urgentNoList; // urgent 일 때 긴급 신고 번호 (서버가 채움)
 
     private int page = 1;             // 현재 페이지
     private int displayDataCnt = 10;    // 한 페이지에 보여줄 개수

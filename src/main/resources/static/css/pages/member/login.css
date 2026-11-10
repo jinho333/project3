@@ -1,10 +1,17 @@
-/* 로그인: 가운데 흰 카드 */
-body.user .content { display: flex; justify-content: center; }
-.login-wrap { width: 440px; max-width: 100%; margin: 48px auto; padding: 32px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+/* 로그인: 가운데 흰 카드. 회원가입과 카드 폭·위쪽 위치·바깥 여백·푸터를 같게 맞춤 */
+body.user .content { display: flex; justify-content: center; padding: 16px 32px; }
+.login-wrap { width: 480px; max-width: 100%; align-self: flex-start; margin: 16px auto; padding: 40px 32px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); display: flex; flex-direction: column; justify-content: center; }   /* 입력칸이 둘뿐이라 높이를 억지로 늘리지 않고 위아래 안쪽 여백(40px)만 줌. 카드 위쪽 위치는 회원가입과 같게 유지 */
 .login-wrap h2 { font-size: 32px; line-height: 40px; margin-bottom: 24px; }
-.form-row { display: flex; flex-direction: column; margin-bottom: 16px; gap: 8px; }
+.form-row { display: flex; flex-direction: column; margin-bottom: 20px; gap: 8px; }
+.login-wrap input[type="text"], .login-wrap input[type="password"] { height: 52px; }   /* 회원가입(48px)보다 한 단계 크게: 입력칸이 적은 만큼 카드를 채움 */
 .form-row label { font-weight: 500; }
 .login-wrap button[type="submit"] { width: 100%; height: 52px; margin-top: 4px; background: var(--ink); color: #fff; }
 .login-wrap button[type="submit"]:hover { background: var(--elevated); }
 .login-wrap > a { display: flex; align-items: center; justify-content: center; height: 48px; margin-top: 12px; border-radius: 999px; background: var(--soft); font-weight: 500; }
 .login-wrap > a:hover { background: var(--pressed); }
+/* 푸터는 한 줄로 줄이고, 로고 옆에 소개 문구를 연하게 넣음 (회원가입·로그인 동일) */
+.site-footer { padding: 9px 32px; }
+.site-footer .footer-logo { margin-bottom: 0; font-size: 16px; }
+.site-footer-inner { align-items: center; }
+.site-footer-inner > div { display: flex; align-items: center; gap: 32px; }   /* 로고 옆에 문구를 같은 줄로: 높이는 한 줄 그대로 */
+.site-footer p { margin: 0; }   /* 문구 색은 공통 푸터의 연한 회색(--mute) 그대로 */

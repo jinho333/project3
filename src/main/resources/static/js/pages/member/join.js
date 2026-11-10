@@ -73,7 +73,7 @@ joinForm.addEventListener('submit', (e) => {
 
   // 비밀번호
   if (!pwRegex.test(memberPw.value)) {
-    pwMsg.textContent = '비밀번호는 영문과 숫자를 포함해 8~20자로 입력해주세요.';
+    pwMsg.textContent = '영문과 숫자를 포함해 8~20자로 입력해주세요.';
     isValid = false;
   } else {
     pwMsg.textContent = '';
@@ -97,7 +97,7 @@ joinForm.addEventListener('submit', (e) => {
 
   // 휴대전화번호
   if (!phoneRegex.test(memberPhone.value.trim())) {
-    phoneMsg.textContent = '휴대전화번호는 숫자만 입력해주세요. (예: 01012345678)';
+    phoneMsg.textContent = '숫자만 입력해주세요. (예: 01012345678)';
     isValid = false;
   } else {
     phoneMsg.textContent = '';

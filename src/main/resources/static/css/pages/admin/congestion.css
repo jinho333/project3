@@ -22,9 +22,17 @@
 /* 왼쪽 노선 목록 */
 .dash-list {
   width: var(--dash-list-width);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+}
+/* 목록 안에서만 스크롤됨. 아래 "맨 위로" 막대는 이 밖에 있어서 스크롤해도 패널 맨 아래에 그대로 있음 */
+.dash-list-scroll {
+  flex: 1;
+  min-height: 0;
   padding: 16px;
   overflow-y: auto;
-  border-right: 1px solid var(--line);
+  scrollbar-gutter: stable;   /* 스크롤바가 생길 자리를 처음부터 비워 둠: 접힌 목록을 펼쳐 스크롤이 생겨도 카드 폭이 바뀌지 않게 */
 }
 
 /* 가운데: 지도(위)와 예측 데이터(아래)를 세로로 쌓음 */
@@ -69,6 +77,8 @@
 .side-ask .side-ai-btn { margin-top: 8px; }
 .side-ai-answer[hidden] { display: none; }
 .side-count-num.is-zero { color: var(--ink-3); }   /* 미완료 신고가 없을 때 */
+#sideReceived:not(.is-zero) { color: var(--st-received); }       /* 대시보드의 접수 숫자와 같은 색 */
+#sideProcessing:not(.is-zero) { color: var(--st-processing); }   /* 대시보드의 처리중 숫자와 같은 색 */
 
 /* 지도 60 : 예측 데이터 40 */
 .dash-map {
@@ -193,7 +203,12 @@
 }
 
 /* 노선 목록 */
-.list-note { margin-top: 8px; color: var(--ink-3); font-size: var(--fs-sub); }
+.list-note { margin-top: 8px; color: var(--ink-3); font-size: var(--fs-sub); word-break: keep-all; }
+/* 노선 목록 위 안내: 한 줄짜리 두 항목을 옅은 상자에 담음 (아래 접는 버튼과 같은 바탕색·테두리, 항목 길이가 비슷해 줄 모양이 맞음) */
+.list-help { list-style: none; margin-top: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink-2); font-size: var(--fs-sub); line-height: 1.5; }
+.list-help li { position: relative; padding-left: 12px; white-space: nowrap; }
+.list-help li + li { margin-top: 4px; }
+.list-help li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 4px; height: 4px; border-radius: 50%; background: var(--primary); }
 
 /* 노선 색 점 (색은 JS 가 노선마다 넣음, 지도의 선 색과 같음) */
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
@@ -262,7 +277,7 @@
 /* 미완료 신고가 없는 노선을 접어 두는 버튼과 목록 */
 .rest-toggle {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 14px;
   padding: 0 12px;
   background: var(--bg);
   border: 1px solid var(--line);
@@ -272,7 +287,27 @@
 }
 .rest-toggle[hidden] { display: none; }
 .rest-toggle:hover { background: var(--surface); }
+#restToggle { margin-top: 18px; }   /* 미완료 신고 없는 노선은 위의 신고 있는 노선 덩어리와 확실히 떨어져 보이게 */
+.rest-list { margin-top: 12px; margin-bottom: 4px; }   /* 펼쳤을 때 버튼과 목록 사이, 다음 버튼 앞에 숨 쉴 간격 */
 .rest-list[hidden] { display: none; }
+
+/* 노선 목록을 아래로 내렸을 때 패널 맨 아래에 나타나는 "맨 위로" 막대 (스크롤 영역 밖이라 늘 맨 아래) */
+.list-top-btn {
+  flex: none;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  background: var(--surface);
+  border: 0;
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink-2);
+  font-size: var(--fs-body);
+  cursor: pointer;
+}
+.list-top-btn[hidden] { display: none; }
+.list-top-btn:hover { background: var(--bg); }
 
 /* 지도를 불러오지 못했을 때 안내 문구 */
 .map-message {

@@ -58,6 +58,10 @@ public class AdminReportController {
         for (ReportPriorityDTO p : queue) {
             priorityMap.put(p.getReport().getReportNo(), p);
         }
+        // 긴급만 보기: 서버가 계산한 긴급 신고 번호로 제한 (요청으로 넘어온 번호 목록은 쓰지 않고 항상 다시 채움)
+        searchDTO.setUrgentNoList(searchDTO.isUrgent()
+            ? queue.stream().filter(ReportPriorityDTO::isUrgent).map(p -> p.getReport().getReportNo()).toList()
+            : null);
 
         int totalCnt = adminService.getReportCount(searchDTO);
         PageDTO pageDTO = new PageDTO(searchDTO.getPage(), searchDTO.getDisplayDataCnt(), totalCnt);

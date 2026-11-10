@@ -2,9 +2,9 @@
 .search-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: var(--gutter);
-  padding: 16px 24px;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px 24px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -69,10 +69,21 @@
 }
 
 /* 신고 관리 목록의 처리 우선순위 표시 */
-.priority-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.admin-title { margin-bottom: 15px; }   /* 신고 관리 화면의 제목 아래 간격: 25px 에서 줄여 첫 화면에 10행이 보이게 */
+.total-cnt { margin-bottom: 4px; padding-left: 16px; }   /* 건수·요약 글자를 한 글자(16px)만큼 들여써서 표 왼쪽 끝에 붙어 보이지 않게 */
+.priority-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-bottom: 8px; padding-left: 16px; }   /* 미처리 / 긴급 / 안내 사이는 적당히만(16px) */
 .priority-formula { color: var(--ink-3); font-size: var(--fs-sub); }
 .rank-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--primary-weak); color: var(--primary-dark); font-weight: 700; }
 .tag-urgent { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--bad-bg); color: var(--bad); font-size: var(--fs-sub); font-weight: 700; }
+.tag-link { text-decoration: none; cursor: pointer; }
+.tag-link:hover { filter: brightness(0.96); }
+.tag-urgent.is-on { background: var(--bad); color: #fff; }   /* 긴급만 보는 중 */
+.tag-normal { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--line); color: var(--ink-2); font-size: var(--fs-sub); font-weight: 600; }   /* 긴급이 아닌 신고: 같은 알약 모양에 차분한 색 */
 .score-text { color: var(--ink-3); font-size: var(--fs-sub); }
 .priority-cell { white-space: nowrap; }
+/* 우선순위 칸: 순위 칩 / 태그 / 점수를 고정 폭 세 칸으로 맞춰, 태그 글자 수나 순위 자릿수가 달라도 세로줄이 어긋나지 않게 함 */
+.priority-grid { display: inline-grid; grid-template-columns: 32px 72px 56px; align-items: center; column-gap: 8px; }
+.priority-grid .rank-chip { box-sizing: border-box; width: 32px; min-width: 0; padding: 0; }
+.priority-grid .priority-tag { justify-self: center; text-align: center; }
+.priority-grid .score-text { text-align: right; font-variant-numeric: tabular-nums; }
 .row-urgent td { background: var(--bad-bg); }

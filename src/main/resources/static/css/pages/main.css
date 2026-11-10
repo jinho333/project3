@@ -63,10 +63,10 @@ body.user .big-title {
   border-bottom: 1px solid var(--ink);
   transition: background 0.15s;
 }
-.band-col h2 { font-size: 26.4px; line-height: 36px; }   /* 기존 22px 의 1.2배 */
+.band-col h2 { font-size: 32px; line-height: 42px; }   /* 칸 제목: 26.4px 에서 한 단계 키움 (화살표 원과 균형) */
 .band-col:hover { background: rgba(255, 255, 255, 0.35); }
 .band-col:hover .circle-arrow { background: var(--ink); color: #fff; }
-.band-col .circle-arrow { align-self: flex-end; width: 56px; height: 56px; font-size: 24px; }   /* 화살표는 오른쪽 */   /* 칸이 커진 만큼 화살표도 크게 */
+.band-col .circle-arrow { align-self: flex-end; width: 60px; height: 60px; font-size: 26px; }   /* 화살표는 오른쪽 */   /* 칸이 커진 만큼 화살표도 크게 */
 
 /* ===== 신고 유형 순위: 흰 배경 =====
    회색 영역(50vh) 아래 남은 높이에 5줄이 모두 들어오도록, 크기를 화면 높이(vh)에 비례해 줄임 */
@@ -94,9 +94,9 @@ body.user .big-title {
 .rank-row:hover .circle-arrow { background: var(--ink); color: #fff; }
 .rank-section .circle-arrow { width: clamp(24px, 3.2vh, 36px); height: clamp(24px, 3.2vh, 36px); font-size: 14px; }
 
-.rank-no { flex-shrink: 0; width: 36px; font-size: clamp(15px, 2.4vh, 20px); font-weight: 700; }
-.rank-name { flex: 0 0 280px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rank-group { margin-right: 10px; color: var(--body); font-size: 13px; }
+.rank-no { flex-shrink: 0; width: 2ch; font-size: clamp(15px, 2.4vh, 20px); font-weight: 700; }   /* 두 자리 숫자 폭만큼만: 번호와 그룹 사이도 줄 간격(20px)과 같게 */
+.rank-name { flex: 0 0 330px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-group { margin-right: 20px; color: var(--body); font-size: 13px; }   /* 번호-그룹, 그룹-유형 간격을 같게(20px) */
 .rank-type { font-size: clamp(14px, 2.1vh, 17px); font-weight: 700; }
 
 /* 막대: 1위를 100%로 한 비율 */

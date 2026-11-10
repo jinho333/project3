@@ -36,22 +36,15 @@ class RouteListServiceTest {
         @Override public List<String> findRouteNos() { return routeNos; }
     }
 
-    // 노선번호별 이용자 수를 돌려주는 가짜 예측 서버: 값이 없는 노선은 UNKNOWN_ROUTE, down 이면 모두 UNAVAILABLE
+    // 하루치 전체 노선의 이용자 수를 한 번에 돌려주는 가짜 예측 서버: 모르는 노선은 빠지고, down 이면 빈 값
     private static class FakeRidership extends RidershipForecastService {
         final Map<String, Integer> riders;
         final AtomicInteger calls = new AtomicInteger();
         volatile boolean down;
         FakeRidership(Map<String, Integer> riders) { super("", ""); this.riders = riders; }
-        @Override public Ridership findDay(String routeNo, LocalDate day) {
+        @Override public Map<String, Integer> findDayRiders(LocalDate day) {
             calls.incrementAndGet();
-            if (down) {
-                return Ridership.failed(routeNo, "UNAVAILABLE", "예측 서버를 쓸 수 없습니다.");
-            }
-            Integer v = riders.get(routeNo);
-            if (v == null) {
-                return Ridership.failed(routeNo, "UNKNOWN_ROUTE", "학습하지 않은 노선");
-            }
-            return new Ridership(routeNo, "OK", null, List.of(new Day(day.toString(), "월", v)), "모델", "2026-10-08", "2026-12-03", "");
+            return down ? Map.of() : riders;
         }
     }
 
@@ -76,16 +69,30 @@ class RouteListServiceTest {
     }
 
     @Test
-    void 선_파일이_있는_노선을_번호순으로_DB_이름과_함께_담는다() {
-        RouteListService service = service(mapper(n -> names("134", "율리공영차고지 ↔ 꽃바위", "114", "율리공영차고지 ↔ 대왕암공원")),
+    void DB에_등록된_노선만_번호순으로_DB_이름과_함께_담는다() {
+        // 선 파일: 741, 134, 114, 9, 1100 / DB: 134, 114, 9, 3600 (3600 은 선 파일이 없음)
+        RouteListService service = service(
+            mapper(n -> names("134", "율리공영차고지 ↔ 꽃바위", "114", "율리공영차고지 ↔ 대왕암공원", "9", "시험 노선", "3600", "서울-수원")),
             new FakeGeometry("741", "134", "114", "9", "1100"), new FakeRidership(Map.of()), new AtomicLong());
 
         JsonNode routes = JSON.readTree(service.findRouteListJson()).path("routes");
-        assertEquals(List.of("9", "114", "134", "741", "1100"),
-            List.of(0, 1, 2, 3, 4).stream().map(i -> routes.get(i).path("routeNo").asString()).toList());   // 9 < 114 < 1100 (숫자 크기순)
+        assertEquals(List.of("9", "114", "134"),
+            List.of(0, 1, 2).stream().map(i -> routes.get(i).path("routeNo").asString()).toList());   // 9 < 114 (숫자 크기순)
+        assertEquals(3, routes.size());                                        // 741, 1100 은 DB 에 없어서, 3600 은 선 파일이 없어서 빠짐
         assertEquals("율리공영차고지 ↔ 대왕암공원", routes.get(1).path("label").asString());
         assertEquals("율리공영차고지 ↔ 꽃바위", routes.get(2).path("label").asString());
-        assertEquals("이름 미등록", routes.get(3).path("label").asString());        // DB 에 이름이 없는 노선
+    }
+
+    @Test
+    void DB에_이름이_비어_있으면_이름_미등록으로_보인다() {
+        RouteListService service = service(mapper(n -> names("134", " ")), new FakeGeometry("134"), new FakeRidership(Map.of()), new AtomicLong());
+        assertEquals("이름 미등록", JSON.readTree(service.findRouteListJson()).path("routes").get(0).path("label").asString());
+    }
+
+    @Test
+    void DB에_노선이_하나도_없으면_목록도_비어_있다() {
+        RouteListService service = service(mapper(n -> List.of()), new FakeGeometry("134", "114"), new FakeRidership(Map.of()), new AtomicLong());
+        assertEquals(0, JSON.readTree(service.findRouteListJson()).path("routes").size());
     }
 
     @Test
@@ -96,7 +103,7 @@ class RouteListServiceTest {
     }
 
     @Test
-    void 노선_이름을_DB에서_못_읽어도_목록은_나온다() {
+    void DB를_못_읽으면_선_파일이_있는_노선을_이름_없이_보여_준다() {
         RouteListService service = service(mapper(n -> {
             throw new DataAccessResourceFailureException("DB 연결 실패");
         }), new FakeGeometry("134"), new FakeRidership(Map.of()), new AtomicLong());
@@ -160,24 +167,25 @@ class RouteListServiceTest {
 
         service.findGrade("134");
         service.findGrade("114");
-        assertEquals(2, ridership.calls.get());                  // 노선 2개를 한 번만 부름 (두 번째 조회는 기억한 값)
+        assertEquals(1, ridership.calls.get());                  // 노선이 몇 개든 예측 서버를 한 번만 부름 (두 번째 조회는 기억한 값)
         now.addAndGet(9 * 60 * 1000L);
         service.findGrade("134");
-        assertEquals(2, ridership.calls.get());                  // 9분: 아직 기억 중
+        assertEquals(1, ridership.calls.get());                  // 9분: 아직 기억 중
         now.addAndGet(2 * 60 * 1000L);
         service.findGrade("134");
-        assertEquals(4, ridership.calls.get());                  // 11분: 다시 받음
+        assertEquals(2, ridership.calls.get());                  // 11분: 다시 받음
     }
 
     @Test
-    void 예측_서버가_안_되면_첫_노선에서_멈추고_등급이_없으며_금방_다시_시도한다() {
+    void 예측_서버가_안_되면_등급이_없고_금방_다시_시도한다() {
         FakeRidership ridership = new FakeRidership(Map.of("134", 100));
         ridership.down = true;
         AtomicLong now = new AtomicLong(1_000);
-        RouteListService service = service(mapper(n -> List.of()), new FakeGeometry("114", "134", "742"), ridership, now);
+        RouteListService service = service(mapper(n -> names("114", "가", "134", "나", "742", "다")),
+            new FakeGeometry("114", "134", "742"), ridership, now);
 
         assertTrue(service.findGrade("134").isEmpty());          // 신고 우선순위는 "예측 없음"으로 이어감
-        assertEquals(1, ridership.calls.get());                  // 노선마다 기다리지 않고 첫 실패에서 멈춤
+        assertEquals(1, ridership.calls.get());                  // 한 번 부르고 실패
         // 목록 화면은 예측 서버와 상관없이 나옴
         assertEquals(3, JSON.readTree(service.findRouteListJson()).path("routes").size());
 

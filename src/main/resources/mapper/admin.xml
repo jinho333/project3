@@ -30,6 +30,7 @@
   <resultMap id="stat" type="com.commit.project3.dto.StatDTO">
     <result column="LABEL" property="label"/>
     <result column="CNT" property="cnt"/>
+    <result column="ID" property="id"/>   <!-- 결과에 ID 열이 없는 통계는 비워 둠 -->
   </resultMap>
 
   <!-- 목록과 개수 조회에서 같이 쓰는 검색 조건 (회원 제한 없음, 내용·신고자 이름으로 키워드 검색) -->
@@ -53,6 +54,18 @@
       </if>
       <if test="endDate != null">
         AND R.REG_DATE &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+      </if>
+      <!-- 긴급만 보기: 서버가 계산한 긴급 신고 번호만 (긴급이 하나도 없으면 결과 없음) -->
+      <if test="urgent">
+        <choose>
+          <when test="urgentNoList != null and !urgentNoList.isEmpty()">
+            AND R.REPORT_NO IN
+            <foreach collection="urgentNoList" item="no" open="(" separator="," close=")">#{no}</foreach>
+          </when>
+          <otherwise>
+            AND 1 = 0
+          </otherwise>
+        </choose>
       </if>
     </where>
   </sql>
@@ -201,7 +214,7 @@
 
   <!-- 신고가 많은 유형 상위 10개 -->
   <select id="selectTypeStat" resultMap="stat">
-    SELECT T.TYPE_NAME AS LABEL, COUNT(*) AS CNT
+    SELECT T.TYPE_NO AS ID, T.TYPE_NAME AS LABEL, COUNT(*) AS CNT
     FROM REPORT R
     INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
     WHERE R.REG_DATE &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY) AND R.REG_DATE &lt; CURDATE()
