@@ -91,14 +91,16 @@
       <h3 th:text="|최근 ${days}일 신고가 많은 유형|"></h3>
       <p class="stat-empty" th:if="${#lists.isEmpty(typeStat)}">데이터가 없습니다.</p>
       <div class="bar-row is-type" th:each="s, st : ${typeStat}" th:if="${st.index < 5}">
-        <span class="bar-label" th:text="${s.label}"></span>
+        <a class="bar-label type-link" th:href="@{/admin/report/list(typeNo=${s.id}, startDate=${#temporals.format(#temporals.createToday().minusDays(days), 'yyyy-MM-dd')}, endDate=${#temporals.format(#temporals.createToday().minusDays(1), 'yyyy-MM-dd')})}"
+            th:text="${s.label}" th:title="|${s.label} 신고 보기|"></a>
         <div class="bar-track"><div class="bar-fill" th:style="|width: ${s.cnt * 100 / typeMax}%|"></div></div>
         <span class="bar-cnt" th:text="|${s.cnt}건|"></span>
       </div>
       <details class="bar-more" th:if="${#lists.size(typeStat) > 5}">
         <summary th:text="|나머지 ${#lists.size(typeStat) - 5}개 더 보기|"></summary>
         <div class="bar-row is-type" th:each="s, st : ${typeStat}" th:if="${st.index >= 5}">
-          <span class="bar-label" th:text="${s.label}"></span>
+          <a class="bar-label type-link" th:href="@{/admin/report/list(typeNo=${s.id}, startDate=${#temporals.format(#temporals.createToday().minusDays(days), 'yyyy-MM-dd')}, endDate=${#temporals.format(#temporals.createToday().minusDays(1), 'yyyy-MM-dd')})}"
+            th:text="${s.label}" th:title="|${s.label} 신고 보기|"></a>
           <div class="bar-track"><div class="bar-fill" th:style="|width: ${s.cnt * 100 / typeMax}%|"></div></div>
           <span class="bar-cnt" th:text="|${s.cnt}건|"></span>
         </div>

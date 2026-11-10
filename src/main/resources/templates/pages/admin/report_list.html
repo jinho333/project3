@@ -14,6 +14,7 @@
 
   <!-- 검색 조건: 선택한 값은 searchDTO로 다시 채움 -->
   <form class="search-form" action="/admin/report/list" method="get">
+    <input type="hidden" name="urgent" value="true" th:if="${searchDTO.urgent}">   <!-- 긴급만 보는 중이면 조회해도 유지 -->
     <div class="search-row">
     <select name="status">
       <option value="">처리상태 전체</option>
@@ -63,7 +64,11 @@
   <!-- 처리 우선순위: 미처리 신고를 어떤 순서로 처리하면 되는지 -->
   <p class="priority-summary">
     <strong th:text="|미처리 ${summary.openCnt}건|"></strong>
-    <span th:if="${summary.urgentCnt > 0}" class="tag-urgent" th:text="|긴급 ${summary.urgentCnt}건|"></span>
+    <!-- 긴급 신고만 보는 필터: 문구는 늘 같고, 켜져 있으면 진한 색으로 채워 보임. 한 번 더 누르면 전체 목록으로 돌아감 -->
+    <a th:if="${summary.urgentCnt > 0}" class="tag-urgent tag-link" th:classappend="${searchDTO.urgent} ? 'is-on'"
+      th:href="${searchDTO.urgent} ? @{/admin/report/list} : @{/admin/report/list(urgent=true)}"
+      th:title="${searchDTO.urgent} ? '전체 목록으로 돌아가기' : '긴급 신고만 보기'" th:attr="aria-pressed=${searchDTO.urgent}"
+      th:text="|긴급 ${summary.urgentCnt}건|"></a>
     <span class="priority-formula" th:text="|우선순위 = ${formula} (안전 관련·14일 이상 방치는 맨 앞)|"></span>
   </p>
 
@@ -71,8 +76,8 @@
     <thead>
       <tr>
         <th>우선순위</th>
-        <th>번호</th>
-        <th>유형</th>
+        <th>접수번호</th>
+        <th>신고 유형</th>
         <th>노선</th>
         <th class="left">내용</th>
         <th>신고자</th>
@@ -84,12 +89,14 @@
       <tr th:each="r : ${reportList}" th:with="p=${priorityMap.get(r.reportNo)}"
         th:classappend="${p != null and p.urgent} ? 'row-urgent'">
         <td class="priority-cell">
-          <th:block th:if="${p != null}">
+          <!-- 순위 칩 / 긴급·장기 방치 태그 / 점수를 세 칸 고정 폭으로 두어 모든 행에서 같은 자리에 맞춤 (긴급·장기 방치가 아닌 신고는 "일반" 태그) -->
+          <div class="priority-grid" th:if="${p != null}">
             <span class="rank-chip" th:text="${p.rank}"
               th:title="${#strings.listJoin(p.reasonList, ' · ')}"></span>
-            <span class="tag-urgent" th:if="${p.urgent}" th:text="${p.aged ? '장기 방치' : '긴급'}"></span>
+            <span class="priority-tag" th:classappend="${p.urgent} ? 'tag-urgent' : 'tag-normal'"
+              th:text="${p.urgent} ? (${p.aged} ? '장기 방치' : '긴급') : '일반'"></span>
             <span class="score-text" th:text="|${#numbers.formatDecimal(p.score, 1, 1)}점|"></span>
-          </th:block>
+          </div>
           <span th:if="${p == null}" class="score-text">-</span>
         </td>
         <td th:text="${r.reportNo}"></td>
@@ -113,16 +120,16 @@
   <!-- 페이지 번호: 검색·정렬 조건을 유지한 채 page만 바꿈 -->
   <div class="paging">
     <a th:if="${pageDTO.prev}"
-      th:href="@{/admin/report/list(page=${pageDTO.startPage - 1}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt})}">이전</a>
+      th:href="@{/admin/report/list(page=${pageDTO.startPage - 1}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt}, urgent=${searchDTO.urgent})}">이전</a>
 
     <th:block th:each="p : ${#numbers.sequence(pageDTO.startPage, pageDTO.endPage)}">
       <strong th:if="${p == pageDTO.page}" th:text="${p}"></strong>
       <a th:unless="${p == pageDTO.page}" th:text="${p}"
-        th:href="@{/admin/report/list(page=${p}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt})}"></a>
+        th:href="@{/admin/report/list(page=${p}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt}, urgent=${searchDTO.urgent})}"></a>
     </th:block>
 
     <a th:if="${pageDTO.next}"
-      th:href="@{/admin/report/list(page=${pageDTO.endPage + 1}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt})}">다음</a>
+      th:href="@{/admin/report/list(page=${pageDTO.endPage + 1}, status=${searchDTO.status}, typeNo=${searchDTO.typeNo}, routeNo=${searchDTO.routeNo}, keyword=${searchDTO.keyword}, startDate=${searchDTO.startDate}, endDate=${searchDTO.endDate}, sort=${searchDTO.sort}, displayDataCnt=${searchDTO.displayDataCnt}, urgent=${searchDTO.urgent})}">다음</a>
   </div>
 </th:block>
 

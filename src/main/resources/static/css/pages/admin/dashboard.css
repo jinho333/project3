@@ -1,5 +1,7 @@
 /* 대시보드: 요약이 먼저. 지금 처리할 일 한 줄 → AI 비서 → 지난 기간 실적 한 줄 → 노선·유형 상위 5개 */
 .block-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
+.now-block .block-head,
+.past-block .block-head { padding-left: 16px; }   /* 카드 밖 제목 줄: 카드 왼쪽 끝에 붙어 보이지 않게 한 글자 들여씀 */
 .period-note { color: var(--ink-2); font-size: var(--fs-sub); }   /* 조회 시각·기간·AI 안내 문장: 보조 문구도 읽혀야 해서 한 단계 진하게 */
 .period-refresh { display: inline-flex; margin-left: -6px; color: var(--primary); }
 .period-refresh svg { display: block; width: 16px; height: 16px; }
@@ -17,7 +19,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 24px;
+  padding: 14px 24px;
   color: inherit;
 }
 .now-item + .now-item { border-left: 1px solid var(--line); }
@@ -28,24 +30,27 @@
 
 /* 지난 기간 실적: 보조 한 줄 */
 .past-block { margin-bottom: var(--gutter); }
-.past-strip { display: flex; gap: 32px; padding: 0 4px; }
+.past-strip { display: flex; gap: 32px; padding: 0 16px; }
 .past-item { display: flex; align-items: baseline; gap: 10px; }
 .past-item .stat-num { font-size: var(--fs-heading); color: var(--ink-2); }
 
 /* 노선별 / 유형별 막대 */
-.stat-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); }
-.stat-group h3 { margin-bottom: 14px; }
+.stat-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); align-items: start; }   /* 한쪽 "더 보기"를 펼쳐도 다른 쪽 카드가 같이 늘어나 빈 칸이 생기지 않게, 카드마다 자기 높이로 */
+.stat-group.panel { padding-top: 16px; padding-bottom: 12px; }   /* 카드 위아래 안쪽 여백을 20px 에서 줄임 (좌우 24px 는 다른 카드와 같게 유지) */
+.stat-group h3 { margin-bottom: 10px; }
 .stat-empty { color: var(--ink-3); }
 
-.bar-row { display: flex; align-items: center; gap: 12px; height: 40px; }
+.bar-row { display: flex; align-items: center; gap: 12px; height: 32px; }   /* 첫 화면에 한 번에 들어오도록 한 줄 높이를 40px 에서 줄임 */
 .bar-label { width: 72px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-row.is-type .bar-label { width: 120px; color: var(--ink); }
+.bar-row.is-type a.type-link { text-decoration: none; }   /* 유형 이름을 누르면 그 유형의 신고 목록(같은 기간)으로 이동 */
+.bar-row.is-type a.type-link:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
 .bar-track { flex: 1; height: 8px; background: var(--bg); border-radius: var(--radius-pill); overflow: hidden; }
 .bar-fill { height: 100%; background: var(--primary); border-radius: var(--radius-pill); }
 .bar-row.is-type .bar-fill { background: var(--bar-muted); }
 .bar-cnt { width: 48px; text-align: right; color: var(--ink-2); }
 
-.bar-more { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+.bar-more { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 6px; }
 .bar-more summary { height: 32px; display: flex; align-items: center; color: var(--primary); cursor: pointer; list-style: none; }
 .bar-more summary::-webkit-details-marker { display: none; }
 .bar-more summary:hover { color: var(--primary-dark); }

@@ -41,3 +41,6 @@
   .route-add-form input,
   .route-search-form input { flex: 1 1 100%; width: 100%; }
 }
+
+/* 목록 위 "전체 N건": 표 왼쪽 끝에 붙어 보이지 않게 한 글자(16px) 들여씀 */
+.list-head .total-cnt { padding-left: 16px; }
