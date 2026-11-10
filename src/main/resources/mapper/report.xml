@@ -163,14 +163,15 @@
     <result column="ROUTE_NAME" property="routeName"/>
   </resultMap>
 
-  <!-- 노선선택 모달용: 노선번호나 이름에 검색어가 들어간 노선 (검색어가 비어 있으면 앞에서 50개) -->
+  <!-- 노선선택 모달용: 노선번호나 이름에 검색어가 들어간 노선 (검색어가 비어 있으면 전체), 번호순.
+       화면에 보여줄 50개는 서비스가 이용자 수 순으로 고르므로 여기서는 넉넉히(500개) 가져옴 -->
   <select id="selectRouteList" resultMap="route">
     SELECT ROUTE_NO, ROUTE_NAME
     FROM BUS_ROUTE
     WHERE ROUTE_NO LIKE CONCAT('%', #{keyword}, '%')
        OR ROUTE_NAME LIKE CONCAT('%', #{keyword}, '%')
     ORDER BY ROUTE_NO
-    LIMIT 50
+    LIMIT 500
   </select>
 
   <!-- 존재하는 노선인지 확인 -->

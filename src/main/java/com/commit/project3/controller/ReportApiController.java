@@ -32,7 +32,7 @@ public class ReportApiController {
         this.reportAiService = reportAiService;
     }
 
-    // 노선선택 모달용 노선 검색 (axios용): 검색어가 없으면 앞에서 50개
+    // 노선선택 모달용 노선 검색 (axios용): 오늘 예상 이용자 수가 많은 순으로 최대 50개 (검색어가 없으면 전체 노선 중)
     @GetMapping("/api/route")
     public List<RouteDTO> getRouteList(@RequestParam(defaultValue = "") String keyword) {
         return reportService.getRouteList(keyword);

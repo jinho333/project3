@@ -51,6 +51,29 @@ def test_predict_returns_days_with_model_info(client, bundle):
     assert "합성데이터" in body["notice"]
 
 
+def test_predict_day_ranks_all_routes_by_riders_and_needs_key(client, bundle):
+    day = _day(bundle)
+    assert client.get("/predict/day", params={"date": day}).status_code == 401
+    r = client.get("/predict/day", params={"date": day}, headers={"X-API-Key": KEY})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["count"] == len(body["routes"]) == len(bundle.routes)
+    assert {x["routeNo"] for x in body["routes"]} == set(bundle.routes)         # 모든 노선, 중복 없음
+    keys = [(-x["predicted"], x["routeNo"]) for x in body["routes"]]
+    assert keys == sorted(keys)                                                 # 많은 순, 같으면 노선번호순
+    # 노선 하나를 따로 받은 값과 같다
+    first = body["routes"][0]
+    one = client.get("/predict", params={"routeNo": first["routeNo"], "from": day}, headers={"X-API-Key": KEY}).json()
+    assert one["predictions"][0]["predicted"] == first["predicted"]
+    assert "합성데이터" in body["notice"]
+
+
+def test_predict_day_outside_range_is_422(client, bundle):
+    too_late = (bundle.trained_end + timedelta(days=500)).isoformat()
+    r = client.get("/predict/day", params={"date": too_late}, headers={"X-API-Key": KEY})
+    assert r.status_code == 422
+
+
 def test_api_key_is_required(client, bundle):
     params = {"routeNo": bundle.routes[0], "from": _day(bundle)}
     assert client.get("/predict", params=params).status_code == 401

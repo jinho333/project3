@@ -15,7 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ReportService {
@@ -31,12 +33,16 @@ public class ReportService {
     private static final long MAX_TOTAL_SIZE = 200L * 1024 * 1024; // 총 200MB
     private static final int MAX_CONTENT_LENGTH = 2000;             // 신고 내용 최대 글자 수
 
+    private static final int ROUTE_LIST_LIMIT = 50;                 // 노선 선택 창에 보여줄 최대 노선 수
+
     private final ReportMapper reportMapper;
     private final UploadUtil uploadUtil;
+    private final RouteRankService routeRankService;
 
-    public ReportService(ReportMapper reportMapper, UploadUtil uploadUtil) {
+    public ReportService(ReportMapper reportMapper, UploadUtil uploadUtil, RouteRankService routeRankService) {
         this.reportMapper = reportMapper;
         this.uploadUtil = uploadUtil;
+        this.routeRankService = routeRankService;
     }
 
     // 유형선택 모달용 목록
@@ -196,9 +202,18 @@ public class ReportService {
         return true;
     }
 
-    // 노선선택 모달용 노선 목록
+    // 노선선택 모달용 노선 목록: 검색어에 맞는 노선을 오늘 예상 이용자 수가 많은 순으로 최대 50개
+    // 예측 순위가 없는 노선(예측 서버가 모르는 노선)과, 예측 서버를 쓸 수 없을 때의 전체 노선은 노선번호순
     public List<RouteDTO> getRouteList(String keyword) {
-        return reportMapper.selectRouteList(keyword == null ? "" : keyword.trim());
+        List<RouteDTO> routes = new ArrayList<>(reportMapper.selectRouteList(keyword == null ? "" : keyword.trim()));
+        return sortByRidership(routes, routeRankService.ranks(), ROUTE_LIST_LIMIT);
+    }
+
+    // 순위(노선번호 -> 0부터 시작하는 순서)가 있는 노선을 앞으로, 순위가 낮은 숫자(많은 순)부터. 순위가 없는 노선은 원래 순서(노선번호순)로 뒤에
+    static List<RouteDTO> sortByRidership(List<RouteDTO> routes, Map<String, Integer> ranks, int limit) {
+        List<RouteDTO> sorted = new ArrayList<>(routes);
+        sorted.sort(Comparator.comparingInt((RouteDTO r) -> ranks.getOrDefault(r.getRouteNo(), Integer.MAX_VALUE)));   // 안정 정렬이라 같은 값은 원래 순서
+        return sorted.size() > limit ? new ArrayList<>(sorted.subList(0, limit)) : sorted;
     }
 
     // 노선번호 검사: 형식이 맞고 실제 있는 노선이어야 함. 문제가 없으면 null

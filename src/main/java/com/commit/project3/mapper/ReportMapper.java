@@ -40,7 +40,7 @@ public interface ReportMapper {
     List<ReportFileDTO> selectReportFileList(int reportNo);
 
     // 노선 목록 (노선번호·이름 검색, 최대 50개)
-    List<RouteDTO> selectRouteList(String keyword);
+    List<RouteDTO> selectRouteList(String keyword);     // 노선번호순으로 최대 500개 (이용자 수 순 정렬과 50개 제한은 서비스에서)
 
     // 존재하는 노선인지 확인 (1이면 있음)
     int countRoute(String routeNo);
