@@ -76,6 +76,16 @@
     <result column="SORT_NO" property="sortNo"/>
   </resultMap>
 
+  <!-- 처리 상태 코드를 화면에 보여줄 이름으로 바꿈 (목록과 상세에서 같이 씀) -->
+  <sql id="statusName">
+    CASE R.STATUS
+      WHEN 'RECEIVED' THEN '접수'
+      WHEN 'PROCESSING' THEN '처리중'
+      WHEN 'DONE' THEN '완료'
+      ELSE R.STATUS
+    END AS STATUS_NAME
+  </sql>
+
   <!-- 목록과 개수 조회에서 같이 쓰는 검색 조건 (내 신고만 + 선택한 조건) -->
   <sql id="searchWhere">
     <where>
@@ -105,12 +115,7 @@
   <select id="selectReportList" resultMap="report">
     SELECT R.REPORT_NO, R.MEMBER_NO, R.REPORTER_NAME, R.REPORTER_PHONE, R.TYPE_NO, R.ROUTE_NO,
            R.CONTENT, R.STATUS, R.REG_DATE, G.GROUP_NAME, T.TYPE_NAME,
-           CASE R.STATUS
-             WHEN 'RECEIVED' THEN '접수'
-             WHEN 'PROCESSING' THEN '처리중'
-             WHEN 'DONE' THEN '완료'
-             ELSE R.STATUS
-           END AS STATUS_NAME
+           <include refid="statusName"/>
     FROM REPORT R
     INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
     INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO
@@ -138,12 +143,7 @@
   <select id="getReportDetail" resultMap="report">
     SELECT R.REPORT_NO, R.MEMBER_NO, R.REPORTER_NAME, R.REPORTER_PHONE, R.TYPE_NO, R.ROUTE_NO,
            R.CONTENT, R.STATUS, R.REG_DATE, R.ANSWER, R.ANSWER_DATE, G.GROUP_NAME, T.TYPE_NAME,
-           CASE R.STATUS
-             WHEN 'RECEIVED' THEN '접수'
-             WHEN 'PROCESSING' THEN '처리중'
-             WHEN 'DONE' THEN '완료'
-             ELSE R.STATUS
-           END AS STATUS_NAME
+           <include refid="statusName"/>
     FROM REPORT R
     INNER JOIN REPORT_TYPE T ON R.TYPE_NO = T.TYPE_NO
     INNER JOIN REPORT_TYPE_GROUP G ON T.GROUP_NO = G.GROUP_NO

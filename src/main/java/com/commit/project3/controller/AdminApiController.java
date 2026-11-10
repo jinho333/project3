@@ -4,7 +4,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpSession;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,7 +19,6 @@ import com.commit.project3.service.AdminService;
 import com.commit.project3.service.RoadRouteService;
 import com.commit.project3.service.RouteGeometryService;
 import com.commit.project3.service.RouteListService;
-import com.commit.project3.util.AdminUtil;
 
 // 관리자 화면이 JS 로 부르는 JSON 주소 모음 (/admin/api/...)
 // TODO: 로그인 구현 후 ROLE 이 관리자인 회원만 접근하도록 제한
@@ -44,11 +42,7 @@ public class AdminApiController {
     // 지도에 보여 줄 노선 목록 (노선번호, 이름): 노선 선 파일이 있는 노선, 이름은 DB(BUS_ROUTE)에서 읽음
     // 200 / 403: 관리자가 아님
     @GetMapping(value = "/routes", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> routes(HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
-        }
+    public ResponseEntity<Object> routes() {
         return ResponseEntity.ok(routeListService.findRouteListJson());
     }
 
@@ -66,11 +60,7 @@ public class AdminApiController {
     // 미처리 신고가 없는 노선은 빠져 있으므로 화면에서는 0건으로 보면 됨 (지도를 열 때 한 번 받아 두고 호버에 사용)
     // 200 / 403: 관리자가 아님
     @GetMapping(value = "/routes/report-counts", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> reportCounts(HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
-        }
+    public ResponseEntity<Object> reportCounts() {
         Map<String, OpenCount> counts = new LinkedHashMap<>();
         for (RouteOpenCountDTO dto : adminService.getOpenCountByRoute()) {
             counts.put(dto.getRouteNo(), OpenCount.of(dto));
@@ -82,22 +72,14 @@ public class AdminApiController {
     // [{ routeNo, received, processing, total, oldestDays }, ...]
     // 200 / 403: 관리자가 아님
     @GetMapping(value = "/routes/priority", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> priority(HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
-        }
+    public ResponseEntity<Object> priority() {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(adminService.getRoutePriority());
     }
 
     // 노선 하나의 미처리 신고 수 (노선을 클릭했을 때 최신 값으로 갱신하는 용도)
     // 200 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님
     @GetMapping(value = "/routes/{routeNo}/report-counts", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> reportCount(@PathVariable String routeNo, HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
-        }
+    public ResponseEntity<Object> reportCount(@PathVariable String routeNo) {
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
@@ -108,11 +90,7 @@ public class AdminApiController {
     // 노선 선과 정류장 (GeoJSON)
     // 200: 노선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 없는 노선이거나 데이터가 없음
     @GetMapping(value = "/routes/{routeNo}/geometry", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> geometry(@PathVariable String routeNo, HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
-        }
+    public ResponseEntity<Object> geometry(@PathVariable String routeNo) {
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));
@@ -131,11 +109,7 @@ public class AdminApiController {
     // 200: 도로 선 있음 / 400: 노선번호 형식이 이상함 / 403: 관리자가 아님 / 404: 도로 선을 쓸 수 없음(화면은 정류장을 이은 직선으로 대체) / 503: 카카오 연결·키 문제
     // 호출할 때마다 카카오 일 한도(1,000건)를 쓰므로 관리자만 부를 수 있게 막음 (관리자 확인을 가장 먼저 해서 비로그인 요청은 카카오까지 가지 못함)
     @GetMapping(value = "/routes/{routeNo}/road", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> road(@PathVariable String routeNo, @RequestParam int brtId, HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiError("FORBIDDEN", "관리자만 사용할 수 있습니다."));
-        }
+    public ResponseEntity<Object> road(@PathVariable String routeNo, @RequestParam int brtId) {
         if (!routeGeometryService.isValidRouteNo(routeNo)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_ROUTE_NO", "잘못된 노선번호입니다."));

@@ -2,8 +2,6 @@ package com.commit.project3.controller;
 
 import com.commit.project3.dto.StatDTO;
 import com.commit.project3.service.AdminService;
-import com.commit.project3.util.AdminUtil;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,11 +28,7 @@ public class AdminController {
 
     // 관리자 대시보드: 상태별·노선별·유형별 신고 건수
     @GetMapping("/admin")
-    public String dashboard(HttpSession session, Model model) {
-        String redirect = AdminUtil.checkAdmin(session);
-        if (redirect != null) {
-            return redirect;
-        }
+    public String dashboard(Model model) {
         List<StatDTO> statusStat = adminService.getStatusStat();
         // 통계 기간은 최근 7일로 고정
         int days = STAT_DAYS;
@@ -61,11 +55,7 @@ public class AdminController {
 
     // 버스 이용수요: 노선 목록 + 지도 + 예측 데이터
     @GetMapping("/admin/congestion")
-    public String congestion(HttpSession session, Model model) {
-        String redirect = AdminUtil.checkAdmin(session);
-        if (redirect != null) {
-            return redirect;
-        }
+    public String congestion(Model model) {
         model.addAttribute("menu", "congestion");
         model.addAttribute("kakaoJsKey", kakaoJsKey);
         return "pages/admin/congestion";
