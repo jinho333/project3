@@ -1,4 +1,4 @@
-/* 대시보드: 요약이 먼저. 지금 처리할 일 한 줄 → 지난 기간 실적 한 줄 → 노선·유형 상위 5개 → AI 비서 */
+/* 대시보드: 요약이 먼저. 지금 처리할 일 한 줄 → AI 비서 → 지난 기간 실적 한 줄 → 노선·유형 상위 5개 */
 .block-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
 .period-note { color: var(--ink-2); font-size: var(--fs-sub); }   /* 조회 시각·기간·AI 안내 문장: 보조 문구도 읽혀야 해서 한 단계 진하게 */
 .period-refresh { display: inline-flex; margin-left: -6px; color: var(--primary); }
@@ -14,7 +14,7 @@
 .now-item {
   flex: 1;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 18px 24px;
@@ -52,7 +52,7 @@
 .bar-more[open] summary { margin-bottom: 4px; }
 
 /* AI 비서 */
-.ai-box { margin-top: var(--gutter); }
+.ai-box { margin-bottom: var(--gutter); }   /* 지금 처리할 일 아래, 지난 기간 실적 위 */
 .ai-btn { margin-top: 4px; height: var(--control-h); padding: 0 16px; border: 1px solid var(--primary); background: var(--surface); color: var(--primary); border-radius: 8px; font-weight: 600; }
 .ai-btn:hover { background: var(--primary-weak); }
 .ai-btn.is-solid { background: var(--primary); color: #fff; }
@@ -61,7 +61,8 @@
 .ai-ask { display: flex; gap: 8px; margin-top: 16px; }
 .ai-ask input { flex: 1; }
 .ai-ask .ai-btn { margin-top: 0; }
-.ai-answer { margin-top: 12px; padding: 14px 16px; background: var(--primary-weak); border-radius: var(--radius); white-space: pre-wrap; line-height: 1.75; }
+/* 답변이 길어도 아래 실적이 밀려 내려가지 않게 화면의 4분의 1(최소 160px)까지만 키우고, 넘치면 칸 안에서만 스크롤 */
+.ai-answer { margin-top: 12px; padding: 14px 16px; background: var(--primary-weak); border-radius: var(--radius); white-space: pre-wrap; line-height: 1.75; max-height: max(160px, 25vh); overflow-y: auto; }
 .ai-answer[hidden] { display: none; }
 .ai-answer.is-error { background: var(--warn-bg); color: var(--warn); }
 

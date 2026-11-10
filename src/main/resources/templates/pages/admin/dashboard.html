@@ -29,6 +29,23 @@
     </div>
   </section>
 
+  <!-- AI 비서: 신고 통계를 근거로 인사이트와 답변을 만들어 줌 (Gemini). 실적이 길어져도 밀려 내려가지 않게 "지금 처리해야 할 일" 바로 아래에 둠 -->
+  <section class="ai-box panel">
+    <div class="block-head">
+      <h3>AI 비서</h3>
+      <span class="period-note">최근 7일 신고 통계와 신고 내용 일부를 바탕으로 답합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</span>
+    </div>
+
+    <button type="button" id="insightBtn" class="ai-btn">AI 인사이트 보기</button>
+    <p id="insightResult" class="ai-answer" hidden></p>
+
+    <div class="ai-ask">
+      <input type="text" id="askInput" maxlength="300" placeholder="예) 신고가 가장 많은 노선은 어떤 문제가 많아?" autocomplete="off" aria-label="AI 비서에게 질문">
+      <button type="button" id="askBtn" class="ai-btn is-solid">질문하기</button>
+    </div>
+    <p id="askResult" class="ai-answer" hidden></p>
+  </section>
+
   <!-- 지난 기간 실적: 어제까지 최근 7일 (오늘은 아직 쌓이는 중이라 제외) -->
   <section class="past-block">
     <div class="block-head">
@@ -88,23 +105,6 @@
       </details>
     </section>
   </div>
-
-  <!-- AI 비서: 위의 신고 통계를 근거로 인사이트와 답변을 만들어 줌 (Gemini) -->
-  <section class="ai-box panel">
-    <div class="block-head">
-      <h3>AI 비서</h3>
-      <span class="period-note">최근 7일 신고 통계와 신고 내용 일부를 바탕으로 답합니다. 신고자 이름·전화번호는 AI에 보내지 않습니다.</span>
-    </div>
-
-    <button type="button" id="insightBtn" class="ai-btn">AI 인사이트 보기</button>
-    <p id="insightResult" class="ai-answer" hidden></p>
-
-    <div class="ai-ask">
-      <input type="text" id="askInput" maxlength="300" placeholder="예) 신고가 가장 많은 노선은 어떤 문제가 많아?" autocomplete="off" aria-label="AI 비서에게 질문">
-      <button type="button" id="askBtn" class="ai-btn is-solid">질문하기</button>
-    </div>
-    <p id="askResult" class="ai-answer" hidden></p>
-  </section>
 </th:block>
 
 <th:block layout:fragment="content_js">
