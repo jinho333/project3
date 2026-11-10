@@ -1,18 +1,20 @@
 /* 회원가입: 가운데 흰 카드 */
 body.user .content { display: flex; justify-content: center; padding: 16px 32px; }   /* 위아래 바깥 여백 32px -> 16px: 한 화면에 담으려고 */
-.join-wrap { width: 480px; max-width: 100%; margin: 16px auto; padding: 24px 32px; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
-.join-wrap h2 { font-size: 32px; line-height: 40px; margin-bottom: 16px; }
-.form-row { display: flex; flex-direction: column; margin-bottom: 10px; gap: 6px; }
+.join-wrap { width: 480px; max-width: 100%; min-height: 650px; align-self: flex-start; margin: 16px auto; padding: 20px 32px; display: flex; flex-direction: column; justify-content: center; border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+.join-wrap h2 { font-size: 32px; line-height: 40px; margin-bottom: 12px; }
+.form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }   /* 오류 문구 자리(21px) 아래에 8px 을 더 둬서, 문구가 다음 칸 라벨에 붙어 보이지 않게 */
 .form-row label { font-weight: 500; }
 .id-line { display: flex; gap: 8px; }
 .id-line input { flex: 1; min-width: 0; }
 .id-line button { flex-shrink: 0; }
-.form-row .error-msg { min-height: 0; }
+body.user .form-row .error-msg, body.user .form-row .ok-msg { min-height: 21px; font-size: 14px; }   /* 오류 한 줄(14px x 1.5)을 미리 비워 둠: 문구가 나타나도 아래 칸이 움직이지 않음. 공통 규칙(body.user .error-msg, 20px)보다 우선하도록 body.user 를 붙임 */
+body.user .join-wrap > form > .error-msg { min-height: 0; }   /* 서버 오류 문구는 가입 시도 후 새로 그려진 화면에서만 나오므로 자리를 비워 두지 않음 */
 .ok-msg { color: var(--ink); font-weight: 500; }
-.join-wrap > form > button[type="submit"] { width: 100%; height: 52px; background: var(--ink); color: #fff; }
+.join-wrap > form > button[type="submit"] { width: 100%; height: 52px; margin-top: 16px; background: var(--ink); color: #fff; }
 .join-wrap > form > button[type="submit"]:hover { background: var(--elevated); }
-/* 푸터는 메인과 같이 한 줄로 줄여서 높이를 아낌 */
+/* 푸터는 한 줄로 줄이고, 로고 옆에 소개 문구를 연하게 넣음 (회원가입·로그인 동일) */
 .site-footer { padding: 9px 32px; }
 .site-footer .footer-logo { margin-bottom: 0; font-size: 16px; }
-.site-footer p { display: none; }
 .site-footer-inner { align-items: center; }
+.site-footer-inner > div { display: flex; align-items: center; gap: 32px; }   /* 로고 옆에 문구를 같은 줄로: 높이는 한 줄 그대로 */
+.site-footer p { margin: 0; }   /* 문구 색은 공통 푸터의 연한 회색(--mute) 그대로 */

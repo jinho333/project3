@@ -32,6 +32,7 @@
   min-height: 0;
   padding: 16px;
   overflow-y: auto;
+  scrollbar-gutter: stable;   /* 스크롤바가 생길 자리를 처음부터 비워 둠: 접힌 목록을 펼쳐 스크롤이 생겨도 카드 폭이 바뀌지 않게 */
 }
 
 /* 가운데: 지도(위)와 예측 데이터(아래)를 세로로 쌓음 */
