@@ -3,7 +3,9 @@ package com.commit.project3.service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -73,8 +75,14 @@ public class RidershipForecastService {
     // 하루 날짜 하나에 대한 모든 노선을 예상 이용자 수가 많은 순으로 한 번에 받음 (노선번호 목록, 같으면 노선번호순)
     // 노선마다 부르지 않으려고 예측 서버의 /predict/day 를 씀. 서버가 꺼져 있거나 값을 못 받으면 예외 없이 빈 목록
     public List<String> findDayRanking(LocalDate day) {
+        return new ArrayList<>(findDayRiders(day).keySet());
+    }
+
+    // 같은 /predict/day 한 번으로 노선별 예상 이용자 수까지 받음 (노선번호 -> 명, 이용자 수가 많은 순서 그대로)
+    // 노선 수백 개를 하나씩 부르면 처음 화면이 오래 걸려서, 이용자 규모를 쓰는 곳은 이걸 씀. 못 받으면 예외 없이 빈 값
+    public Map<String, Integer> findDayRiders(LocalDate day) {
         if (!baseUrlSet || apiKey.isEmpty()) {
-            return List.of();
+            return Map.of();
         }
         try {
             JsonNode body = client.get()
@@ -82,22 +90,22 @@ public class RidershipForecastService {
                 .header("X-API-Key", apiKey)
                 .retrieve()
                 .body(JsonNode.class);
-            List<String> routeNos = new ArrayList<>();
+            Map<String, Integer> riders = new LinkedHashMap<>();
             if (body != null && body.path("routes").isArray()) {
                 for (JsonNode r : body.path("routes")) {
                     String routeNo = r.path("routeNo").asString("");
                     if (!routeNo.isBlank()) {
-                        routeNos.add(routeNo);
+                        riders.put(routeNo, r.path("predicted").asInt(0));
                     }
                 }
             }
-            return routeNos;
+            return riders;
         } catch (RestClientResponseException e) {
             System.err.println("[Predict] 노선 순위 호출 실패: HTTP " + e.getStatusCode().value());   // 401, 422(예측 가능 기간 밖), 503 등
-            return List.of();
+            return Map.of();
         } catch (RestClientException e) {
             System.err.println("[Predict] 노선 순위 연결 실패: " + e.getClass().getSimpleName());
-            return List.of();
+            return Map.of();
         }
     }
 
