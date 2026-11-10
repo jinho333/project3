@@ -70,6 +70,37 @@ public class RidershipForecastService {
         return find(routeNo, day, 1);
     }
 
+    // 하루 날짜 하나에 대한 모든 노선을 예상 이용자 수가 많은 순으로 한 번에 받음 (노선번호 목록, 같으면 노선번호순)
+    // 노선마다 부르지 않으려고 예측 서버의 /predict/day 를 씀. 서버가 꺼져 있거나 값을 못 받으면 예외 없이 빈 목록
+    public List<String> findDayRanking(LocalDate day) {
+        if (!baseUrlSet || apiKey.isEmpty()) {
+            return List.of();
+        }
+        try {
+            JsonNode body = client.get()
+                .uri(b -> b.path("/predict/day").queryParam("date", day.toString()).build())
+                .header("X-API-Key", apiKey)
+                .retrieve()
+                .body(JsonNode.class);
+            List<String> routeNos = new ArrayList<>();
+            if (body != null && body.path("routes").isArray()) {
+                for (JsonNode r : body.path("routes")) {
+                    String routeNo = r.path("routeNo").asString("");
+                    if (!routeNo.isBlank()) {
+                        routeNos.add(routeNo);
+                    }
+                }
+            }
+            return routeNos;
+        } catch (RestClientResponseException e) {
+            System.err.println("[Predict] 노선 순위 호출 실패: HTTP " + e.getStatusCode().value());   // 401, 422(예측 가능 기간 밖), 503 등
+            return List.of();
+        } catch (RestClientException e) {
+            System.err.println("[Predict] 노선 순위 연결 실패: " + e.getClass().getSimpleName());
+            return List.of();
+        }
+    }
+
     // from 부터 days 일
     private Ridership find(String routeNo, LocalDate from, int days) {
         if (!baseUrlSet || apiKey.isEmpty()) {

@@ -22,7 +22,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 
 from app import artifact
-from app.api_models import HealthResponse, HourlyResponse, PredictResponse
+from app.api_models import DayRankingResponse, HealthResponse, HourlyResponse, PredictResponse
 from app.config import settings
 from app.features import calendar_features
 from app.hourly import HourlyHolder
@@ -129,6 +129,20 @@ def create_app(holder: ModelHolder | None = None, api_key: str | None = None, ho
                                                       "scope": bundle.scope, "trainedEnd": bundle.trained_end.isoformat()},
                 "lastError": models.last_error,
                 "warnings": [f"예측 모델 {w}" for w in models.warnings] + ([expiry] if expiry else [])}
+
+    @app.get("/predict/day", dependencies=[Depends(require_key)], response_model=DayRankingResponse)
+    def predict_day(day: Annotated[date, Query(alias="date", description="날짜 YYYY-MM-DD")]) -> dict:
+        """하루 날짜 하나에 대해 모든 노선의 예상 이용자 수를 많은 순으로(같으면 노선번호순). 노선을 하나씩 부르지 않고 한 번에 받는 용도."""
+        bundle = models.get()
+        if bundle is None:
+            raise HTTPException(503, "저장된 모델이 없습니다. python -m app.model ... --save-model 로 모델을 저장하세요.")
+        try:
+            out = bundle.predict(sorted(str(r) for r in bundle.routes), [day])
+        except artifact.PredictInputError as e:
+            raise HTTPException(422, str(e))
+        rows = sorted(((str(r.route_no), int(round(r.predicted))) for r in out.itertuples()), key=lambda x: (-x[1], x[0]))
+        return {"date": day.isoformat(), "dayOfWeek": DAY_LABELS[day.weekday()], "modelVersion": bundle.model_version,
+                "count": len(rows), "routes": [{"routeNo": n, "predicted": p} for n, p in rows], "notice": NOTICE}
 
     @app.get("/predict", dependencies=[Depends(require_key)], response_model=PredictResponse)
     def predict(route_no: Annotated[str, Query(alias="routeNo", description="노선번호 (예: 106)")],

@@ -32,6 +32,21 @@ class PredictResponse(BaseModel):
     notice: str
 
 
+class DayRouteRiders(BaseModel):
+    routeNo: str
+    predicted: int                  # 그날 하루 예상 이용자 수(명)
+
+
+class DayRankingResponse(BaseModel):
+    """하루 날짜 하나에 대한 모든 노선의 예상 이용자 수, 많은 순(같으면 노선번호순). 웹이 노선 목록을 이용자 수 순으로 정렬할 때 쓴다."""
+    date: str
+    dayOfWeek: str
+    modelVersion: str
+    count: int
+    routes: list[DayRouteRiders]
+    notice: str
+
+
 class HourPrediction(BaseModel):
     hour: int                       # 0~23 (해당 시각의 한 시간 동안)
     predicted: int                  # 예상 승차 인원(명)
