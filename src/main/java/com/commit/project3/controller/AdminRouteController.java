@@ -111,25 +111,20 @@ public class AdminRouteController {
         return "redirect:/admin/route";
     }
 
-    // 예측 노선 동기화: 예측 서버가 예측할 수 있는 노선번호를 DB의 노선 표(BUS_ROUTE)에 맞춰 넣음(새 노선은 이름 미등록으로 들어가고 이름은 이 화면에서 고침)
-    @PostMapping("/admin/route/forecast-sync")
-    public String syncForecastRoute(HttpSession session, RedirectAttributes ra) {
+    // 노선 새로고침: 예측 서버의 노선번호를 노선 표(BUS_ROUTE)에 맞춘 뒤(없던 노선만 "이름 미등록"으로 추가),
+    // 울산 BIS 의 이름으로 "이름 미등록" 노선의 이름을 채움. 이미 있는 노선과 이름은 바꾸지 않음
+    // 한쪽이 실패해도(예측 서버 꺼짐, 인증키 없음 등) 다른 쪽은 그대로 하고, 안내 문구에 둘의 결과를 함께 보여 줌
+    @PostMapping("/admin/route/refresh")
+    public String refresh(@RequestParam(defaultValue = "1") String page, @RequestParam(defaultValue = "") String keyword,
+                          HttpSession session, RedirectAttributes ra) {
         String redirect = AdminUtil.checkAdmin(session);
         if (redirect != null) {
             return redirect;
         }
-        ForecastRouteSyncService.Result syncResult = forecastRouteSyncService.sync();
-        return result(ra, syncResult.ok() ? null : syncResult.message(), syncResult.message());
-    }
-
-    // 노선 이름 가져오기: 울산 BIS 의 노선 이름으로 "이름 미등록" 노선의 이름만 채움
-    @PostMapping("/admin/route/bis-names")
-    public String importBisNames(HttpSession session, RedirectAttributes ra) {
-        String redirect = AdminUtil.checkAdmin(session);
-        if (redirect != null) {
-            return redirect;
-        }
-        RouteNameImportService.Result importResult = routeNameImportService.importNames();
-        return result(ra, importResult.ok() ? null : importResult.message(), importResult.message());
+        keepPosition(ra, page, keyword);
+        ForecastRouteSyncService.Result syncResult = forecastRouteSyncService.sync();          // 번호를 먼저 맞춰야 새 노선도 이름을 받음
+        RouteNameImportService.Result nameResult = routeNameImportService.importNames();
+        String message = "노선 번호: " + syncResult.message() + " / 노선 이름: " + nameResult.message();
+        return result(ra, syncResult.ok() && nameResult.ok() ? null : message, message);
     }
 }
