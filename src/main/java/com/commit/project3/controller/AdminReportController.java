@@ -7,9 +7,7 @@ import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.service.AdminService;
 import com.commit.project3.service.ReportPriorityService;
 import com.commit.project3.service.ReportService;
-import com.commit.project3.util.AdminUtil;
 import com.commit.project3.util.SearchUtil;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -39,11 +37,7 @@ public class AdminReportController {
     // 신고 관리 목록: 전체 회원의 신고 (검색 조건 + 정렬 + 페이징)
     @GetMapping("/admin/report/list")
     public String reportList(SearchDTO searchDTO, BindingResult bindingResult,
-                             @RequestParam(required = false) String sort, HttpSession session, Model model) {
-        String redirect = AdminUtil.checkAdmin(session);
-        if (redirect != null) {
-            return redirect;
-        }
+                             @RequestParam(required = false) String sort, Model model) {
         String searchMsg = SearchUtil.normalize(searchDTO, bindingResult);
 
         // 처리 우선순위: 미처리 신고를 처리할 순서대로 계산하고, 정렬을 고르지 않았으면 우선순위순으로 보여줌
@@ -80,11 +74,7 @@ public class AdminReportController {
 
     // 신고 처리 화면: 신고 내용 확인 + 상태 변경 + 처리 결과 입력
     @GetMapping("/admin/report/{reportNo:\\d{1,9}}")
-    public String reportDetail(@PathVariable int reportNo, HttpSession session, Model model) {
-        String redirect = AdminUtil.checkAdmin(session);
-        if (redirect != null) {
-            return redirect;
-        }
+    public String reportDetail(@PathVariable int reportNo, Model model) {
         ReportDTO reportDTO = adminService.getReportDetail(reportNo);
         if (reportDTO == null) {
             return "redirect:/admin/report/list";
@@ -102,11 +92,7 @@ public class AdminReportController {
                           @RequestParam(required = false) String status,
                           @RequestParam(required = false) String answer,
                           @RequestParam(required = false) String next,
-                          HttpSession session, Model model) {
-        String redirect = AdminUtil.checkAdmin(session);
-        if (redirect != null) {
-            return redirect;
-        }
+                          Model model) {
         // 저장하면 순서가 바뀔 수 있으므로 다음 신고는 저장하기 전 대기열 기준으로 정함
         Integer nextNo = "true".equals(next) ? reportPriorityService.findNextReportNo(reportNo) : null;
 

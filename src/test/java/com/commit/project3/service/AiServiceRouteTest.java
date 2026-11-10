@@ -54,6 +54,7 @@ class AiServiceRouteTest {
     }
 
     private void route(String routeNo, int received, int processing, Integer oldestDays, int base) {
+        when(adminService.isRegisteredRoute(routeNo)).thenReturn(true);
         when(adminService.getOpenCount(routeNo)).thenReturn(open(received, processing));
         when(adminService.getOpenOldestDays(routeNo)).thenReturn(oldestDays);
         when(adminService.getOpenTypeStat(routeNo)).thenReturn(List.of());
@@ -121,6 +122,7 @@ class AiServiceRouteTest {
 
     @Test
     void 예측이_없어도_신고_분석은_된다() {
+        when(adminService.isRegisteredRoute("999")).thenReturn(true);
         when(adminService.getOpenCount("999")).thenReturn(open(0, 0));
         when(adminService.getOpenOldestDays("999")).thenReturn(null);
         when(adminService.getOpenTypeStat("999")).thenReturn(List.of());
@@ -175,6 +177,7 @@ class AiServiceRouteTest {
     }
 
     private void routeWith(String routeNo, RidershipForecastService.Ridership ridershipData) {
+        when(adminService.isRegisteredRoute(routeNo)).thenReturn(true);
         when(adminService.getOpenCount(routeNo)).thenReturn(open(3, 2));
         when(adminService.getOpenOldestDays(routeNo)).thenReturn(5);
         when(adminService.getOpenTypeStat(routeNo)).thenReturn(List.of());
@@ -259,5 +262,14 @@ class AiServiceRouteTest {
         ArgumentCaptor<String> user = ArgumentCaptor.forClass(String.class);
         verify(gemini).generate(anyString(), user.capture());
         assertTrue(!user.getValue().contains("서버가 계산한 비교"), user.getValue());
+    }
+
+    @Test
+    void 노선_관리에_없는_노선은_분석도_질문도_받지_않는다() {
+        when(adminService.isRegisteredRoute("999")).thenReturn(false);
+
+        assertThrows(IllegalArgumentException.class, () -> service.analyzeRoute("999", null));
+        assertThrows(IllegalArgumentException.class, () -> service.askRoute("999", null, "질문"));
+        verify(ridership, times(0)).find("999");        // 이용자 수 예측도 읽지 않음
     }
 }

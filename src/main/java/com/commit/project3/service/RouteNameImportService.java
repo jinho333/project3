@@ -28,6 +28,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import com.commit.project3.mapper.AdminMapper;
+import com.commit.project3.util.NumberUtil;
 
 // 울산광역시 BIS 정보(공공데이터포털 "울산광역시_BIS 정보_GW")의 노선정보 조회로 노선 이름을 받아 BUS_ROUTE 에서 "이름 미등록" 인 노선의 이름만 채움
 // 이미 이름이 있는 노선은 바꾸지 않음. 인증키(ulsan.bis.key)는 git 에 올라가지 않는 application.yaml 에만 둠
@@ -91,7 +92,7 @@ public class RouteNameImportService {
                     Element e = (Element) list.item(i);
                     rows.add(new Row(text(e, "BRTNO"), text(e, "BRTNAME"), text(e, "DIRECTION"), text(e, "CLASS")));
                 }
-                int total = parseInt(text(doc.getDocumentElement(), "totalCnt"));
+                int total = NumberUtil.toInt(text(doc.getDocumentElement(), "totalCnt"), 0);
                 if (list.getLength() == 0 || rows.size() >= total) {
                     break;
                 }
@@ -203,13 +204,5 @@ public class RouteNameImportService {
     private static String text(Element parent, String tag) {
         NodeList list = parent.getElementsByTagName(tag);
         return list.getLength() == 0 || list.item(0).getTextContent() == null ? "" : list.item(0).getTextContent().trim();
-    }
-
-    private static int parseInt(String value) {
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 }

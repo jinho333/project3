@@ -14,13 +14,13 @@ public class ReportPriorityDTO {
     private double score;               // 합계 점수 (소수 첫째 자리)
 
     private double severityScore;       // 심각도 S: 신고 유형으로 정함
-    private Double scaleScore;          // 이용자규모 U: 앞으로 6시간 예측 혼잡도(%) 평균, 예측이 없으면 null
+    private Double scaleScore;          // 이용자규모 U: 가장 이용자가 많은 노선 대비 이 노선의 오늘 예상 이용자 수(%), 예측이 없으면 null
     private double waitScore;           // 방치 W: 접수 후 지난 시간
     private double repeatScore;         // 누적 N: 같은 노선에 쌓인 미처리 건수
 
     private int waitDays;               // 접수 후 지난 일수
     private int sameRouteCnt;           // 같은 노선의 미처리 신고 수 (자기 자신 포함)
     private int recentSameCnt;          // 최근 4주 같은 노선·같은 유형으로 접수된 신고 수 (자기 자신 포함, 완료된 것도 포함)
-    private String scaleLabel;          // 앞으로 6시간 이용 단계: 많음 / 보통 / 적음 / 예측 없음
+    private String scaleLabel;          // 이용 단계(지도 혼잡 등급과 같은 경계): 많음 / 보통 / 적음 / 예측 없음
     private List<String> reasonList;    // 화면에 보여줄 근거 문구
 }

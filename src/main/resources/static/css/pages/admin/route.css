@@ -14,12 +14,6 @@
 .route-add-form .name-input { flex: 1; width: auto; min-width: 0; }   /* 이름 입력칸이 남는 폭을 쓴다 */
 .name-input { width: 300px; }
 
-/* 제목 옆 새로고침 버튼 */
-.page-head { display: flex; align-items: center; gap: 12px; margin-bottom: var(--gutter); }
-.page-head .admin-title { margin-bottom: 0; }
-.refresh-btn { white-space: nowrap; }
-.refresh-btn[disabled] { opacity: 0.6; cursor: progress; }
-
 /* 목록 위 줄 오른쪽의 검색 (왼쪽 전체 건수는 .list-head 공통 규칙) */
 .route-search-form { display: flex; align-items: center; gap: 8px; }
 .route-search-form input { width: 280px; }

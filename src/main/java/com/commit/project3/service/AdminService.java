@@ -9,6 +9,7 @@ import com.commit.project3.dto.SearchDTO;
 import com.commit.project3.dto.StatDTO;
 import com.commit.project3.mapper.AdminMapper;
 import com.commit.project3.mapper.ReportMapper;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
@@ -146,6 +147,16 @@ public class AdminService {
         list.sort(Comparator.comparingInt((RoutePriorityDTO r) -> bestRank.getOrDefault(r.routeNo(), Integer.MAX_VALUE))
             .thenComparing(RoutePriorityDTO::routeNo));
         return list;
+    }
+
+    // 노선 관리에 등록된 노선인지 (이용수요 화면은 등록된 노선의 데이터만 보여 줌)
+    // DB 를 읽지 못하면 막지 않음: 지도 목록도 DB 를 못 읽으면 선 파일이 있는 모든 노선을 보여 주는 것과 같은 기준
+    public boolean isRegisteredRoute(String routeNo) {
+        try {
+            return !adminMapper.selectRouteNames(List.of(routeNo)).isEmpty();
+        } catch (DataAccessException e) {
+            return true;
+        }
     }
 
     // 노선 하나의 미처리 신고 건수: 신고가 없으면 0건으로 채워서 돌려줌

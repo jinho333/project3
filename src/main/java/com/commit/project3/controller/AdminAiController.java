@@ -2,7 +2,6 @@ package com.commit.project3.controller;
 
 import com.commit.project3.service.AiService;
 import com.commit.project3.service.GeminiClient;
-import com.commit.project3.util.AdminUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,9 +42,6 @@ public class AdminAiController {
     // 현재 데이터를 요약한 인사이트
     @PostMapping("/insight")
     public ResponseEntity<Map<String, String>> insight(HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
-        }
         if (tooFast(session)) {
             return fail(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요.");
         }
@@ -59,9 +55,6 @@ public class AdminAiController {
     // 관리자가 직접 한 질문
     @PostMapping("/ask")
     public ResponseEntity<Map<String, String>> ask(@RequestBody Map<String, String> body, HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
-        }
         if (tooFast(session)) {
             return fail(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요.");
         }
@@ -78,9 +71,6 @@ public class AdminAiController {
     // compareRouteNo 를 같이 보내면 두 노선을 비교해서 답하고, question 을 같이 보내면 같은 데이터를 보고 그 질문에 답함
     @PostMapping("/route")
     public ResponseEntity<Map<String, String>> route(@RequestBody Map<String, Object> body, HttpSession session) {
-        if (AdminUtil.checkAdmin(session) != null) {
-            return fail(HttpStatus.FORBIDDEN, "관리자만 사용할 수 있습니다.");
-        }
         if (tooFast(session)) {
             return fail(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해 주세요.");
         }
