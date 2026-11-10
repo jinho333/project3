@@ -9,7 +9,17 @@
 
 <th:block layout:fragment="content">
   <div class="page-narrow">
-  <h2 class="admin-title">노선 관리</h2>
+  <!-- 제목 옆 새로고침: 예측 서버의 노선번호와 울산 BIS 의 노선 이름을 가져와 노선 목록을 최신으로 맞춤 -->
+  <div class="page-head">
+    <h2 class="admin-title">노선 관리</h2>
+    <form id="refreshForm" method="post" action="/admin/route/refresh">
+      <input type="hidden" name="page" th:value="${pageDTO.page}">
+      <input type="hidden" name="keyword" th:value="${keyword}">
+      <button type="submit" class="refresh-btn"
+        title="예측 서버의 노선번호와 울산 BIS의 노선 이름을 가져와 목록을 최신으로 맞춥니다. 없던 노선만 추가하고 이름이 없는 노선만 채우며, 이미 있는 노선과 이름은 바꾸지 않습니다.">
+        <span aria-hidden="true">↻</span> 새로고침</button>
+    </form>
+  </div>
 
   <!-- 등록·수정·삭제 결과는 redirect 후 한 번만 보임 (flash) -->
   <p class="info-msg" th:if="${successMsg != null}" th:text="${successMsg}"></p>
@@ -21,20 +31,6 @@
     <input type="text" name="routeNo" placeholder="노선번호 (예: 134)" maxlength="20" required>
     <input type="text" name="routeName" class="name-input" placeholder="노선 이름 (예: 율리공영차고지 ↔ 꽃바위)" maxlength="100" required>
     <button type="submit" class="btn-primary">등록</button>
-  </form>
-
-  <!-- 예측 노선 동기화: 예측 서버가 예측할 수 있는 노선번호를 DB의 노선 표에 맞춤(없던 노선만 추가, 이름은 "이름 미등록"으로 들어감) -->
-  <form class="forecast-sync-form" method="post" action="/admin/route/forecast-sync">
-    <h3>예측 노선</h3>
-    <p>예측 서버가 예측할 수 있는 노선번호를 노선 목록에 맞춥니다. 없던 노선만 "이름 미등록"으로 추가하고, 이미 있는 노선은 바꾸지 않습니다. 이름은 아래 목록에서 수정하세요.</p>
-    <button type="submit">예측 노선 동기화</button>
-  </form>
-
-  <!-- 노선 이름 가져오기: 울산 BIS 의 노선 이름으로 "이름 미등록" 노선의 이름만 채움(이미 이름이 있는 노선은 그대로) -->
-  <form class="forecast-sync-form" method="post" action="/admin/route/bis-names">
-    <h3>노선 이름</h3>
-    <p>울산 BIS의 노선 정보로 "이름 미등록"인 노선의 이름만 채웁니다. 방향 이름이 3개 이상이면 맨 앞과 맨 뒤만 씁니다.</p>
-    <button type="submit">노선 이름 가져오기</button>
   </form>
 
   <!-- 목록 위 줄: 왼쪽은 전체 건수, 오른쪽은 그 목록을 거르는 검색 -->
