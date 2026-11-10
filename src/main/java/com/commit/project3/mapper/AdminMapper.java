@@ -49,7 +49,9 @@ public interface AdminMapper {
     List<ReportDTO> selectOpenReportText(@Param("routeNo") String routeNo, @Param("limit") int limit);
 
     // 노선 관리
-    List<RouteDTO> selectAdminRouteList(String keyword);
+    // 검색어에 맞는 노선을 한 페이지 분량만 (offset 번째부터 limit 개)
+    List<RouteDTO> selectAdminRouteList(@Param("keyword") String keyword, @Param("offset") int offset, @Param("limit") int limit);
+    int selectAdminRouteCount(String keyword);  // 검색어에 맞는 노선 전체 개수
     int insertRoute(RouteDTO routeDTO);
     int updateRoute(RouteDTO routeDTO);
     int deleteRoute(String routeNo);

@@ -174,8 +174,14 @@ public class AdminService {
 
     // ===== 노선 관리 =====
 
-    public List<RouteDTO> getRouteList(String keyword) {
-        return adminMapper.selectAdminRouteList(keyword == null ? "" : keyword.trim());
+    // 검색어에 맞는 노선 전체 개수 (페이지 번호 계산용)
+    public int getRouteCount(String keyword) {
+        return adminMapper.selectAdminRouteCount(keyword == null ? "" : keyword.trim());
+    }
+
+    // 검색어에 맞는 노선 중 offset 번째부터 limit 개
+    public List<RouteDTO> getRouteList(String keyword, int offset, int limit) {
+        return adminMapper.selectAdminRouteList(keyword == null ? "" : keyword.trim(), offset, limit);
     }
 
     // 노선 등록: 성공하면 null, 실패하면 오류 문구
