@@ -131,7 +131,7 @@ class RouteListServiceTest {
 
     @Test
     void 일위를_100으로_한_비율을_혼잡_등급_경계에_대어_등급을_정한다() {
-        // 80% 이상 HIGH, 50% 이상 MID, 그 아래 LOW (RouteForecastService 의 등급 경계와 같음)
+        // 80% 이상 HIGH, 50% 이상 MID, 그 아래 LOW (RouteListService.gradeOf 의 등급 경계와 같음)
         Map<String, String> grades = RouteListService.gradesOf(Map.of(
             "1", 1000, "2", 800, "3", 790, "4", 500, "5", 490));
         assertEquals("HIGH", grades.get("1"));
@@ -192,5 +192,43 @@ class RouteListServiceTest {
         ridership.down = false;
         now.addAndGet(31_000L);                                  // 실패는 30초만 기억
         assertEquals("HIGH", service.findGrade("134").orElse(null));
+    }
+
+    // ---- 이용자 규모 (우선순위가 씀) ----
+
+    @Test
+    void 이용자_규모는_가장_큰_노선을_100으로_한_비율이다() {
+        Map<String, Double> scales = RouteListService.scalesOf(Map.of("134", 9713, "114", 4856, "741", 97));
+
+        assertEquals(100.0, scales.get("134"), 0.001);
+        assertEquals(50.0, scales.get("114"), 0.01);
+        assertEquals(1.0, scales.get("741"), 0.01);
+        assertTrue(RouteListService.scalesOf(Map.of("1", 0)).isEmpty());
+    }
+
+    @Test
+    void 지도_노선의_이용자_규모와_예측이_없을_때_쓸_중간값을_돌려준다() {
+        // 비율: 134=100, 114=50, 741=10, 742=2 → 중간값은 (10 + 50) / 2 = 30
+        FakeRidership ridership = new FakeRidership(Map.of("134", 1000, "114", 500, "741", 100, "742", 20));
+        RouteListService service = service(mapper(n -> List.of()), new FakeGeometry("114", "134", "741", "742", "999"), ridership, new AtomicLong());
+
+        assertEquals(50.0, service.findScale("114").orElse(-1), 0.001);
+        assertTrue(service.findScale("999").isEmpty());                  // 예측 서버가 모르는 노선
+        assertEquals(30.0, service.neutralScale(), 0.001);
+    }
+
+    @Test
+    void 이용자_수를_하나도_못_받으면_중간값은_50이다() {
+        FakeRidership ridership = new FakeRidership(Map.of());
+        RouteListService service = service(mapper(n -> List.of()), new FakeGeometry("134"), ridership, new AtomicLong());
+
+        assertEquals(50.0, service.neutralScale(), 0.001);
+        assertTrue(service.findScale("134").isEmpty());
+    }
+
+    @Test
+    void 중간값은_개수가_홀수면_가운데_짝수면_가운데_둘의_평균이다() {
+        assertEquals(3.0, RouteListService.medianOf(List.of(5.0, 1.0, 3.0), 50), 0.001);
+        assertEquals(2.5, RouteListService.medianOf(List.of(4.0, 1.0, 2.0, 3.0), 50), 0.001);
     }
 }
