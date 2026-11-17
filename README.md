@@ -55,7 +55,7 @@ flowchart LR
 | 신고마다 점수를 매기는데 쿼리가 신고 수만큼 나가지 않게 한 방법? | [`ReportPriorityService.getQueue`](src/main/java/com/commit/project3/service/ReportPriorityService.java#L80): 노선별 건수·최근 4주 반복을 한 번에 집계, 노선별 규모는 `computeIfAbsent`로 한 번만 계산 |
 | 긴급 → 점수 → 접수 순으로 정렬이 매번 같은 결과가 되게 한 방법? | [`ReportPriorityService` 정렬](src/main/java/com/commit/project3/service/ReportPriorityService.java#L101): 마지막 기준을 신고 번호로 둬서 동점 순서 고정 |
 | 같은 사람의 반복 신고가 순위를 부풀리지 못하게 한 방법? | [`report.xml`](src/main/resources/mapper/report.xml#L18): `COUNT(DISTINCT 회원|YEARWEEK)` |
-| 예측 서버가 꺼졌을 때 신고 접수가 같이 멈추지 않게 한 방법? | [`RouteRankService.ranks`](src/main/java/com/commit/project3/service/RouteRankService.java#L45): 성공은 10분, 실패는 30초만 기억(실패 결과를 오래 붙들지 않음) + 빈 순위면 노선번호순으로 대체 |
+| 노선 선택 창을 이용자 수 순으로 정렬할 때, 받아 둔 순위를 어떻게 기억하나? | [`RouteRankService.ranks`](src/main/java/com/commit/project3/service/RouteRankService.java#L45): 성공은 10분, 빈 순위(실패)는 30초만 기억해 복구되면 곧 반영 + 순위가 비면 노선번호순으로 대체 |
 | 시간이 걸리는 캐시를 테스트에서 기다리지 않는 방법? | `RouteRankService`의 시계 주입(`Supplier<LocalDate>`, `LongSupplier`) → [`RouteRankServiceTest`](src/test/java/com/commit/project3/service/RouteRankServiceTest.java#L55)에서 "10분 캐시", "날짜 바뀌면 재요청", "30초 뒤 재시도"를 즉시 검증 |
 
 ```java
