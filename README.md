@@ -70,7 +70,7 @@ COUNT(DISTINCT CONCAT_WS('|', IFNULL(R.MEMBER_NO, CONCAT('n', R.REPORT_NO)), YEA
 
 ### 관리자: 노선별 이용자 수 예측
 
-![이용자 수 예측](docs/demo-ridership.gif)
+![이용자 수 예측](docs/demo-ridership-900.gif)
 
 > 지도에서 노선을 고르면 노선 경로와 일별 · 시간대별 예상 이용자 수가 나오고, 두 노선을 비교하거나 AI에게 신고와 예측을 근거로 한 분석을 물어볼 수 있습니다.
 
