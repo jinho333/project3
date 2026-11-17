@@ -22,7 +22,7 @@
 
 ## 기술 스택
 
-Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini API · FastAPI · JUnit 5 · Mockito 
+Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini API · FastAPI 
 
 ## 구조
 
@@ -76,12 +76,6 @@ COUNT(DISTINCT CONCAT_WS('|', IFNULL(R.MEMBER_NO, CONCAT('n', R.REPORT_NO)), YEA
 ./gradlew bootRun
 ```
 
-## 한계
-
-- 우선순위 비중(40·30·20·10)은 **시작값**입니다. 실제 운영 데이터에서 관리자 판단과 비교해 조정해야 합니다.
-- 예측 서버의 학습 데이터는 [`ai_service/README.md`](ai_service/README.md)에 적힌 대로 AI 합성데이터이며, 개별 값의 정밀 예측이 아닌 통계적 경향입니다. 우선순위의 "이용자 규모" 점수에 이 예측값이 쓰입니다.
-- 신고 접수의 파일 저장과 DB 저장은 수동으로 되돌립니다. 트랜잭션으로 옮겨야 합니다.
-- 모바일을 위한 반응형 화면은 아직 없습니다.
 
 ## 기록
 
