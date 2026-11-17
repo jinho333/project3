@@ -34,7 +34,7 @@ flowchart LR
   S -->|REST| G["Gemini API<br/>문장 다듬기 · 관리자 요약"]
 ```
 
-## 제가 한 일
+## 맡은 부분
 
 **신고 (시민)**
 - 로그인/회원가입(BCrypt), 신고 작성 · 조회 · 수정 · 취소
@@ -69,18 +69,6 @@ flowchart LR
 ```sql
 -- 같은 사람이 같은 유형을 같은 주(월~일)에 여러 번 신고하면 1건으로 센다
 COUNT(DISTINCT CONCAT_WS('|', IFNULL(R.MEMBER_NO, CONCAT('n', R.REPORT_NO)), YEARWEEK(R.REG_DATE, 1))) AS cnt
-```
-
-## 기술 스택
-
-
-## 실행
-
-1. MariaDB `project-3` 데이터베이스를 준비합니다. (스키마 SQL은 이 저장소에 없습니다.)
-2. `application.yaml`(DB 접속 · API 키 등)을 본인 환경에 맞게 채우고 실행합니다.
-
-```bash
-./gradlew bootRun
 ```
 
 
