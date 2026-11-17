@@ -55,7 +55,7 @@ flowchart LR
 | 긴급 → 점수 → 접수 순으로 정렬이 매번 같은 결과가 되게 한 방법? | [`ReportPriorityService` 정렬](src/main/java/com/commit/project3/service/ReportPriorityService.java#L101): 마지막 기준을 신고 번호로 둬서 동점 순서 고정 |
 | 같은 사람의 반복 신고가 순위를 부풀리지 못하게 한 방법? | [`report.xml`](src/main/resources/mapper/report.xml#L18): `COUNT(DISTINCT 회원|YEARWEEK)` |
 | 노선 선택 창을 이용자 수 순으로 정렬할 때, 받아 둔 순위를 어떻게 기억하나? | [`RouteRankService.ranks`](src/main/java/com/commit/project3/service/RouteRankService.java#L45): 성공은 10분, 빈 순위(실패)는 30초만 기억해 복구되면 곧 반영 + 순위가 비면 노선번호순으로 대체 |
-| 시간이 걸리는 캐시를 테스트에서 기다리지 않는 방법? | `RouteRankService`의 시계 주입(`Supplier<LocalDate>`, `LongSupplier`) → [`RouteRankServiceTest`](src/test/java/com/commit/project3/service/RouteRankServiceTest.java#L55)에서 "10분 캐시", "날짜 바뀌면 재요청", "30초 뒤 재시도"를 즉시 검증 |
+
 
 ```java
 // 이용자 수는 소수 노선에 몰려 있어 중간값이 50보다 훨씬 낮다 → 고정 50을 쓰면 예측 없는 노선이 부당하게 앞선다
