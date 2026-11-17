@@ -20,6 +20,10 @@
 | 처리 우선순위 | 점수 = 0.4×심각도 + 0.3×이용자 규모 + 0.2×방치 + 0.1×반복 |
 | 긴급 규칙 | 사고 위험 유형이거나 **14일 이상 방치**된 신고는 점수와 무관하게 맨 위 |
 
+## 기술 스택
+
+Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini API · FastAPI · JUnit 5 · Mockito 
+
 ## 구조
 
 ```mermaid
@@ -60,9 +64,7 @@ flowchart LR
 COUNT(DISTINCT CONCAT_WS('|', IFNULL(R.MEMBER_NO, CONCAT('n', R.REPORT_NO)), YEARWEEK(R.REG_DATE, 1))) AS cnt
 ```
 
-## 기술 스택
 
-Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini API · FastAPI · JUnit 5 · Mockito · Gradle
 
 ## 실행
 
