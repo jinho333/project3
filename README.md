@@ -21,6 +21,10 @@
 | 처리 우선순위 | 점수 = 0.4×심각도 + 0.3×이용자 규모 + 0.2×방치 + 0.1×반복 |
 | 긴급 규칙 | 사고 위험 유형이거나 **14일 이상 방치**된 신고는 점수와 무관하게 맨 위 |
 
+## 기술 스택
+
+Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini API · FastAPI 
+
 ## 구조
 
 ```mermaid
@@ -70,7 +74,6 @@ COUNT(DISTINCT CONCAT_WS('|', IFNULL(R.MEMBER_NO, CONCAT('n', R.REPORT_NO)), YEA
 
 ## 기술 스택
 
-Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini API · JUnit 5 · Mockito · Gradle
 
 ## 실행
 
@@ -81,12 +84,6 @@ Java 17 · Spring Boot · MyBatis · Thymeleaf · MariaDB · BCrypt · Gemini AP
 ./gradlew bootRun
 ```
 
-## 한계
-
-- 우선순위 비중(40·30·20·10)은 **시작값**입니다. 실제 운영 데이터에서 관리자 판단과 비교해 조정해야 합니다.
-- "이용자 규모" 점수는 외부에서 받은 예상 이용자 수에 의존합니다. 예측이 없는 노선은 중간값으로 대체하지만, 예측값 자체의 정확도는 검증하지 않았습니다.
-- 신고 접수의 파일 저장과 DB 저장은 수동으로 되돌립니다. 트랜잭션으로 옮겨야 합니다.
-- 모바일을 위한 반응형 화면은 아직 없습니다.
 
 ## 기록
 
